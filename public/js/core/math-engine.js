@@ -368,3 +368,342 @@ export function findOptimalPairs(items, opts, capitalUsd = 200) {
 
   return diverse;
 }
+
+/**
+ * Quant Capital Advisor Engine:
+ * Evaluates thousands of real CS2 combinations specifically simulated at the user's
+ * exact capital (integer Q1, Q2, leftover Steam trap, CS2 1,000-slot inventory limit,
+ * liquidity depth, and volatility) to produce tailored, actionable strategies.
+ */
+export function getCapitalTierInfo(capitalUsd) {
+  const c = Math.max(0, Number(capitalUsd) || 0);
+  if (c < 75) {
+    return {
+      id: 'MICRO',
+      badge: 'Mikro Bütçe',
+      rangeLabel: '< $75',
+      advice:
+        'Bu bütçede pahalı dönüş skinleri Steam cüzdanında yüksek küsurat bırakır. $0.40–$2.50 arası likit kasalar + $4–$18 hızlı skinler en yüksek sermaye verimini sağlar.',
+      maxL1Price: Math.max(c * 0.5, 4),
+      minL1Price: 0.28, // avoid $0.01+$0.01 min fee traps
+      minL2Price: 2.5,
+      maxL2Price: Math.max(c * 0.65, 18),
+      maxSlots: 300,
+      splitPlan: [
+        { pct: 100, role: 'Tek Odaklı Likit Çift', note: 'Düşük sermayeyi bölmeden maksimum tam sayı adet (Q₁, Q₂) yakalayın.' }
+      ]
+    };
+  }
+  if (c < 400) {
+    return {
+      id: 'STARTER',
+      badge: 'Büyüme Bütçesi',
+      rangeLabel: '$75 – $400',
+      advice:
+        'Arbitraj için en akıcı aralık! Yüksek makaslı CS2 kasalarıyla Steam bakiyesini büyütüp $15–$55 arası çok likit tüfek skinleriyle (Redline, Printstream vb.) %92+ sermaye verimiyle nakde dönebilirsiniz.',
+      maxL1Price: Math.min(c * 0.25, 40),
+      minL1Price: 0.35,
+      minL2Price: 8,
+      maxL2Price: Math.min(c * 0.45, 90),
+      maxSlots: 600,
+      splitPlan: [
+        { pct: 70, role: 'Ana Kasa / Yüksek Makas', note: 'En güçlü 1. Yön spread getirisini yakalar.' },
+        { pct: 30, role: 'İkinci Likit Eşya', note: 'Tek eşyanın 7G hold fiyat düşüş riskini dengeler.' }
+      ]
+    };
+  }
+  if (c < 1500) {
+    return {
+      id: 'PRO',
+      badge: 'Orta-Üst Bütçe',
+      rangeLabel: '$400 – $1.500',
+      advice:
+        'Bu sermayede çok ucuz kasalar 1.000 envanter slot sınırına dayanır ve satışı yavaşlatır. Birim fiyatı $1.20+ kasa/skinler ile $45–$220 arası yüksek hacimli skinler hem hızlı hem slot dostudur.',
+      maxL1Price: Math.min(c * 0.22, 180),
+      minL1Price: 0.8,
+      minL2Price: 25,
+      maxL2Price: Math.min(c * 0.35, 280),
+      maxSlots: 650,
+      splitPlan: [
+        { pct: 50, role: 'Ana Yüksek Makas Sepeti', note: 'Envanter dostu ($1+ birim fiyatlı) yüksek hacimli kasalar.' },
+        { pct: 35, role: 'Orta Bant Likit Skin', note: 'Hızlı Steam satışı ve düşük listeleme eforu.' },
+        { pct: 15, role: 'Nakit Fırsat Tamponu', note: 'Ani düşüşlerde (snipe) veya 2. yön küsurat tamamlamada kullanılır.' }
+      ]
+    };
+  }
+  return {
+    id: 'WHALE',
+    badge: 'Yüksek Sermaye / Desk',
+    rangeLabel: '$1.500+',
+    advice:
+      'Yüksek sermayede tek bir ucuz eşyaya girmek hem 1.000 CS2 slot sınırını aşar hem emir defterini bozar. Sermayeyi 3 farklı likit banda (orta-üst skin, bıçak/eldiven, premium kasa) bölün.',
+    maxL1Price: Math.min(c * 0.2, 600),
+    minL1Price: Math.max(2.0, c / 600),
+    minL2Price: 60,
+    maxL2Price: Math.min(c * 0.35, 900),
+    maxSlots: 550,
+    splitPlan: [
+      { pct: 45, role: 'Yüksek Hacimli Premium Kasa / Skin', note: 'Slot limitini aşmayan $3–$50 arası likit eşyalar.' },
+      { pct: 40, role: 'Bıçak / Covert Likit Nakit Hattı', note: 'Az işlem adediyle büyük bakiye taşıma.' },
+      { pct: 15, role: 'Risk Tamponu & Buy Order', note: 'Volatilite ve anlık fırsat rezervi.' }
+    ]
+  };
+}
+
+export function analyzeCapitalStrategies(items, opts, capitalUsd = 200) {
+  const cap = Math.max(5, Number(capitalUsd) || 200);
+  const tier = getCapitalTierInfo(cap);
+  const isCSFloat = opts.marketplace === 'CSFLOAT';
+
+  const leg1Pool = [];
+  const leg2Pool = [];
+
+  for (const item of items) {
+    const qty = Number(item.q) || 0;
+    if (isCSFloat && qty < 18) continue;
+
+    const m = evaluateItemMetrics(item, opts);
+    if (!m.hasValidMarket || m.isSpiky) continue;
+
+    // Leg 1 candidates adapted to capital tier
+    if (
+      m.effBuy >= tier.minL1Price &&
+      m.effBuy <= Math.max(tier.maxL1Price, cap * 0.5) &&
+      m.leg1ProfitPct >= 3 &&
+      m.leg1ProfitPct <= 62
+    ) {
+      const q1Est = Math.floor(cap / m.effBuy);
+      if (q1Est >= 1 && q1Est <= 950) {
+        leg1Pool.push({ item, m, qty, q1Est });
+      }
+    }
+
+    // Leg 2 candidates adapted to capital tier
+    if (
+      m.steamUsd >= tier.minL2Price &&
+      m.steamUsd <= Math.max(tier.maxL2Price, cap * 0.95) &&
+      m.leg2LossPct >= -3 &&
+      m.leg2LossPct <= 14.5
+    ) {
+      leg2Pool.push({ item, m, qty });
+    }
+  }
+
+  // Fallback relaxation if strict tier filters produced too few candidates
+  if (leg1Pool.length < 3 || leg2Pool.length < 3) {
+    for (const item of items) {
+      const qty = Number(item.q) || 0;
+      if (isCSFloat && qty < 8) continue;
+      const m = evaluateItemMetrics(item, opts);
+      if (!m.hasValidMarket || m.isSpiky) continue;
+      if (leg1Pool.length < 10 && m.effBuy >= 0.2 && m.effBuy <= cap && m.leg1ProfitPct > 1 && m.leg1ProfitPct <= 65) {
+        if (!leg1Pool.some((x) => x.item.n === item.n)) {
+          leg1Pool.push({ item, m, qty, q1Est: Math.floor(cap / m.effBuy) });
+        }
+      }
+      if (leg2Pool.length < 10 && m.steamUsd >= 1 && m.steamUsd <= cap * 1.1 && m.leg2LossPct <= 16) {
+        if (!leg2Pool.some((x) => x.item.n === item.n)) {
+          leg2Pool.push({ item, m, qty });
+        }
+      }
+    }
+  }
+
+  leg1Pool.sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct);
+  leg2Pool.sort((a, b) => a.m.leg2LossPct - b.m.leg2LossPct);
+
+  const topL1 = leg1Pool.slice(0, 14);
+  const topL2 = leg2Pool.slice(0, 14);
+
+  // Also grab ultra-liquid candidates for the Fast/Safe strategy
+  const liquidL1 = [...leg1Pool].sort((a, b) => b.qty - a.qty).slice(0, 10);
+  const liquidL2 = [...leg2Pool].sort((a, b) => b.qty - a.qty).slice(0, 10);
+
+  const l1Candidates = Array.from(new Map([...topL1, ...liquidL1].map((x) => [x.item.n, x])).values());
+  const l2Candidates = Array.from(new Map([...topL2, ...liquidL2].map((x) => [x.item.n, x])).values());
+
+  const evaluatedPairs = [];
+
+  for (const l1 of l1Candidates) {
+    for (const l2 of l2Candidates) {
+      if (l1.item.n === l2.item.n) continue;
+
+      const sim = computeLoopMetrics({
+        capitalUsd: cap,
+        pM1Usd: l1.m.marketBuyUsd,
+        pS1Usd: l1.m.steamUsd,
+        pS2Usd: l2.m.steamUsd,
+        pM2Usd: l2.m.marketSellUsd,
+        buyFeePct: opts.buyFeePct,
+        sellFeePct: opts.sellFeePct,
+        withdrawFeePct: opts.withdrawFeePct,
+        steamFeeMode: opts.steamFeeMode,
+        steamCustomFeePct: opts.steamCustomFeePct
+      });
+
+      const c1 = sim.firstCycle;
+      if (c1.q1 <= 0 || c1.q2 <= 0) continue;
+
+      const utilizedPct = c1.steamAfterLeg1 > 0 ? ((c1.steamAfterLeg1 - c1.steamWallet) / c1.steamAfterLeg1) * 100 : 0;
+      const minDepth = isCSFloat ? Math.min(l1.qty, l2.qty) : 80;
+      const slotSafe = c1.q1 <= tier.maxSlots;
+      const liquidityScore = Math.min(100, Math.round(Math.log10(Math.max(10, minDepth)) * 36));
+
+      evaluatedPairs.push({
+        leg1: l1,
+        leg2: l2,
+        sim,
+        c1,
+        utilizedPct,
+        minDepth,
+        slotSafe,
+        liquidityScore
+      });
+    }
+  }
+
+  const pickBest = (scorer, excludeNames = new Set()) => {
+    let best = null;
+    let bestScore = -Infinity;
+    for (const p of evaluatedPairs) {
+      if (p.c1.netProfit <= 0) continue;
+      const key = `${p.leg1.item.n}|${p.leg2.item.n}`;
+      if (excludeNames.has(key)) continue;
+      const score = scorer(p);
+      if (score > bestScore) {
+        bestScore = score;
+        best = p;
+      }
+    }
+    return best;
+  };
+
+  const usedKeys = new Set();
+  const strategies = [];
+
+  // Strategy 1: Max Realistic Profit (with slot safety penalty)
+  const maxProfit = pickBest(
+    (p) => p.c1.netRoiPct * (p.slotSafe ? 1 : 0.72) + p.utilizedPct * 0.08,
+    usedKeys
+  );
+  if (maxProfit) {
+    usedKeys.add(`${maxProfit.leg1.item.n}|${maxProfit.leg2.item.n}`);
+    strategies.push({
+      id: 'MAX_PROFIT',
+      tag: 'MAKSİMUM KÂR',
+      tagCls: 'pill-mint',
+      title: 'En Yüksek 14 Günlük Net Getiri',
+      reason: `Bu bütçede 1. döngüde en yüksek nakit eşdeğeri kârı (${maxProfit.c1.q1}x → ${maxProfit.c1.q2}x) üreten kombinasyon.`,
+      pair: maxProfit
+    });
+  }
+
+  // Strategy 2: Fast & Ultra-Liquid (Safest Execution)
+  const fastSafe = pickBest(
+    (p) =>
+      p.liquidityScore * 0.45 +
+      p.c1.netRoiPct * 0.9 +
+      (p.c1.q1 <= 260 ? 12 : 0) +
+      (p.utilizedPct >= 88 ? 8 : 0),
+    usedKeys
+  );
+  if (fastSafe) {
+    usedKeys.add(`${fastSafe.leg1.item.n}|${fastSafe.leg2.item.n}`);
+    strategies.push({
+      id: 'FAST_SAFE',
+      tag: 'HIZLI & GÜVENLİ',
+      tagCls: 'pill-ice',
+      title: 'Yüksek Likidite & Hızlı Satış',
+      reason: `En az ${fastSafe.minDepth} aktif ilan derinliği ve düşük listeleme yükü (${fastSafe.c1.q1} adet) ile güvenli nakit dönüş.`,
+      pair: fastSafe
+    });
+  }
+
+  // Strategy 3: Highest Capital Efficiency (Minimal Steam Leftover)
+  const maxEff = pickBest(
+    (p) => p.utilizedPct * 1.4 + p.c1.netRoiPct * 0.75 + (p.slotSafe ? 10 : 0),
+    usedKeys
+  );
+  if (maxEff) {
+    usedKeys.add(`${maxEff.leg1.item.n}|${maxEff.leg2.item.n}`);
+    strategies.push({
+      id: 'MAX_EFFICIENCY',
+      tag: 'DENGELİ VERİM',
+      tagCls: 'pill-gold',
+      title: 'En Az Atıl Steam Bakiyesi',
+      reason: `Steam bakiyenizin %${maxEff.utilizedPct.toFixed(1)}'ini anında 2. yöne çevirerek içeride kilitli bakiye bırakmaz.`,
+      pair: maxEff
+    });
+  }
+
+  return {
+    tier,
+    strategies,
+    bestBenchmark: maxProfit || fastSafe || maxEff || null
+  };
+}
+
+/**
+ * Generates real-time actionable diagnostics comparing user's current Desk selection
+ * against real CS2 operational constraints & the budget's optimal benchmark.
+ */
+export function diagnoseCurrentSetup(metrics, advisorResult) {
+  const c1 = metrics.firstCycle;
+  const alerts = [];
+
+  if (c1.q1 === 0) {
+    return [
+      {
+        level: 'danger',
+        text: 'Başlangıç sermayesi 1 adet 1. yön eşyası almaya yetmiyor. Bütçenize uygun önerilen stratejilerden birini tek tıkla yükleyebilirsiniz.'
+      }
+    ];
+  }
+
+  if (c1.q1 > 950) {
+    alerts.push({
+      level: 'danger',
+      text: `Envanter Limiti Uyarısı: ${c1.q1} adet eşya CS2'nin 1.000 slotluk envanter sınırını aşıyor. Birim fiyatı daha yüksek bir 1. yön eşyası seçin.`
+    });
+  } else if (c1.q1 > 450) {
+    alerts.push({
+      level: 'warn',
+      text: `Yüksek İşlem Yükü: ${c1.q1} adet eşyayı tek tek Steam'de listelemek zaman alır. Bütçeniz için daha az adetli üst bant eşyalar daha pratiktir.`
+    });
+  }
+
+  const trappedSteamPct = c1.steamAfterLeg1 > 0 ? (c1.steamWallet / c1.steamAfterLeg1) * 100 : 0;
+  if (c1.q2 === 0) {
+    alerts.push({
+      level: 'danger',
+      text: '1. yön sonunda oluşan Steam bakiyesi 2. yön dönüş eşyasından 1 adet bile almaya yetmiyor. Daha uygun fiyatlı bir 2. yön skini seçin.'
+    });
+  } else if (trappedSteamPct > 18) {
+    alerts.push({
+      level: 'warn',
+      text: `Atıl Bakiye Uyarısı: Steam bakiyenizin %${trappedSteamPct.toFixed(1)}'i dönüş eşyasına yetmediği için içeride kilitli kalıyor. Birim fiyatı daha düşük bir 2. yön skini verimi artırır.`
+    });
+  }
+
+  if (metrics.netCycleRoiPct <= 0) {
+    alerts.push({
+      level: 'danger',
+      text: 'Bu eşleşme mevcut komisyonlarla kâr üretmiyor (M₁ × M₂ ≤ 1.00). Aşağıdaki bütçenize özel stratejilerden birini seçin.'
+    });
+  } else if (advisorResult?.bestBenchmark) {
+    const diff = advisorResult.bestBenchmark.c1.netProfit - c1.netProfit;
+    if (diff > Math.max(2, metrics.capitalUsd * 0.03)) {
+      alerts.push({
+        level: 'info',
+        text: `Fırsat İpucu: Aynı sermayeyle "${advisorResult.bestBenchmark.leg1.item.n} → ${advisorResult.bestBenchmark.leg2.item.n}" stratejisi 1. döngüde tahmini +$${diff.toFixed(2)} daha fazla kâr potansiyeli sunuyor.`
+      });
+    } else if (alerts.length === 0) {
+      alerts.push({
+        level: 'good',
+        text: `Optimize Kurulum: Sermayenizin %${(100 - trappedSteamPct).toFixed(1)}'i aktif dönüyor ve bütçe katmanınız (${advisorResult.tier.badge}) için güçlü verim bandındasınız.`
+      });
+    }
+  }
+
+  return alerts;
+}

@@ -122,6 +122,14 @@ Proje **GitHub → Cloudflare Workers Builds (`npx wrangler deploy`)** akışın
 
 ---
 
+## Destek & İletişim
+
+- **Destek / İletişim E-postası:** `spread@haking.tr`
+- **Geliştiriciyi Destekle (Buy Me a Coffee):** [buymeacoffee.com/haking](https://buymeacoffee.com/haking)
+- **Steam Takasla Destekle:** [Steam Takas Teklifi Gönder](https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7)
+
+---
+
 ## Yasal Uyarı & Lisans
 
 Bu yazılım yalnızca hesaplama, analiz ve kişisel takip amacıyla hazırlanmıştır; finansal veya yatırım tavsiyesi değildir. Valve Corporation, Steam, Counter-Strike 2, CSFloat veya Youpin898 ile herhangi bir resmi ortaklığı bulunmamaktadır.

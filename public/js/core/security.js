@@ -16,6 +16,12 @@ const ALLOWED_LINK_HOSTS = new Set([
   'csfloat.com',
   'www.youpin898.com',
   'youpin898.com',
+  'buymeacoffee.com',
+  'www.buymeacoffee.com',
+  'x.com',
+  'twitter.com',
+  'api.whatsapp.com',
+  't.me',
   'github.com',
   'spread.haking.tr',
   'haking.tr'
@@ -61,6 +67,9 @@ export function safeImageUrl(rawUrl) {
 
 export function safeExternalUrl(rawUrl) {
   if (typeof rawUrl !== 'string') return '#';
+  if (rawUrl.startsWith('mailto:') && /^mailto:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(rawUrl)) {
+    return rawUrl;
+  }
   try {
     const parsed = new URL(rawUrl);
     if (parsed.protocol === 'https:' && ALLOWED_LINK_HOSTS.has(parsed.hostname)) {

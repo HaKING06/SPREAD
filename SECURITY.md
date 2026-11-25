@@ -10,4 +10,4 @@
 - **Prototip Kirliliği & CSV Enjeksiyon Koruması:** JSON yedek içe aktarımlarında `__proto__` / `constructor` / `prototype` anahtarları temizlenir, SHA-256 bütünlük özeti doğrulanır ve CSV hücrelerinde formül enjeksiyonu (`=`, `+`, `-`, `@`) etkisizleştirilir.
 
 ## Güvenlik Açığı Bildirimi
-Bir güvenlik zafiyeti tespit ederseniz lütfen herkese açık Issue açmak yerine doğrudan `security@haking.tr` adresine veya GitHub Private Security Advisory üzerinden bildirin.
+Bir güvenlik zafiyeti tespit ederseniz lütfen herkese açık Issue açmak yerine doğrudan `spread@haking.tr` adresine veya GitHub Private Security Advisory üzerinden bildirin.

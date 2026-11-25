@@ -1,5 +1,10 @@
-# Cloudflare Pages clean routes (keep /api/* routed to Functions)
+# Clean SPA URL routes for spread.haking.tr
+/masa         /index.html   200
+/hesaplayici  /index.html   200
 /calculator   /index.html   200
+/tarayici     /index.html   200
 /scanner      /index.html   200
+/takip        /index.html   200
 /tracker      /index.html   200
+/akademi      /index.html   200
 /academy      /index.html   200

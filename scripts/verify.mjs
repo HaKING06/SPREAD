@@ -7,7 +7,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { calcExactValveSteamFee, computeLoopMetrics } from '../public/js/core/math-engine.js';
+import {
+  analyzeCapitalStrategies,
+  calcExactValveSteamFee,
+  computeLoopMetrics
+} from '../public/js/core/math-engine.js';
+import { parseSharedSetupFromUrl } from '../public/js/core/router-share.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -166,6 +171,28 @@ async function main() {
     );
   }
 
+  // 5b. Smart Capital Advisor + Shareable URL Parser Assertions
+  const mergedSample = catalog.items
+    .map((m) => ({ ...m, ...(snapshot.prices[m.n] || {}) }))
+    .filter((x) => x.s > 0 && x.cf > 0);
+  const adv = analyzeCapitalStrategies(
+    mergedSample,
+    { marketplace: 'CSFLOAT', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true },
+    200
+  );
+  if (adv.strategies.length >= 2 && adv.tier.id === 'STARTER') {
+    pass(`Capital Strategy Advisor verified: ${adv.strategies.length} tailored strategies generated for $200 (${adv.tier.badge}).`);
+  } else {
+    fail(`Capital Strategy Advisor returned insufficient strategies: ${adv.strategies.length}`);
+  }
+
+  const parsedShare = parseSharedSetupFromUrl('?m=cf&cur=TRY&cap=250&l1=Revolution+Case&p1m=0.55&p1s=0.89&l2=AK-47+%7C+Redline+%28Field-Tested%29&p2s=20&p2m=18.2');
+  if (parsedShare && parsedShare.currency === 'TRY' && parsedShare.capitalUsd === 250 && parsedShare.leg1.name === 'Revolution Case') {
+    pass('Shareable Deep-Link parser verified cleanly.');
+  } else {
+    fail('Shareable Deep-Link parser failed validation.');
+  }
+
   if (process.argv.includes('--live')) {
     console.log('\nRunning live local server + /api/market & /api/fx smoke test...');
     const port = '4189';
@@ -191,8 +218,10 @@ async function main() {
 
       const endpoints = [
         ['/', 200],
-        ['/scanner', 200],
-        ['/css/tokens.css', 200],
+        ['/tarayici', 200],
+        ['/takip', 200],
+        ['/akademi', 200],
+        ['/css/advisor.css', 200],
         ['/js/main.js', 200],
         ['/assets/brand/logo-192.png', 200],
         ['/assets/brand/banner.jpg', 200],

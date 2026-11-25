@@ -1,12 +1,19 @@
 /**
- * SPREAD (spread.haking.tr) — 2-Leg Trade Desk Calculator View
+ * SPREAD (spread.haking.tr) — 2-Leg Trade Desk Calculator + Smart Capital Advisor View
  */
 
-import { MARKETPLACES, buildImageUrl, steamMarketUrl } from '../core/config.js';
+import { MARKETPLACES, STORAGE_KEYS, buildImageUrl, steamMarketUrl } from '../core/config.js';
 import { clearNode, el } from '../core/security.js';
-import { computeLoopMetrics, computeSensitivityMatrix, findOptimalPairs } from '../core/math-engine.js';
+import {
+  analyzeCapitalStrategies,
+  computeLoopMetrics,
+  computeSensitivityMatrix,
+  diagnoseCurrentSetup
+} from '../core/math-engine.js';
 import { fmtMoneyFromUsd, fmtMult, fmtPct, fromUsd, getCurrencyMeta, toUsd } from '../core/formatters.js';
 import { renderCompoundChart, renderSensitivityHeatmap } from '../charts/canvas-charts.js';
+
+const CAPITAL_PRESETS_USD = [50, 150, 500, 1500, 5000];
 
 export function initCalculatorView(app) {
   const capInput = document.getElementById('calcCapitalInput');
@@ -21,6 +28,69 @@ export function initCalculatorView(app) {
   const fxFromSel = document.getElementById('fxQuickFrom');
   const fxToSel = document.getElementById('fxQuickTo');
   const fxOutEl = document.getElementById('fxQuickOutput');
+
+  const onboardingEl = document.getElementById('onboardingGuideCard');
+  let advisorTimer = null;
+  let lastAdvisorResult = null;
+
+  // Onboarding visibility state
+  function initOnboardingState() {
+    try {
+      const hidden = localStorage.getItem(STORAGE_KEYS.ONBOARDING_HIDDEN) === '1';
+      onboardingEl?.classList.toggle('hidden', hidden);
+    } catch {
+      // ignore
+    }
+  }
+
+  document.getElementById('dismissOnboardingBtn')?.addEventListener('click', () => {
+    onboardingEl?.classList.add('hidden');
+    try {
+      localStorage.setItem(STORAGE_KEYS.ONBOARDING_HIDDEN, '1');
+    } catch {
+      // ignore
+    }
+  });
+
+  document.getElementById('showGuideQuickBtn')?.addEventListener('click', () => {
+    app.switchTab('calculator');
+    onboardingEl?.classList.remove('hidden');
+    try {
+      localStorage.removeItem(STORAGE_KEYS.ONBOARDING_HIDDEN);
+    } catch {
+      // ignore
+    }
+    onboardingEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  function renderCapitalPresets() {
+    const host = document.getElementById('capitalPresetsRow');
+    if (!host) return;
+    clearNode(host);
+    const cur = app.settings.currency;
+    const fx = app.market.fxRates;
+
+    for (const usd of CAPITAL_PRESETS_USD) {
+      const isClose = Math.abs(app.settings.capitalUsd - usd) / usd < 0.04;
+      host.appendChild(
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `preset-chip ${isClose ? 'is-active' : ''}`,
+            onClick: () => {
+              app.settings.capitalUsd = usd;
+              app.saveSettings();
+              syncInputsFromSettings();
+              renderMetricsOnly(true);
+              app.toast(`Sermaye ${fmtMoneyFromUsd(usd, cur, fx, { decimals: 0 })} olarak ayarlandı — öneriler güncellendi.`);
+            }
+          },
+          fmtMoneyFromUsd(usd, cur, fx, { decimals: 0 })
+        )
+      );
+    }
+  }
 
   function syncInputsFromSettings() {
     const s = app.settings;
@@ -44,6 +114,7 @@ export function initCalculatorView(app) {
     s2Name.value = s.leg2.name;
     pS2Input.value = fromUsd(s.leg2.steamUsd, cur, fx).toFixed(2);
     pM2Input.value = fromUsd(s.leg2.marketUsd, cur, fx).toFixed(2);
+    renderCapitalPresets();
   }
 
   function updateSettingsFromInputs() {
@@ -60,11 +131,18 @@ export function initCalculatorView(app) {
     s.leg2.marketUsd = Math.max(0, toUsd(parseFloat(pM2Input.value) || 0, cur, fx));
 
     app.saveSettings();
-    renderMetricsOnly();
+    renderCapitalPresets();
+    renderMetricsOnly(false);
+
+    // Debounce heavy 4,500-item strategy advisor re-scan when typing fast
+    clearTimeout(advisorTimer);
+    advisorTimer = setTimeout(() => {
+      renderAdvisorSection();
+    }, 180);
   }
 
   function updateFxBar() {
-    if (!fxSrcInput || !fxFromSel || !fxToSel || !fxOutEl) return;
+    if (!fxSrcInput || !fxFromSel || !fxToSel || !fxOutEl) return null;
     const amount = Math.max(0, parseFloat(fxSrcInput.value) || 0);
     const fromCur = fxFromSel.value;
     const toCur = fxToSel.value;
@@ -110,7 +188,7 @@ export function initCalculatorView(app) {
                 app.settings.leg2.marketUsd = found.cfo;
                 app.saveSettings();
                 syncInputsFromSettings();
-                renderMetricsOnly();
+                renderMetricsOnly(true);
                 app.toast(`CSFloat Buy Order fiyatı (${fmtMoneyFromUsd(found.cfo, app.settings.currency, app.market.fxRates)}) uygulandı.`);
               }
             },
@@ -167,7 +245,185 @@ export function initCalculatorView(app) {
     box.appendChild(links);
   }
 
-  function renderMetricsOnly() {
+  /**
+   * Renders the Smart Capital Strategy Advisor Panel inside the Trade Desk
+   */
+  function renderAdvisorSection() {
+    const tierBadgeEl = document.getElementById('advisorTierBadge');
+    const tierAdviceEl = document.getElementById('advisorTierAdvice');
+    const strategiesGrid = document.getElementById('advisorStrategiesGrid');
+    const splitBarHost = document.getElementById('advisorSplitPlan');
+    const diagHost = document.getElementById('advisorDiagnosticsHost');
+    if (!strategiesGrid) return;
+
+    const s = app.settings;
+    const fx = app.market.fxRates;
+    const cur = s.currency;
+    const money = (u, sign = false) => fmtMoneyFromUsd(u, cur, fx, { withSign: sign });
+
+    const advisor = analyzeCapitalStrategies(
+      app.items,
+      {
+        marketplace: s.marketplace,
+        buyFeePct: s.buyFeePct,
+        sellFeePct: s.sellFeePct,
+        withdrawFeePct: s.withdrawFeePct,
+        steamFeeMode: s.steamFeeMode,
+        steamCustomFeePct: s.steamCustomFeePct,
+        useBuyOrderForLeg2: s.useBuyOrderForLeg2,
+        conservativeSteamPrice: s.conservativeSteamPrice
+      },
+      s.capitalUsd
+    );
+    lastAdvisorResult = advisor;
+
+    if (tierBadgeEl) {
+      tierBadgeEl.textContent = `${advisor.tier.badge} • ${money(s.capitalUsd)}`;
+    }
+    if (tierAdviceEl) {
+      tierAdviceEl.textContent = advisor.tier.advice;
+    }
+
+    // Live Diagnostics on current selection
+    if (diagHost && app.latestMetrics) {
+      clearNode(diagHost);
+      const alerts = diagnoseCurrentSetup(app.latestMetrics, advisor);
+      for (const al of alerts) {
+        const icon = al.level === 'danger' ? '⚠' : al.level === 'warn' ? '!' : al.level === 'good' ? '✓' : '★';
+        diagHost.appendChild(
+          el(
+            'div',
+            { className: `diag-pill is-${al.level}` },
+            el('span', { className: 'diag-icon' }, icon),
+            el('span', null, al.text)
+          )
+        );
+      }
+    }
+
+    // 3 Strategy Cards
+    clearNode(strategiesGrid);
+    if (advisor.strategies.length === 0) {
+      strategiesGrid.appendChild(
+        el(
+          'div',
+          { className: 'txt-muted', style: { gridColumn: '1 / -1', fontSize: '12.5px' } },
+          'Bu bütçe ve komisyon ayarlarıyla kârlı likit strateji bulunamadı. Sermayeyi artırın veya komisyonları kontrol edin.'
+        )
+      );
+    } else {
+      for (const st of advisor.strategies) {
+        const p = st.pair;
+        const isCurrent =
+          s.leg1.name.toLowerCase() === p.leg1.item.n.toLowerCase() &&
+          s.leg2.name.toLowerCase() === p.leg2.item.n.toLowerCase();
+
+        const card = el(
+          'div',
+          { className: `strategy-card ${isCurrent ? 'is-selected' : ''}` },
+          el(
+            'div',
+            { className: 'strategy-card-head' },
+            el('span', { className: `pill ${st.tagCls}` }, st.tag),
+            el('span', { className: 'num txt-mint', style: { fontWeight: '700', fontSize: '13.5px' } }, `${money(p.c1.netProfit, true)} (${fmtPct(p.c1.netRoiPct, true)})`)
+          ),
+          el('h4', { className: 'strategy-card-title' }, st.title),
+          el('p', { className: 'strategy-card-desc' }, st.reason),
+          el(
+            'div',
+            { className: 'pair-items-stack' },
+            el(
+              'div',
+              { className: 'pair-mini-item' },
+              el(
+                'div',
+                { className: 'pair-mini-thumb', style: { '--rarity-color': p.leg1.item.rc || '#b0c3d9' } },
+                el('img', { src: buildImageUrl(p.leg1.item.img), alt: p.leg1.item.n, loading: 'lazy' })
+              ),
+              el(
+                'div',
+                { className: 'pair-mini-info' },
+                el('div', { className: 'pair-mini-name', title: p.leg1.item.n }, `${p.c1.q1}x ${p.leg1.item.n}`),
+                el('div', { className: 'pair-mini-sub' }, `${money(p.leg1.m.marketBuyUsd)} → ${money(p.leg1.m.steamUsd)} (${fmtPct(p.leg1.m.leg1ProfitPct, true)})`)
+              )
+            ),
+            el(
+              'div',
+              { className: 'pair-mini-item' },
+              el(
+                'div',
+                { className: 'pair-mini-thumb', style: { '--rarity-color': p.leg2.item.rc || '#b0c3d9' } },
+                el('img', { src: buildImageUrl(p.leg2.item.img), alt: p.leg2.item.n, loading: 'lazy' })
+              ),
+              el(
+                'div',
+                { className: 'pair-mini-info' },
+                el('div', { className: 'pair-mini-name', title: p.leg2.item.n }, `${p.c1.q2}x ${p.leg2.item.n}`),
+                el('div', { className: 'pair-mini-sub' }, `${money(p.leg2.m.steamUsd)} → ${money(p.leg2.m.marketSellUsd)} (${fmtPct(p.leg2.m.leg2LossPct, false)} kayıp)`)
+              )
+            )
+          ),
+          el(
+            'div',
+            { className: 'strategy-meta-strip num' },
+            el('span', null, `Verim: %${p.utilizedPct.toFixed(0)}`),
+            el('span', null, `Likidite: ${p.liquidityScore}/100`),
+            el('span', null, `Slot: ${p.c1.q1}`)
+          ),
+          el(
+            'button',
+            {
+              type: 'button',
+              className: `btn btn-sm ${isCurrent ? 'btn-mint' : 'btn-primary'}`,
+              style: { width: '100%' },
+              onClick: () => {
+                app.applyPair(p.leg1.item, p.leg2.item, p.leg1.m, p.leg2.m);
+              }
+            },
+            isCurrent ? '✓ Masada Aktif' : 'Bu Stratejiyi Uygula →'
+          )
+        );
+        strategiesGrid.appendChild(card);
+      }
+    }
+
+    // Budget Split Allocation Plan
+    if (splitBarHost) {
+      clearNode(splitBarHost);
+      const colors = ['var(--gold)', 'var(--mint)', 'var(--ice)'];
+      const bar = el('div', { className: 'split-bar-track' });
+      const legend = el('div', { className: 'split-legend-grid' });
+
+      advisor.tier.splitPlan.forEach((seg, idx) => {
+        const segUsd = (s.capitalUsd * seg.pct) / 100;
+        bar.appendChild(
+          el('div', {
+            className: 'split-bar-seg',
+            style: { width: `${seg.pct}%`, background: colors[idx % colors.length] }
+          })
+        );
+        legend.appendChild(
+          el(
+            'div',
+            { className: 'split-legend-item' },
+            el(
+              'div',
+              { className: 'split-legend-head' },
+              el('i', { className: 'legend-dot', style: { background: colors[idx % colors.length] } }),
+              el('strong', null, `%${seg.pct} • ${seg.role}`),
+              el('span', { className: 'num txt-gold' }, money(segUsd))
+            ),
+            el('div', { className: 'txt-muted', style: { fontSize: '11.5px', marginTop: '2px' } }, seg.note)
+          )
+        );
+      });
+
+      splitBarHost.appendChild(bar);
+      splitBarHost.appendChild(legend);
+    }
+  }
+
+  function renderMetricsOnly(refreshAdvisor = true) {
     const s = app.settings;
     const fx = app.market.fxRates;
     const cur = s.currency;
@@ -186,6 +442,7 @@ export function initCalculatorView(app) {
       steamCustomFeePct: s.steamCustomFeePct
     });
 
+    app.latestMetrics = d;
     const c1 = d.firstCycle;
 
     // Preview wells
@@ -309,7 +566,9 @@ export function initCalculatorView(app) {
     renderCompoundTable(d, money);
     updateFxBar();
 
-    app.latestMetrics = d;
+    if (refreshAdvisor) {
+      renderAdvisorSection();
+    }
   }
 
   function renderCompoundTable(d, money) {
@@ -407,34 +666,17 @@ export function initCalculatorView(app) {
       document.querySelectorAll('[data-comp-mode]').forEach((b) => {
         b.classList.toggle('is-active', b.dataset.compMode === app.settings.compoundMode);
       });
-      renderMetricsOnly();
+      renderMetricsOnly(false);
     });
   });
 
-  // Auto-fill best live pair
+  // Auto-fill best live strategy for current budget
   document.getElementById('autoBestPairBtn')?.addEventListener('click', () => {
-    const s = app.settings;
-    const pairs = findOptimalPairs(
-      app.items,
-      {
-        marketplace: s.marketplace,
-        buyFeePct: s.buyFeePct,
-        sellFeePct: s.sellFeePct,
-        withdrawFeePct: s.withdrawFeePct,
-        steamFeeMode: s.steamFeeMode,
-        steamCustomFeePct: s.steamCustomFeePct,
-        useBuyOrderForLeg2: s.useBuyOrderForLeg2,
-        conservativeSteamPrice: s.conservativeSteamPrice
-      },
-      s.capitalUsd
-    );
-
-    if (pairs.length === 0) {
-      app.toast('Mevcut filtrelerde uygun likit çift bulunamadı.', 'warn');
+    const best = lastAdvisorResult?.bestBenchmark;
+    if (!best) {
+      app.toast('Mevcut bütçede uygun likit strateji bulunamadı.', 'warn');
       return;
     }
-
-    const best = pairs[0];
     app.applyPair(best.leg1.item, best.leg2.item, best.leg1.m, best.leg2.m);
   });
 
@@ -445,7 +687,7 @@ export function initCalculatorView(app) {
       app.settings.capitalUsd = Math.ceil(eff * 100) / 100;
       app.saveSettings();
       syncInputsFromSettings();
-      renderMetricsOnly();
+      renderMetricsOnly(true);
       app.toast('Sermaye 1 adet alış tutarına eşitlendi.');
     }
   });
@@ -463,7 +705,7 @@ export function initCalculatorView(app) {
     app.settings.leg1.marketUsd = res.usdVal;
     app.saveSettings();
     syncInputsFromSettings();
-    renderMetricsOnly();
+    renderMetricsOnly(true);
     app.toast('Kur çevirici tutarı 1. Yön alış fiyatına aktarıldı.');
   });
 
@@ -476,7 +718,7 @@ export function initCalculatorView(app) {
     app.settings.leg2.marketUsd = res.usdVal;
     app.saveSettings();
     syncInputsFromSettings();
-    renderMetricsOnly();
+    renderMetricsOnly(true);
     app.toast('Kur çevirici tutarı 2. Yön satış fiyatına aktarıldı.');
   });
 
@@ -485,14 +727,16 @@ export function initCalculatorView(app) {
     app.createTrackedCycleFromCalculator();
   });
 
-  // Re-render charts cleanly on resize
+  // Resize charts smoothly
   let resizeTimer = null;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      if (app.activeTab === 'calculator') renderMetricsOnly();
+      if (app.activeTab === 'calculator') renderMetricsOnly(false);
     }, 150);
   });
+
+  initOnboardingState();
 
   return {
     syncInputsFromSettings,
@@ -501,7 +745,7 @@ export function initCalculatorView(app) {
       document.querySelectorAll('[data-comp-mode]').forEach((b) => {
         b.classList.toggle('is-active', b.dataset.compMode === app.settings.compoundMode);
       });
-      renderMetricsOnly();
+      renderMetricsOnly(true);
     }
   };
 }

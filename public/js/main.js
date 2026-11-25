@@ -1,10 +1,16 @@
 /**
  * SPREAD (spread.haking.tr) — Main Application Orchestrator
+ * Includes Clean History API Routing (/ , /tarayici, /takip, /akademi) & Shareable Deep-Links.
  */
 
 import { MARKETPLACES } from './core/config.js';
 import { el } from './core/security.js';
 import { evaluateItemMetrics, findOptimalPairs } from './core/math-engine.js';
+import {
+  parseSharedSetupFromUrl,
+  resolveTabFromPathname,
+  syncUrlForTab
+} from './core/router-share.js';
 import { MarketService } from './services/market-api.js';
 import { Vault } from './services/vault-storage.js';
 import { initCommandPalette, renderLiveTicker } from './views/header-ticker.js';
@@ -13,6 +19,7 @@ import { initScannerView } from './views/scanner-view.js';
 import { initTrackerView } from './views/tracker-view.js';
 import { initAcademyView } from './views/academy-view.js';
 import { initVaultModal } from './views/vault-modal.js';
+import { initShareAndSupportModals } from './views/share-support-modals.js';
 
 class SpreadApp {
   constructor() {
@@ -29,6 +36,7 @@ class SpreadApp {
     this.views = {};
     this.cmdPalette = null;
     this.vaultModal = null;
+    this.shareSupport = null;
   }
 
   toast(message, kind = 'ok') {
@@ -45,7 +53,7 @@ class SpreadApp {
       node.style.opacity = '0';
       node.style.transition = 'opacity 180ms ease';
       setTimeout(() => node.remove(), 200);
-    }, 3000);
+    }, 3200);
   }
 
   rebuildItemIndex() {
@@ -85,14 +93,21 @@ class SpreadApp {
     this.cmdPalette?.open(legHint);
   }
 
-  switchTab(tabName) {
+  switchTab(tabName, opts = {}) {
+    const { updateHistory = true, replaceHistory = false } = opts;
     this.activeTab = tabName;
+
     document.querySelectorAll('[data-tab]').forEach((btn) => {
       btn.classList.toggle('is-active', btn.dataset.tab === tabName);
     });
     document.querySelectorAll('.view-panel').forEach((panel) => {
       panel.classList.toggle('hidden', panel.id !== `view-${tabName}`);
     });
+
+    if (updateHistory) {
+      syncUrlForTab(tabName, replaceHistory);
+    }
+
     if (tabName === 'calculator') this.views.calculator?.render();
     if (tabName === 'scanner') this.views.scanner?.render();
     if (tabName === 'tracker') this.views.tracker?.render();
@@ -145,7 +160,7 @@ class SpreadApp {
     this.saveSettings();
     this.switchTab('calculator');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    this.toast(`En iyi çift yüklendi: ${item1.n} → ${item2.n}`);
+    this.toast(`Strateji uygulandı: ${item1.n} → ${item2.n}`);
   }
 
   toggleWatchlist(itemName) {
@@ -329,6 +344,13 @@ class SpreadApp {
   }
 
   wireHeaderControls() {
+    // Brand logo click -> Home /
+    document.getElementById('brandHomeLink')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.switchTab('calculator');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
     // Marketplace selector (CSFloat primary / Youpin898 optional)
     document.querySelectorAll('[data-marketplace]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -338,7 +360,6 @@ class SpreadApp {
         this.settings.buyFeePct = MARKETPLACES[nextMkt].defaultBuyFee;
         this.settings.sellFeePct = MARKETPLACES[nextMkt].defaultSellFee;
 
-        // Refresh active pair prices for the newly selected marketplace if catalog items exist
         const l1Item = this.findItemByName(this.settings.leg1.name);
         const l2Item = this.findItemByName(this.settings.leg2.name);
         const evalOpts = {
@@ -380,9 +401,18 @@ class SpreadApp {
       });
     });
 
-    // Nav Tabs
+    // Nav Tabs (supports clean anchor links with preventDefault for SPA speed)
     document.querySelectorAll('[data-tab]').forEach((btn) => {
-      btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.switchTab(btn.dataset.tab);
+      });
+    });
+
+    // Browser Back / Forward navigation
+    window.addEventListener('popstate', () => {
+      const tab = resolveTabFromPathname(window.location.pathname);
+      this.switchTab(tab, { updateHistory: false });
     });
 
     // Fee Inputs
@@ -472,6 +502,8 @@ class SpreadApp {
       if (e.key === 'Escape') {
         this.cmdPalette?.close();
         this.vaultModal?.close();
+        this.shareSupport?.closeShare();
+        this.shareSupport?.closeSupport();
         document.getElementById('completeCycleModal')?.classList.add('hidden');
         return;
       }
@@ -548,27 +580,42 @@ class SpreadApp {
   async boot() {
     this.cmdPalette = initCommandPalette(this);
     this.vaultModal = initVaultModal(this);
+    this.shareSupport = initShareAndSupportModals(this);
     this.views.calculator = initCalculatorView(this);
     this.views.scanner = initScannerView(this);
     this.views.tracker = initTrackerView(this);
     initAcademyView();
 
     this.wireHeaderControls();
-    this.syncHeaderControls();
 
-    // Handle clean path routes (/scanner, /tracker, /academy)
-    const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
-    if (['calculator', 'scanner', 'tracker', 'academy'].includes(path)) {
-      this.activeTab = path;
+    // Check for incoming shared deep-link setup (/?l1=...&l2=...)
+    const sharedSetup = parseSharedSetupFromUrl(window.location.search);
+    if (sharedSetup) {
+      this.settings = { ...this.settings, ...sharedSetup };
+      this.saveSettings();
+      this.activeTab = 'calculator';
+      const banner = document.getElementById('sharedLoadedBanner');
+      banner?.classList.remove('hidden');
+      document.getElementById('dismissSharedBannerBtn')?.addEventListener('click', () => {
+        banner?.classList.add('hidden');
+        window.history.replaceState({ tab: 'calculator' }, '', '/');
+      });
+    } else {
+      this.activeTab = resolveTabFromPathname(window.location.pathname);
     }
+
+    this.syncHeaderControls();
 
     // 1. Instant boot from bundled ByMykel catalog + fresh snapshot
     try {
       this.items = await this.market.loadInitial(this.customItems);
       this.rebuildItemIndex();
       this.hydrateDefaultPairIfEmpty();
-      this.switchTab(this.activeTab);
+      this.switchTab(this.activeTab, { updateHistory: true, replaceHistory: true });
       this.renderAll();
+      if (sharedSetup) {
+        this.toast('Paylaşılan arbitraj kurulumu yüklendi!');
+      }
     } catch (err) {
       this.toast('Yerel katalog yüklenemedi. Lütfen HTTP sunucusu üzerinden açın.', 'err');
       console.error(err);

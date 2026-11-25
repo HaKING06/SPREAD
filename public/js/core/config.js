@@ -7,7 +7,30 @@ export const BRAND = {
   domain: 'spread.haking.tr',
   url: 'https://spread.haking.tr',
   parentDomain: 'haking.tr',
-  version: '1.0.0'
+  supportEmail: 'spread@haking.tr',
+  buyMeACoffeeUrl: 'https://buymeacoffee.com/haking',
+  steamTradeDonateUrl: 'https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7',
+  version: '1.1.0'
+};
+
+export const ROUTES = {
+  calculator: { path: '/', title: 'SPREAD — CS2 Arbitraj Döngü Masası | spread.haking.tr' },
+  scanner: { path: '/tarayici', title: 'Canlı CS2 Skin Tarayıcısı (4.500+ Eşya) — SPREAD' },
+  tracker: { path: '/takip', title: '14 Günlük Aktif Döngü Takibi — SPREAD' },
+  academy: { path: '/akademi', title: 'CS2 Arbitraj Akademisi & Rehber — SPREAD' }
+};
+
+export const PATH_TO_TAB = {
+  '': 'calculator',
+  'masa': 'calculator',
+  'hesaplayici': 'calculator',
+  'calculator': 'calculator',
+  'tarayici': 'scanner',
+  'scanner': 'scanner',
+  'takip': 'tracker',
+  'tracker': 'tracker',
+  'akademi': 'academy',
+  'academy': 'academy'
 };
 
 export const STEAM_IMG_PREFIX = 'https://community.akamai.steamstatic.com/economy/image/';
@@ -17,7 +40,8 @@ export const STORAGE_KEYS = {
   SETTINGS: 'spread_haking_tr_v1_settings',
   CYCLES: 'spread_haking_tr_v1_cycles',
   CUSTOM_ITEMS: 'spread_haking_tr_v1_custom_items',
-  WATCHLIST: 'spread_haking_tr_v1_watchlist'
+  WATCHLIST: 'spread_haking_tr_v1_watchlist',
+  ONBOARDING_HIDDEN: 'spread_haking_tr_v1_onboarding_hidden'
 };
 
 export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;

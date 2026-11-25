@@ -263,7 +263,7 @@ const server = http.createServer(async (req, res) => {
       }
     } catch {
       // Clean SPA route fallback matching Cloudflare not_found_handling = "single-page-application"
-      if (['/calculator', '/scanner', '/tracker', '/academy'].includes(pathname)) {
+      if (['/masa', '/hesaplayici', '/calculator', '/tarayici', '/scanner', '/takip', '/tracker', '/akademi', '/academy'].includes(pathname)) {
         filePath = path.join(PUBLIC_DIR, 'index.html');
       } else {
         res.writeHead(404, SECURITY_HEADERS);

@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SPREAD — CS2 Arbitrage Terminal | spread.haking.tr</title>
+  <title>SPREAD — CS2 Arbitraj Döngü Masası | spread.haking.tr</title>
   <meta
     name="description"
-    content="CSFloat & Youpin898 ↔ Steam Topluluk Pazarı canlı iki yönlü CS2 arbitraj terminali. Gerçek Valve cent komisyonu, 4.500+ canlı skin verisi, 14 günlük döngü takipçisi ve yerel JSON kasa."
+    content="CSFloat & Youpin898 ↔ Steam Topluluk Pazarı canlı iki yönlü CS2 arbitraj terminali. Bütçeye özel akıllı strateji danışmanı, gerçek Valve cent komisyonu, 4.500+ canlı skin verisi ve yerel JSON kasa."
   />
   <meta name="theme-color" content="#08090c" />
   <link rel="canonical" href="https://spread.haking.tr/" />
@@ -17,14 +17,14 @@
   <meta property="og:title" content="SPREAD — CS2 Arbitrage Terminal | spread.haking.tr" />
   <meta
     property="og:description"
-    content="CSFloat & Youpin898 ↔ Steam canlı iki yönlü CS2 arbitraj hesaplayıcısı, 4.500+ gerçek skin tarayıcısı ve 14 günlük döngü takip terminali."
+    content="Bütçene özel canlı CSFloat & Youpin898 ↔ Steam CS2 arbitraj stratejileri, 4.500+ gerçek skin tarayıcısı ve 14 günlük döngü takip terminali."
   />
   <meta property="og:image" content="https://spread.haking.tr/assets/brand/banner.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="SPREAD — CS2 Arbitrage Terminal" />
   <meta
     name="twitter:description"
-    content="CSFloat & Youpin898 ↔ Steam canlı spread tarayıcısı, Valve cent komisyon motoru ve yerel JSON veri kasası."
+    content="CSFloat & Youpin898 ↔ Steam canlı spread tarayıcısı, bütçeye özel strateji motoru ve yerel JSON veri kasası."
   />
   <meta name="twitter:image" content="https://spread.haking.tr/assets/brand/banner.jpg" />
 
@@ -53,6 +53,7 @@
   <link rel="stylesheet" href="/css/scanner.css" />
   <link rel="stylesheet" href="/css/tracker.css" />
   <link rel="stylesheet" href="/css/academy.css" />
+  <link rel="stylesheet" href="/css/advisor.css" />
 </head>
 <body>
 
@@ -77,9 +78,9 @@
   <!-- =================================================================== -->
   <header class="app-header">
     <div class="header-inner">
-      <!-- Üst Satır: Marka, Pazar Seçici, Para Birimi, Arama, Kasa, Tema -->
+      <!-- Üst Satır: Marka, Pazar Seçici, Para Birimi, Arama, Kasa, Destek, Tema -->
       <div class="header-row-top">
-        <div class="brand-lockup">
+        <a id="brandHomeLink" href="/" class="brand-lockup" style="text-decoration: none;">
           <img
             src="/assets/brand/logo-192.png"
             alt="SPREAD Logo"
@@ -94,7 +95,7 @@
             </div>
             <span class="brand-sub">CS2 İki Yönlü Arbitraj Terminali • CSFloat &amp; Youpin898 ↔ Steam</span>
           </div>
-        </div>
+        </a>
 
         <div class="header-controls">
           <!-- Pazar Seçici (CSFloat Varsayılan / Youpin898 Opsiyonel) -->
@@ -132,6 +133,16 @@
             ⛁ Kasa / JSON
           </button>
 
+          <!-- Geliştiriciyi Destekle & İletişim -->
+          <button id="openSupportBtn" type="button" class="btn btn-sm" style="border-color: var(--gold-border); color: var(--gold);" title="Geliştiriciyi Destekle & İletişim">
+            ☕ Destek
+          </button>
+
+          <!-- Hızlı Rehber -->
+          <button id="showGuideQuickBtn" type="button" class="btn btn-icon" aria-label="Nasıl Kullanılır" title="30 Saniyelik Hızlı Kullanım Rehberini Göster">
+            ?
+          </button>
+
           <!-- Tema Değiştirici -->
           <button id="themeToggleBtn" type="button" class="btn btn-icon" aria-label="Tema Değiştir" title="Karanlık / Açık Tema">
             ◐
@@ -139,24 +150,24 @@
         </div>
       </div>
 
-      <!-- Alt Satır: Sekme Navigasyonu & Canlı Komisyon Parametreleri -->
+      <!-- Alt Satır: Temiz URL Sekme Navigasyonu & Canlı Komisyon Parametreleri -->
       <div class="header-row-sub">
         <nav class="main-nav" aria-label="Ana Bölümler">
-          <button type="button" class="nav-tab is-active" data-tab="calculator">
+          <a href="/" class="nav-tab is-active" data-tab="calculator" style="text-decoration: none;">
             <span>Döngü Masası</span>
             <kbd>1</kbd>
-          </button>
-          <button type="button" class="nav-tab" data-tab="scanner">
+          </a>
+          <a href="/tarayici" class="nav-tab" data-tab="scanner" style="text-decoration: none;">
             <span>Canlı Tarayıcı</span>
             <span class="nav-badge">4.500+</span>
-          </button>
-          <button type="button" class="nav-tab" data-tab="tracker">
+          </a>
+          <a href="/takip" class="nav-tab" data-tab="tracker" style="text-decoration: none;">
             <span>Aktif Döngüler</span>
             <span id="trackerNavBadge" class="nav-badge">0</span>
-          </button>
-          <button type="button" class="nav-tab" data-tab="academy">
+          </a>
+          <a href="/akademi" class="nav-tab" data-tab="academy" style="text-decoration: none;">
             <span>Arbitraj Akademisi</span>
-          </button>
+          </a>
         </nav>
 
         <div class="fee-strip" aria-label="Komisyon Parametreleri">
@@ -193,26 +204,76 @@
   <!-- =================================================================== -->
   <main class="app-main">
 
+    <!-- Paylaşılan Linkle Gelindiğinde Gösterilen Bilgi Şeridi -->
+    <div id="sharedLoadedBanner" class="alert-banner hidden" style="margin-bottom: 14px; border-color: var(--mint-border); background: var(--mint-soft);">
+      <span><strong>↗ Paylaşılan Arbitraj Kurulumu Yüklendi:</strong> Arkadaşınızın gönderdiği döngü senaryosu masaya aktarıldı. Dilerseniz kendi bütçenize göre değiştirebilirsiniz.</span>
+      <button id="dismissSharedBannerBtn" type="button" class="btn btn-sm">URL'yi Temizle</button>
+    </div>
+
     <!-- ================================================================= -->
-    <!-- SEKME 1: DÖNGÜ MASASI (2-LEG TRADE DESK CALCULATOR)               -->
+    <!-- SEKME 1: DÖNGÜ MASASI (2-LEG TRADE DESK + AKILLI BÜTÇE DANIŞMANI) -->
     <!-- ================================================================= -->
     <section id="view-calculator" class="view-panel">
+
+      <!-- Yeni Başlayanlar İçin 30 Saniyelik Rehber Şeridi (Kapatılabilir) -->
+      <div id="onboardingGuideCard" class="panel onboarding-card">
+        <div class="onboarding-head">
+          <div style="display: flex; align-items: center; gap: 9px; flex-wrap: wrap;">
+            <span class="pill pill-gold">30 SANİYEDE BAŞLA</span>
+            <strong style="font-size: 13.5px;">İlk kez mi geliyorsun? CS2 arbitraj döngüsünü 3 adımda kur:</strong>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <a href="/akademi" class="btn btn-sm btn-ghost" data-tab="academy" style="text-decoration: none;">Detaylı Akademi →</a>
+            <button id="dismissOnboardingBtn" type="button" class="btn btn-sm">Anladım, Gizle ✕</button>
+          </div>
+        </div>
+        <div class="onboarding-steps">
+          <div class="onboard-step">
+            <span class="onboard-num">01</span>
+            <div>
+              <strong>Bütçeni ve Pazarını Seç</strong>
+              <span>Aşağıya başlangıç sermayeni yaz (veya hazır bütçe butonuna tıkla). Sistem 4.500 canlı CS2 eşyasını anında bütçene göre tarar.</span>
+            </div>
+          </div>
+          <div class="onboard-step">
+            <span class="onboard-num">02</span>
+            <div>
+              <strong>Bütçene Özel Stratejiyi Uygula</strong>
+              <span>Akıllı Strateji Danışmanı envanter slotunu ve atıl Steam bakiyesini hesaplayıp en mantıklı 3 stratejiyi sunar. Tek tıkla uygula.</span>
+            </div>
+          </div>
+          <div class="onboard-step">
+            <span class="onboard-num">03</span>
+            <div>
+              <strong>14G Takibe Al veya Arkadaşınla Paylaş</strong>
+              <span>"+ Takibe Al" ile 7+7 günlük kilit sayacını başlat, "↗ Paylaş" ile bu kurulumu tek linkle arkadaşına gönder.</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Komut Özeti Şeridi -->
       <div class="panel panel-corner calc-hero-strip">
         <div class="capital-box">
           <label for="calcCapitalInput" class="field-label">
-            <span>Başlangıç Sermayesi (Capital₀)</span>
+            <span>
+              Başlangıç Sermayesi (Capital₀)
+              <span class="tip-badge" tabindex="0" data-tip="CSFloat veya Youpin898 hesabınızda 1. yön alımı için ayırdığınız nakit sermaye.">?</span>
+            </span>
           </label>
           <div class="input-prefix-wrap">
             <span class="input-prefix cur-sym">$</span>
             <input id="calcCapitalInput" type="number" step="1" min="0" value="200.00" class="input num" />
           </div>
+          <div id="capitalPresetsRow" class="presets-row"></div>
         </div>
 
         <div class="hero-metrics-grid">
           <div>
-            <div class="metric-cell-label">Tam Döngü Çarpanı</div>
+            <div class="metric-cell-label">
+              Tam Döngü Çarpanı
+              <span class="tip-badge" tabindex="0" data-tip="M₁ (Steam bakiye büyümesi) × M₂ (nakit dönüş oranı). 1.0000x üstü net kâr demektir.">?</span>
+            </div>
             <div class="metric-cell-val">
               <span id="heroMultVal">1.0000x</span>
               <span id="heroRoiPill" class="pill pill-mint">+%0.00</span>
@@ -221,19 +282,28 @@
           </div>
 
           <div>
-            <div class="metric-cell-label">1. Döngü Gerçekçi Net Kâr</div>
+            <div class="metric-cell-label">
+              1. Döngü Gerçekçi Net Kâr
+              <span class="tip-badge" tabindex="0" data-tip="Tam sayı adetlerle elde edilen gerçekçi net nakit kârı. Steam'de artan küsurat M₂ ile iskonto edilerek eklenir.">?</span>
+            </div>
             <div id="heroRealProfit" class="metric-cell-val txt-mint">+$0.00</div>
             <div id="heroRealSub" class="metric-cell-sub">Nakit Eşdeğeri (Steam × M₂)</div>
           </div>
 
           <div>
-            <div class="metric-cell-label">Başabaş Kayıp Limiti</div>
+            <div class="metric-cell-label">
+              Başabaş Kayıp Limiti
+              <span class="tip-badge" tabindex="0" data-tip="2. yönde nakde dönerken zarar etmeden katlanabileceğin maksimum kayıp yüzdesi: 1 − (1 / M₁).">?</span>
+            </div>
             <div id="heroBreakEven" class="metric-cell-val">%0.00</div>
             <div id="heroBreakEvenSub" class="metric-cell-sub">Max 2. yön dönüşüm kaybı</div>
           </div>
 
           <div>
-            <div class="metric-cell-label">Aylık Bileşik (2 Döngü)</div>
+            <div class="metric-cell-label">
+              Aylık Bileşik (2 Döngü)
+              <span class="tip-badge" tabindex="0" data-tip="14 günde 1 tam döngüyle 28 gün (2 döngü) sonunda bileşik teorik büyüme oranı.">?</span>
+            </div>
             <div id="heroMonthlyRoi" class="metric-cell-val txt-gold">+%0.00</div>
             <div class="metric-cell-sub">28 Gün • 2 × (7+7G Hold)</div>
           </div>
@@ -243,9 +313,47 @@
           <button id="trackCycleBtn" type="button" class="btn btn-primary">
             + Bu Döngüyü Takibe Al
           </button>
-          <button id="autoBestPairBtn" type="button" class="btn">
-            ⚡ Canlı En İyi Çifti Doldur
-          </button>
+          <div style="display: flex; gap: 6px;">
+            <button id="autoBestPairBtn" type="button" class="btn btn-sm" style="flex: 1;" title="Mevcut bütçene göre en yüksek kârlı stratejiyi otomatik uygula">
+              ⚡ En İyi Strateji
+            </button>
+            <button id="openShareModalBtn" type="button" class="btn btn-sm" title="Bu döngü kurulumunu link olarak arkadaşınla paylaş">
+              ↗ Paylaş
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AKILLI BÜTÇE & STRATEJİ DANIŞMANI (QUANT CAPITAL ADVISOR) -->
+      <div class="panel panel-corner advisor-panel">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">
+              <span>⚡ Bütçene Özel Akıllı Strateji Danışmanı</span>
+              <span id="advisorTierBadge" class="pill pill-gold">Büyüme Bütçesi</span>
+            </h3>
+            <p id="advisorTierAdvice" class="advisor-advice-text" style="margin-top: 4px;"></p>
+          </div>
+          <a href="/tarayici" class="btn btn-sm" data-tab="scanner" style="text-decoration: none;">
+            Tüm 4.500 Eşyayı Gör →
+          </a>
+        </div>
+
+        <div class="advisor-body">
+          <!-- Mevcut Seçim İçin Canlı Uyarı & Fırsat Tanıları -->
+          <div id="advisorDiagnosticsHost" class="diagnostics-stack"></div>
+
+          <!-- 3 Farklı Profilde Canlı Hesaplanan Strateji Kartları -->
+          <div id="advisorStrategiesGrid" class="strategies-grid"></div>
+
+          <!-- Bütçe Dağıtım / Sepet Planı -->
+          <div class="split-plan-box">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+              <strong style="font-size: 12.5px;">Önerilen Sermaye Dağıtım Planı (Risk &amp; Envanter Optimizasyonu)</strong>
+              <span class="txt-muted" style="font-size: 11px;">1.000 CS2 envanter slotu ve 7G fiyat oynaklığı dikkate alınır</span>
+            </div>
+            <div id="advisorSplitPlan"></div>
+          </div>
         </div>
       </div>
 
@@ -295,7 +403,7 @@
                 <div class="leg-step-badge txt-mint">1. YÖN • BAKİYE BÜYÜTME</div>
                 <h2><span class="mkt-name">CSFloat</span> Alış → Steam Satış</h2>
               </div>
-              <span id="leg1MultBadge" class="pill pill-mint">M₁ = 1.0000x</span>
+              <span id="leg1MultBadge" class="pill pill-mint" title="1. Yön Bakiye Çarpanı">M₁ = 1.0000x</span>
             </div>
 
             <div id="leg1PreviewWell" class="leg-preview-row" style="margin-top: 14px;"></div>
@@ -355,7 +463,7 @@
                 <div class="leg-step-badge txt-gold">2. YÖN • NAKİT DÖNÜŞ</div>
                 <h2>Steam Alış → <span class="mkt-name">CSFloat</span> Satış</h2>
               </div>
-              <span id="leg2MultBadge" class="pill pill-gold">M₂ = 0.0000x</span>
+              <span id="leg2MultBadge" class="pill pill-gold" title="2. Yön Nakit Dönüş Çarpanı">M₂ = 0.0000x</span>
             </div>
 
             <div id="leg2PreviewWell" class="leg-preview-row" style="margin-top: 14px;"></div>
@@ -409,12 +517,12 @@
         <div class="fx-inline-group">
           <span class="pill pill-gold">CANLI KUR ÇEVİRİCİ</span>
           <select id="fxQuickFrom" class="select num" style="width: 82px; padding: 5px 8px;">
-            <option value="CNY">¥ CNY</option>
             <option value="TRY">₺ TRY</option>
+            <option value="CNY">¥ CNY</option>
             <option value="USD">$ USD</option>
             <option value="EUR">€ EUR</option>
           </select>
-          <input id="fxQuickAmount" type="number" step="0.01" min="0" value="100" class="input num" style="width: 110px; padding: 5px 9px;" />
+          <input id="fxQuickAmount" type="number" step="0.01" min="0" value="1000" class="input num" style="width: 110px; padding: 5px 9px;" />
           <span class="txt-muted">→</span>
           <select id="fxQuickTo" class="select num" style="width: 82px; padding: 5px 8px;">
             <option value="USD" selected>$ USD</option>
@@ -858,7 +966,7 @@
             </div>
             <div class="checklist-row">
               <span class="check-dot">2</span>
-              <div><strong>Envanter &amp; Hacim Sınırı:</strong> CS2 envanter limiti 1.000 eşyadır. Çok ucuz kasalardan yüzlerce almak satış hızını ve depolamayı zorlar.</div>
+              <div><strong>Envanter &amp; Hacim Sınırı:</strong> CS2 envanter limiti 1.000 eşyadır. Akıllı Bütçe Danışmanı sermayene göre slot sınırını aşmayan eşyaları önceliklendirir.</div>
             </div>
             <div class="checklist-row">
               <span class="check-dot">3</span>
@@ -871,22 +979,64 @@
   </main>
 
   <!-- =================================================================== -->
-  <!-- ALT BİLGİ (FOOTER)                                                  -->
+  <!-- ZENGİN ALT BİLGİ (FOOTER + DESTEK + BAĞIŞ BAĞLANTILARI)             -->
   <!-- =================================================================== -->
   <footer class="app-footer">
-    <div class="footer-inner">
+    <div class="footer-grid">
       <div>
-        <strong style="color: var(--text-primary);">SPREAD</strong> •
-        <a href="https://spread.haking.tr">spread.haking.tr</a> —
-        <span>%100 yerel depolamalı açık kaynak CS2 arbitraj terminali. Valve Corporation, Steam, CSFloat veya Youpin898 ile resmi bağlantısı yoktur.</span>
+        <div class="footer-col-title">SPREAD • spread.haking.tr</div>
+        <p style="line-height: 1.6;">
+          %100 tarayıcı içi yerel depolamalı, açık kaynaklı CS2 iki yönlü arbitraj terminali.
+          Hiçbir Steam veya pazar girişi istemez. Valve Corporation, Steam, CSFloat veya Youpin898 ile resmi bağlantısı yoktur.
+        </p>
       </div>
-      <div class="footer-links">
-        <span>Katalog: ByMykel/CSGO-API</span>
-        <span>•</span>
-        <span>MIT Lisansı</span>
-        <span>•</span>
-        <span>Yatırım tavsiyesi değildir</span>
+
+      <div>
+        <div class="footer-col-title">Destek &amp; İletişim</div>
+        <p style="line-height: 1.6;">
+          Hata bildirimi, özellik önerisi veya iş birliği için doğrudan ulaşabilirsiniz:
+        </p>
+        <div class="footer-support-actions">
+          <a href="mailto:spread@haking.tr" class="btn btn-sm" style="text-decoration: none;">
+            ✉ spread@haking.tr
+          </a>
+          <button id="footerSupportBtn" type="button" class="btn btn-sm">
+            Destek Detayları
+          </button>
+        </div>
       </div>
+
+      <div>
+        <div class="footer-col-title">Geliştiriciyi Destekle</div>
+        <p style="line-height: 1.6;">
+          SPREAD tamamen ücretsizdir. Sunucu ve geliştirme sürecine gönüllü destek olmak istersen:
+        </p>
+        <div class="footer-support-actions">
+          <a
+            href="https://buymeacoffee.com/haking"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-sm btn-coffee"
+            style="text-decoration: none;"
+          >
+            ☕ Buy Me a Coffee
+          </a>
+          <a
+            href="https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-sm btn-steam"
+            style="text-decoration: none;"
+          >
+            ⇄ Steam Takasla Destekle
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 haking.tr • MIT Lisansı • Katalog: ByMykel/CSGO-API</span>
+      <span>Yatırım tavsiyesi değildir — piyasa fiyatları anlık değişebilir.</span>
     </div>
   </footer>
 
@@ -979,6 +1129,105 @@
           <button id="vaultResetBtn" type="button" class="btn btn-danger btn-sm">
             Tüm Yerel Verileri Temizle
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL 4: DÖNGÜYÜ PAYLAŞ (ARKADAŞLA PAYLAŞILABİLİR ÖZEL LİNK)        -->
+  <!-- =================================================================== -->
+  <div id="shareModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <div class="modal-card" style="max-width: 560px;">
+      <div class="modal-head">
+        <h3 id="shareTitle" class="panel-title">↗ Bu Arbitraj Kurulumunu Paylaş</h3>
+        <button id="closeShareModalBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="sharePreviewSummary" class="panel panel-pad num" style="background: var(--bg-inset); font-size: 12px; padding: 11px 13px;"></p>
+
+        <div>
+          <label for="shareUrlInput" class="field-label">Doğrudan Paylaşım Linki (Arkadaşın açınca birebir bu kurulum yüklenir)</label>
+          <div class="share-url-row">
+            <input id="shareUrlInput" type="text" readonly class="input num" style="font-size: 11.5px;" />
+            <button id="copyShareUrlBtn" type="button" class="btn btn-primary">Kopyala</button>
+          </div>
+        </div>
+
+        <div class="share-socials">
+          <button id="copyShareSummaryBtn" type="button" class="btn btn-sm">📋 Discord / Özet Metni Kopyala</button>
+          <a id="shareWhatsappLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-mint" style="text-decoration: none;">WhatsApp ↗</a>
+          <a id="shareTelegramLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-steam" style="text-decoration: none;">Telegram ↗</a>
+          <a id="shareXLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="text-decoration: none;">X (Twitter) ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL 5: GELİŞTİRİCİYİ DESTEKLE & İLETİŞİM                         -->
+  <!-- =================================================================== -->
+  <div id="supportModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="supportTitle">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-head">
+        <h3 id="supportTitle" class="panel-title">☕ SPREAD'i Destekle &amp; İletişim</h3>
+        <button id="closeSupportModalBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="txt-sec" style="font-size: 12.5px; line-height: 1.6;">
+          <strong>SPREAD (`spread.haking.tr`)</strong> reklamsız, ücretsiz ve açık kaynaklı olarak geliştirilmektedir.
+          Projenin canlı piyasa altyapısına ve yeni özelliklerine gönüllü destek olmak isterseniz aşağıdaki güvenli kanalları kullanabilirsiniz:
+        </p>
+
+        <div class="support-cards-grid">
+          <div class="support-card is-coffee">
+            <div>
+              <span class="pill pill-gold">FİNANSAL DESTEK</span>
+              <h4 style="margin-top: 8px; font-size: 15px;">Buy Me a Coffee</h4>
+              <p class="txt-sec" style="font-size: 12px; margin-top: 4px;">
+                Geliştiriciye bir kahve ısmarlayarak projenin sürdürülebilirliğine katkıda bulun.
+              </p>
+            </div>
+            <a
+              href="https://buymeacoffee.com/haking"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-coffee"
+              style="width: 100%; text-decoration: none;"
+            >
+              ☕ buymeacoffee.com/haking ↗
+            </a>
+          </div>
+
+          <div class="support-card is-steam">
+            <div>
+              <span class="pill pill-ice">CS2 SKIN / KASA</span>
+              <h4 style="margin-top: 8px; font-size: 15px;">Steam Takasla Destekle</h4>
+              <p class="txt-sec" style="font-size: 12px; margin-top: 4px;">
+                İstersen doğrudan Steam takas teklifi üzerinden kasa, çıkartma veya skin ile destek olabilirsin.
+              </p>
+            </div>
+            <a
+              href="https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-steam"
+              style="width: 100%; text-decoration: none;"
+            >
+              ⇄ Steam Takas Teklifi Gönder ↗
+            </a>
+          </div>
+        </div>
+
+        <div class="support-mail-bar">
+          <div>
+            <div class="kpi-card-label">Resmi Destek &amp; Güvenlik E-postası</div>
+            <div class="num" style="font-size: 13.5px; font-weight: 700; margin-top: 2px;">spread@haking.tr</div>
+          </div>
+          <div style="display: flex; gap: 7px;">
+            <button id="copySupportEmailBtn" type="button" class="btn btn-sm">Adresi Kopyala</button>
+            <a href="mailto:spread@haking.tr" class="btn btn-sm btn-primary" style="text-decoration: none;">✉ Mail Gönder</a>
+          </div>
         </div>
       </div>
     </div>
