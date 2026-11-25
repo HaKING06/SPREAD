@@ -7,10 +7,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { calcExactValveSteamFee, computeLoopMetrics } from '../js/core/math-engine.js';
+import { calcExactValveSteamFee, computeLoopMetrics } from '../public/js/core/math-engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
+const PUBLIC_DIR = path.join(ROOT, 'public');
 
 let failures = 0;
 
@@ -41,10 +42,10 @@ async function listFiles(dir, extList) {
 async function main() {
   console.log('\nSPREAD Verification Suite (spread.haking.tr)\n');
 
-  // 1. JS Syntax Check across all modules & functions
+  // 1. JS Syntax Check across all public modules, Worker & scripts
   const jsFiles = [
-    ...(await listFiles(path.join(ROOT, 'js'), ['.js'])),
-    ...(await listFiles(path.join(ROOT, 'functions'), ['.js'])),
+    ...(await listFiles(path.join(PUBLIC_DIR, 'js'), ['.js'])),
+    ...(await listFiles(path.join(ROOT, 'src'), ['.js'])),
     ...(await listFiles(path.join(ROOT, 'scripts'), ['.mjs'])),
     path.join(ROOT, 'server.mjs')
   ];
@@ -59,11 +60,10 @@ async function main() {
   pass(`Checked syntax of ${jsFiles.length} JS/MJS files.`);
 
   // 2. Security Static Audit (no innerHTML/outerHTML/document.write/eval/Function in code)
-  const appJs = await listFiles(path.join(ROOT, 'js'), ['.js']);
+  const appJs = await listFiles(path.join(PUBLIC_DIR, 'js'), ['.js']);
   let secFails = 0;
   for (const file of appJs) {
     const raw = await fs.readFile(file, 'utf8');
-    // Strip block & line comments before inspecting executable JS sinks
     const code = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     if (/\.\s*innerHTML\b|\.\s*outerHTML\b|\bdocument\.write\s*\(|\beval\s*\(|new\s+Function\s*\(/.test(code)) {
       fail(`Dangerous DOM/eval sink detected in ${path.relative(ROOT, file)}`);
@@ -71,18 +71,18 @@ async function main() {
     }
   }
   if (secFails === 0) {
-    pass('Security audit: zero innerHTML / eval / document.write sinks in js/.');
+    pass('Security audit: zero innerHTML / eval / document.write sinks in public/js/.');
   }
 
-  const indexHtml = await fs.readFile(path.join(ROOT, 'index.html'), 'utf8');
+  const indexHtml = await fs.readFile(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
   const inlineScriptRegex = /<script(?![^>]*\bsrc=)[^>]*>/i;
   if (inlineScriptRegex.test(indexHtml)) {
-    fail('Inline <script> tag found in index.html (violates strict CSP script-src self)');
+    fail('Inline <script> tag found in public/index.html (violates strict CSP script-src self)');
   } else {
-    pass('Strict CSP audit: zero inline <script> tags in index.html.');
+    pass('Strict CSP audit: zero inline <script> tags in public/index.html.');
   }
 
-  // 2b. DOM ID Integrity Check (every getElementById in js/ must exist in index.html)
+  // 2b. DOM ID Integrity Check
   const htmlIds = new Set([...indexHtml.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
   const missingIds = [];
   for (const file of appJs) {
@@ -96,22 +96,22 @@ async function main() {
   if (missingIds.length > 0) {
     fail(`Missing DOM IDs referenced in JS: ${missingIds.join(', ')}`);
   } else {
-    pass(`DOM ID cross-check: 100% of JS getElementById() references exist in index.html (${htmlIds.size} IDs).`);
+    pass(`DOM ID cross-check: 100% of JS getElementById() references exist in public/index.html (${htmlIds.size} IDs).`);
   }
 
-  // 3. Required Brand & Deploy Files
+  // 3. Required Brand, Data & Deploy Files
   const requiredFiles = [
-    'assets/brand/logo.jpg',
-    'assets/brand/logo-192.png',
-    'assets/brand/logo-512.png',
-    'assets/brand/favicon.png',
-    'assets/brand/banner.jpg',
-    'data/catalog.json',
-    'data/market-snapshot.json',
-    'functions/api/market.js',
-    'functions/api/fx.js',
-    '_headers',
-    '_redirects',
+    'public/index.html',
+    'public/_headers',
+    'public/_redirects',
+    'public/assets/brand/logo.jpg',
+    'public/assets/brand/logo-192.png',
+    'public/assets/brand/logo-512.png',
+    'public/assets/brand/favicon.png',
+    'public/assets/brand/banner.jpg',
+    'public/data/catalog.json',
+    'public/data/market-snapshot.json',
+    'src/worker.js',
     'wrangler.toml',
     'LICENSE',
     'README.md',
@@ -126,11 +126,11 @@ async function main() {
       fail(`Missing required file: ${rel}`);
     }
   }
-  pass(`All ${requiredFiles.length} required brand, data, Cloudflare & GitHub files present.`);
+  pass(`All ${requiredFiles.length} required brand, data, Cloudflare Worker & GitHub files present.`);
 
   // 4. Data Integrity Check
-  const catalog = JSON.parse(await fs.readFile(path.join(ROOT, 'data', 'catalog.json'), 'utf8'));
-  const snapshot = JSON.parse(await fs.readFile(path.join(ROOT, 'data', 'market-snapshot.json'), 'utf8'));
+  const catalog = JSON.parse(await fs.readFile(path.join(PUBLIC_DIR, 'data', 'catalog.json'), 'utf8'));
+  const snapshot = JSON.parse(await fs.readFile(path.join(PUBLIC_DIR, 'data', 'market-snapshot.json'), 'utf8'));
   if (catalog.items?.length >= 1000 && Object.keys(snapshot.prices || {}).length >= 1000) {
     pass(`Catalog (${catalog.items.length} items) & Snapshot (${Object.keys(snapshot.prices).length} priced items) verified.`);
   } else {
@@ -191,6 +191,7 @@ async function main() {
 
       const endpoints = [
         ['/', 200],
+        ['/scanner', 200],
         ['/css/tokens.css', 200],
         ['/js/main.js', 200],
         ['/assets/brand/logo-192.png', 200],
@@ -228,7 +229,7 @@ async function main() {
           if (j.ok && j.rates?.TRY > 1 && j.rates?.CNY > 1) {
             pass(`Live /api/fx -> 1 USD = ${j.rates.TRY} TRY | ${j.rates.CNY} CNY | ${j.rates.EUR} EUR`);
           } else {
-            fail(`Live /api/fx invalid payload`);
+            fail('Live /api/fx invalid payload');
           }
         } else {
           pass(`HTTP ${res.status} ${ep}`);

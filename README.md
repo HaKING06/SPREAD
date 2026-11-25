@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/brand/banner.jpg" alt="SPREAD — CS2 Arbitrage Terminal (spread.haking.tr)" width="100%" />
+  <img src="public/assets/brand/banner.jpg" alt="SPREAD — CS2 Arbitrage Terminal (spread.haking.tr)" width="100%" />
 
   <h1>SPREAD — CS2 Arbitrage Terminal</h1>
 
@@ -55,23 +55,21 @@
 ## Klasör Yapısı
 
 ```text
-├── index.html                  # CSP sertleştirilmiş ana giriş ve OpenGraph meta
+├── wrangler.toml               # Cloudflare Workers + Static Assets yapılandırması (name = "spread")
 ├── server.mjs                  # Sıfır bağımlılıklı yerel canlı geliştirme + API proxy sunucusu
-├── wrangler.toml               # Cloudflare Pages yapılandırması
-├── _headers                    # Cloudflare Pages katı güvenlik başlıkları (CSP, HSTS, X-Frame)
-├── _redirects                  # Temiz URL yönlendirmeleri (/scanner, /tracker, /academy)
-├── assets/brand/               # Gemini Banana ile üretilmiş logo, favicon ve 16:9 afiş
-├── css/                        # Modüler tasarım sistemi (tokens, base, layout, components, views)
-├── js/
-│   ├── core/                   # config, math-engine (Valve cent), security, formatters
-│   ├── services/               # market-api (3 katmanlı canlı sync), vault-storage (JSON/SHA-256)
-│   ├── charts/                 # canvas-charts (bileşik eğri, 5x5 ısı haritası, sparkline)
-│   └── views/                  # header-ticker, calculator, scanner, tracker, academy, vault-modal
-├── functions/api/              # Cloudflare Pages Functions (/api/market & /api/fx)
-├── scripts/
-│   ├── sync-catalog.mjs        # ByMykel/CSGO-API + canlı piyasa snapshot güncelleyici
-│   └── verify.mjs              # Sözdizimi, güvenlik (XSS/CSP) ve matematik doğrulama testi
-└── data/                       # Paketlenmiş 4.500+ CS2 eşya kataloğu ve çevrimdışı snapshot
+├── src/
+│   └── worker.js               # Cloudflare Worker (/api/market & /api/fx canlı Edge API + ASSETS)
+├── public/                     # Yalnızca istemciye sunulan statik web dosyaları
+│   ├── index.html              # CSP sertleştirilmiş ana giriş ve OpenGraph meta
+│   ├── _headers                # Katı güvenlik başlıkları (CSP, HSTS, X-Frame-Options)
+│   ├── _redirects              # Temiz URL yönlendirmeleri
+│   ├── assets/brand/           # Gemini Banana ile üretilmiş logo, favicon ve 16:9 afiş
+│   ├── css/                    # Modüler tasarım sistemi (tokens, base, layout, components, views)
+│   ├── js/                     # Modüler ES uygulama (core, services, charts, views, main)
+│   └── data/                   # Paketlenmiş 4.500+ CS2 eşya kataloğu ve çevrimdışı snapshot
+└── scripts/
+    ├── sync-catalog.mjs        # ByMykel/CSGO-API + canlı piyasa snapshot güncelleyici
+    └── verify.mjs              # Sözdizimi, güvenlik (XSS/CSP) ve matematik doğrulama testi
 ```
 
 ---
@@ -102,18 +100,15 @@ npm run verify
 
 ---
 
-## Cloudflare Pages Yayınlama (`spread.haking.tr`)
+## Cloudflare Workers (Static Assets) Yayınlama (`spread.haking.tr`)
 
-Proje **GitHub → Cloudflare Pages** akışına birebir hazır yapılandırılmıştır:
+Proje **GitHub → Cloudflare Workers Builds (`npx wrangler deploy`)** akışına birebir hazır yapılandırılmıştır:
 
 1. Bu depoyu kendi GitHub hesabınıza gönderin (`main` dalı).
-2. **Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git** adımından depoyu seçin.
-3. Yapılandırma ayarlarını şu şekilde bırakın:
-   - **Framework preset:** `None`
-   - **Build command:** *(boş bırakın — statik + Functions anında yayınlanır)*
-   - **Build output directory:** `.` (kök dizin)
-4. Yayınlandıktan sonra **Custom domains → Set up a custom domain** bölümünden **`spread.haking.tr`** alt alan adını ekleyin (Cloudflare DNS otomatik CNAME oluşturur).
-5. `functions/api/market.js` ve `functions/api/fx.js` otomatik olarak Cloudflare Edge üzerinde `/api/market` ve `/api/fx` uç noktaları olarak devreye girer; `_headers` dosyası tüm güvenlik başlıklarını uygular.
+2. **Cloudflare Dashboard → Workers & Pages → Create → Workers → Connect to Git** adımından `SPREAD` reposunu seçin.
+3. Worker adını **`spread`** (`wrangler.toml` ile eşleşir) bırakın; Build command boş, Deploy command varsayılan `npx wrangler deploy` olarak çalışır.
+4. Yayınlandıktan sonra **Settings → Domains & Routes → Add Custom Domain** bölümünden **`spread.haking.tr`** alt alan adını ekleyin.
+5. `src/worker.js` otomatik olarak `/api/market` ve `/api/fx` uç noktalarını Cloudflare Edge üzerinde canlı çalıştırır; `.assetsignore` kaynak/yapılandırma dosyalarını gizler ve `_headers` tüm güvenlik başlıklarını uygular.
 
 ---
 

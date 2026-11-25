@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const DATA_DIR = path.join(ROOT, 'data');
+const DATA_DIR = path.join(ROOT, 'public', 'data');
 
 const STEAM_IMG_PREFIX = 'https://community.akamai.steamstatic.com/economy/image/';
 

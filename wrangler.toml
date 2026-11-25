@@ -1,4 +1,10 @@
-# Cloudflare Pages Configuration for spread.haking.tr
-name = "spread-haking-tr"
+# Cloudflare Workers + Static Assets Configuration (spread.haking.tr)
+name = "spread"
+main = "src/worker.js"
 compatibility_date = "2026-01-01"
-pages_build_output_dir = "."
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]

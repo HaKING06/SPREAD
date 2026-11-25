@@ -1,54 +1,65 @@
 /**
- * Cloudflare Pages Function: GET /api/market
- * Fetches live CSFloat price-list + Steam + Youpin898 + CSFloat Buy Orders
- * and merges them against the requested/bundled catalog items with edge caching.
+ * SPREAD (spread.haking.tr) — Cloudflare Worker + Static Assets Entry Point
+ *
+ * Routes:
+ *   GET /api/market  -> Live CSFloat + Steam + Youpin898 aggregator (5m Edge cache)
+ *   GET /api/fx      -> Live USD / TRY / CNY / EUR exchange rates (1h Edge cache)
+ *   *                -> Cloudflare Static Assets binding (env.ASSETS)
  */
 
-const CACHE_TTL_SECONDS = 300; // 5 minutes at Cloudflare edge
+const MARKET_CACHE_TTL = 300; // 5 minutes
+const FX_CACHE_TTL = 3600;    // 1 hour
+
 const UPSTREAM = {
   csfloatLive: 'https://csfloat.com/api/v1/listings/price-list',
   csfloatOrders: 'https://prices.csgotrader.app/latest/csfloat.json',
   steam: 'https://prices.csgotrader.app/latest/steam.json',
-  youpin: 'https://prices.csgotrader.app/latest/youpin.json'
+  youpin: 'https://prices.csgotrader.app/latest/youpin.json',
+  fx: 'https://open.er-api.com/v6/latest/USD'
 };
 
-async function fetchJsonWithTimeout(url, ms = 12000) {
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs = 12000) {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), ms);
+  const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { 'User-Agent': 'SpreadTerminal-Edge/1.0 (+https://spread.haking.tr)' }
+      headers: { 'User-Agent': 'SpreadTerminal-Worker/1.0 (+https://spread.haking.tr)' }
     });
-    if (!res.ok) throw new Error(`Upstream ${res.status}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } finally {
     clearTimeout(id);
   }
 }
 
-function round2(v) {
-  return Math.round(v * 100) / 100;
-}
-
-export async function onRequestGet(context) {
-  const { request } = context;
+async function handleApiMarket(request, env, ctx) {
   const url = new URL(request.url);
+  const forceRefresh = url.searchParams.get('refresh') === '1';
   const cache = caches.default;
   const cacheKey = new Request(url.origin + '/api/market?v=1', { method: 'GET' });
 
-  const cached = await cache.match(cacheKey);
-  if (cached) {
-    const headers = new Headers(cached.headers);
-    headers.set('X-Spread-Cache', 'HIT');
-    return new Response(cached.body, { status: cached.status, headers });
+  if (!forceRefresh) {
+    try {
+      const cached = await cache.match(cacheKey);
+      if (cached) {
+        const headers = new Headers(cached.headers);
+        headers.set('X-Spread-Cache', 'HIT');
+        return new Response(cached.body, { status: cached.status, headers });
+      }
+    } catch {
+      // Ignore cache lookup errors on preview domains
+    }
   }
 
   try {
-    // Load our own catalog.json asset to know exact target market_hash_names
     const catalogReq = new Request(url.origin + '/data/catalog.json');
     const [catalogRes, cfLiveRes, cfOrdRes, steamRes, ypRes] = await Promise.allSettled([
-      context.env.ASSETS ? context.env.ASSETS.fetch(catalogReq) : fetch(catalogReq),
+      env.ASSETS.fetch(catalogReq),
       fetchJsonWithTimeout(UPSTREAM.csfloatLive, 12000),
       fetchJsonWithTimeout(UPSTREAM.csfloatOrders, 12000),
       fetchJsonWithTimeout(UPSTREAM.steam, 12000),
@@ -58,6 +69,7 @@ export async function onRequestGet(context) {
     if (catalogRes.status !== 'fulfilled' || !catalogRes.value.ok) {
       return Response.json({ ok: false, error: 'Catalog asset unavailable' }, { status: 500 });
     }
+
     const catalog = await catalogRes.value.json();
     const cfLiveArr = cfLiveRes.status === 'fulfilled' && Array.isArray(cfLiveRes.value) ? cfLiveRes.value : [];
     const cfOrdObj = cfOrdRes.status === 'fulfilled' && cfOrdRes.value ? cfOrdRes.value : {};
@@ -126,13 +138,17 @@ export async function onRequestGet(context) {
       status: 200,
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}, s-maxage=${CACHE_TTL_SECONDS}`,
+        'Cache-Control': `public, max-age=${MARKET_CACHE_TTL}, s-maxage=${MARKET_CACHE_TTL}`,
         'X-Spread-Cache': 'MISS',
         'X-Content-Type-Options': 'nosniff'
       }
     });
 
-    context.waitUntil(cache.put(cacheKey, response.clone()));
+    try {
+      ctx.waitUntil(cache.put(cacheKey, response.clone()));
+    } catch {
+      // Ignore cache write errors
+    }
     return response;
   } catch (err) {
     return Response.json(
@@ -141,3 +157,75 @@ export async function onRequestGet(context) {
     );
   }
 }
+
+async function handleApiFx(request, ctx) {
+  const url = new URL(request.url);
+  const cache = caches.default;
+  const cacheKey = new Request(url.origin + '/api/fx?v=1', { method: 'GET' });
+
+  try {
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      const headers = new Headers(cached.headers);
+      headers.set('X-Spread-Cache', 'HIT');
+      return new Response(cached.body, { status: cached.status, headers });
+    }
+  } catch {
+    // Ignore cache lookup errors
+  }
+
+  try {
+    const data = await fetchJsonWithTimeout(UPSTREAM.fx, 10000);
+    const rates = data?.rates || {};
+    const payload = {
+      ok: true,
+      base: 'USD',
+      updatedAt: data?.time_last_update_utc || new Date().toISOString(),
+      rates: {
+        USD: 1,
+        TRY: Number(rates.TRY) || 50.67,
+        CNY: Number(rates.CNY) || 6.68,
+        EUR: Number(rates.EUR) || 0.91
+      }
+    };
+
+    const response = new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': `public, max-age=${FX_CACHE_TTL}, s-maxage=${FX_CACHE_TTL}`,
+        'X-Spread-Cache': 'MISS',
+        'X-Content-Type-Options': 'nosniff'
+      }
+    });
+
+    try {
+      ctx.waitUntil(cache.put(cacheKey, response.clone()));
+    } catch {
+      // Ignore cache write errors
+    }
+    return response;
+  } catch (err) {
+    return Response.json({ ok: false, error: String(err?.message || err) }, { status: 502 });
+  }
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+
+    if (url.pathname === '/api/market' && request.method === 'GET') {
+      return handleApiMarket(request, env, ctx);
+    }
+
+    if (url.pathname === '/api/fx' && request.method === 'GET') {
+      return handleApiFx(request, ctx);
+    }
+
+    if (env.ASSETS) {
+      return env.ASSETS.fetch(request);
+    }
+
+    return new Response('Not Found', { status: 404 });
+  }
+};

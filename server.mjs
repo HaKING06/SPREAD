@@ -17,6 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PUBLIC_DIR = path.join(__dirname, 'public');
 const PORT = Number(process.env.PORT) || 4173;
 const HOST = process.env.HOST || '127.0.0.1';
 
@@ -92,7 +93,7 @@ async function handleApiMarket(res, forceRefresh) {
   }
 
   try {
-    const catalogRaw = await fs.readFile(path.join(__dirname, 'data', 'catalog.json'), 'utf8');
+    const catalogRaw = await fs.readFile(path.join(PUBLIC_DIR, 'data', 'catalog.json'), 'utf8');
     const catalog = JSON.parse(catalogRaw);
 
     const [cfLiveRes, cfOrdRes, steamRes, ypRes] = await Promise.allSettled([
@@ -247,8 +248,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     const safeRel = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
-    const resolved = path.resolve(__dirname, safeRel);
-    if (!resolved.startsWith(__dirname + path.sep) && resolved !== path.join(__dirname, 'index.html')) {
+    const resolved = path.resolve(PUBLIC_DIR, safeRel);
+    if (!resolved.startsWith(PUBLIC_DIR + path.sep) && resolved !== path.join(PUBLIC_DIR, 'index.html')) {
       res.writeHead(403, SECURITY_HEADERS);
       res.end('Forbidden');
       return;
@@ -261,9 +262,14 @@ const server = http.createServer(async (req, res) => {
         filePath = path.join(filePath, 'index.html');
       }
     } catch {
-      res.writeHead(404, SECURITY_HEADERS);
-      res.end('Not Found');
-      return;
+      // Clean SPA route fallback matching Cloudflare not_found_handling = "single-page-application"
+      if (['/calculator', '/scanner', '/tracker', '/academy'].includes(pathname)) {
+        filePath = path.join(PUBLIC_DIR, 'index.html');
+      } else {
+        res.writeHead(404, SECURITY_HEADERS);
+        res.end('Not Found');
+        return;
+      }
     }
 
     const ext = path.extname(filePath).toLowerCase();
