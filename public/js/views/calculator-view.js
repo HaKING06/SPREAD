@@ -217,6 +217,31 @@ export function initCalculatorView(app) {
       found?.w ? el('span', { className: `wear-tag wear-${found.w}` }, found.w) : null,
       steamVolChip,
       found?.q ? el('span', { className: 'num' }, `${found.q} ${tr ? 'ilan' : 'listed'}`) : null,
+      legNum === 1 && liveSteam?.live && liveSteam.medianUsd > 0 && liveSteam.medianUsd < app.settings.leg1.steamUsd * 0.96
+        ? el(
+            'button',
+            {
+              type: 'button',
+              className: 'pill pill-amber',
+              style: { fontSize: '10px', cursor: 'pointer' },
+              title: tr
+                ? 'Son 24 saatte gerçekleşen medyan Steam satış fiyatını uygula (daha hızlı satış testi)'
+                : 'Apply actual 24h Steam median sold price (realistic fast-sell check)',
+              onClick: () => {
+                app.settings.leg1.steamUsd = liveSteam.medianUsd;
+                app.saveSettings();
+                syncInputsFromSettings();
+                renderMetricsOnly(true);
+                app.toast(
+                  isTr()
+                    ? `Steam hızlı satış medyanı (${fmtMoneyFromUsd(liveSteam.medianUsd, app.settings.currency, app.market.fxRates)}) uygulandı.`
+                    : `Applied Steam fast-sell median (${fmtMoneyFromUsd(liveSteam.medianUsd, app.settings.currency, app.market.fxRates)}).`
+                );
+              }
+            },
+            `${tr ? 'Hızlı Medyan' : 'Fast Median'}: ${fmtMoneyFromUsd(liveSteam.medianUsd, app.settings.currency, app.market.fxRates)}`
+          )
+        : null,
       found?.cfo && legNum === 2 && app.settings.marketplace === 'CSFLOAT'
         ? el(
             'button',

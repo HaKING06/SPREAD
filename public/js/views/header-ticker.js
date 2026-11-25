@@ -51,16 +51,16 @@ export function renderLiveTicker(app) {
   for (const item of app.items) {
     if (item.st || item.sv) continue;
     if (item.c === 'Capsule' && (item.v7 || 0) < 35) continue;
-    if (s.marketplace === 'CSFLOAT' && item.q < 25) continue;
+    if (s.marketplace === 'CSFLOAT' && item.q < 30) continue;
     const m = evaluateItemMetrics(item, evalOpts);
     if (!m.hasValidMarket || m.isSpiky || m.isAnomalySpread) continue;
     const vel = m.velocity;
-    if ((vel.tier !== 'A' && vel.tier !== 'B') || vel.isKnifeOrGlove) continue;
-    if (m.effBuy >= 0.3 && m.leg1ProfitPct >= 8 && m.leg1ProfitPct <= 48) {
+    if (vel.tier !== 'A' && vel.tier !== 'B') continue;
+    if (m.effBuy >= 0.3 && m.leg1ProfitPct >= 8 && m.leg1ProfitPct <= 62) {
       leg1Top.push({ item, m });
     }
     const l2Valid = m.leg2LossPct >= 3.0 || (vel.tier === 'A' && vel.mktVol >= 150 && m.leg2LossPct >= 0.5);
-    if (l2Valid && m.steamUsd >= 5 && m.steamUsd <= 250 && m.leg2LossPct <= 11.5) {
+    if (l2Valid && !vel.isKnifeOrGlove && m.steamUsd >= 5 && m.steamUsd <= 250 && m.leg2LossPct <= 11.5) {
       leg2Top.push({ item, m });
     }
   }

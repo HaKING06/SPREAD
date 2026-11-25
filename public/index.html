@@ -1,17 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SPREAD — CS2 Arbitrage Calculator &amp; Live Spread Terminal | spread.haking.tr</title>
-  <meta
-    name="description"
-    content="Free, zero-login CS2 Steam arbitrage calculator &amp; live spread scanner for CSFloat, Youpin898, and Steam Community Market. Exact Valve cent fees, 4,500+ skins with 24h/7d sales velocity, Smart Capital Strategy Advisor, and 14-day trade-hold cycle tracker."
-  />
-  <meta
-    name="keywords"
-    content="CS2 arbitrage, CS2 arbitrage calculator, Steam arbitrage, CSFloat to Steam arbitrage, Youpin898 Steam arbitrage, CS2 spread scanner, Steam market fee calculator, what is CS2 arbitrage, CS2 skin trading profit, Valve 7 day trade protection"
-  />
+  <meta name="description"
+    content="Free, zero-login CS2 Steam arbitrage calculator &amp; live spread scanner for CSFloat, Youpin898, and Steam Community Market. Exact Valve cent fees, 4,500+ skins with 24h/7d sales velocity, Smart Capital Strategy Advisor, and 14-day trade-hold cycle tracker." />
+  <meta name="keywords"
+    content="CS2 arbitrage, CS2 arbitrage calculator, Steam arbitrage, CSFloat to Steam arbitrage, Youpin898 Steam arbitrage, CS2 spread scanner, Steam market fee calculator, what is CS2 arbitrage, CS2 skin trading profit, Valve 7 day trade protection" />
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#08090c" />
 
@@ -28,18 +25,14 @@
   <meta property="og:locale:alternate" content="tr_TR" />
   <meta property="og:url" content="https://spread.haking.tr/" />
   <meta property="og:title" content="SPREAD — CS2 Arbitrage Calculator &amp; Live Spread Terminal" />
-  <meta
-    property="og:description"
-    content="Zero-login CSFloat &amp; Youpin898 ↔ Steam CS2 arbitrage desk. Real 24h/7d sales velocity, Confidence Scores, exact Valve cent math, and local JSON vault."
-  />
+  <meta property="og:description"
+    content="Zero-login CSFloat &amp; Youpin898 ↔ Steam CS2 arbitrage desk. Real 24h/7d sales velocity, Confidence Scores, exact Valve cent math, and local JSON vault." />
   <meta property="og:image" content="https://spread.haking.tr/assets/brand/banner.jpg" />
   <meta property="og:image:alt" content="SPREAD — CS2 Arbitrage Terminal Live Spread Engine" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="SPREAD — CS2 Arbitrage Calculator &amp; Live Spread Terminal" />
-  <meta
-    name="twitter:description"
-    content="Live CSFloat &amp; Youpin898 ↔ Steam spread scanner, budget-fit strategy engine, real sales velocity &amp; 14-day trade-hold tracker."
-  />
+  <meta name="twitter:description"
+    content="Live CSFloat &amp; Youpin898 ↔ Steam spread scanner, budget-fit strategy engine, real sales velocity &amp; 14-day trade-hold tracker." />
   <meta name="twitter:image" content="https://spread.haking.tr/assets/brand/banner.jpg" />
 
   <!-- Icons & PWA Manifest -->
@@ -146,8 +139,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
-    rel="stylesheet"
-  />
+    rel="stylesheet" />
 
   <!-- Theme Boot (External for strict CSP) -->
   <script src="/js/theme-init.js"></script>
@@ -163,6 +155,7 @@
   <link rel="stylesheet" href="/css/academy.css" />
   <link rel="stylesheet" href="/css/advisor.css" />
 </head>
+
 <body>
 
   <!-- =================================================================== -->
@@ -189,13 +182,7 @@
       <!-- Top Row: Brand, Marketplace, Currency, Language, Search, Sync, Vault, Support, Theme -->
       <div class="header-row-top">
         <a id="brandHomeLink" href="/" class="brand-lockup" style="text-decoration: none;">
-          <img
-            src="/assets/brand/logo-192.png"
-            alt="SPREAD Logo"
-            class="brand-logo"
-            width="36"
-            height="36"
-          />
+          <img src="/assets/brand/logo-192.png" alt="SPREAD Logo" class="brand-logo" width="36" height="36" />
           <div class="brand-text">
             <div class="brand-title-line">
               <h1 class="brand-name">SPREAD</h1>
@@ -226,39 +213,47 @@
 
           <!-- Language Switcher (EN Default / Auto TR Detect + Persisted) -->
           <div class="seg-group lang-pill" role="group" aria-label="Language">
-            <button type="button" class="seg-btn is-active" data-lang-btn="en" title="English (Global Default)">EN</button>
+            <button type="button" class="seg-btn is-active" data-lang-btn="en"
+              title="English (Global Default)">EN</button>
             <button type="button" class="seg-btn" data-lang-btn="tr" title="Türkçe">TR</button>
           </div>
 
           <!-- Quick Command Search -->
-          <button id="openCmdSearchBtn" type="button" class="cmd-search-btn" title="Search 4,500+ CS2 Skins & Price Ranges (Ctrl+K)">
+          <button id="openCmdSearchBtn" type="button" class="cmd-search-btn"
+            title="Search 4,500+ CS2 Skins & Price Ranges (Ctrl+K)">
             <span>⌕</span>
             <span class="cmd-search-text" data-i18n="hdr.search">Search skins...</span>
             <kbd>Ctrl+K</kbd>
           </button>
 
           <!-- Live Sync -->
-          <button id="syncLiveBtn" type="button" class="btn btn-sm" data-i18n="hdr.refresh" title="Refresh CSFloat, Steam, Youpin898 & FX Rates">
+          <button id="syncLiveBtn" type="button" class="btn btn-sm" data-i18n="hdr.refresh"
+            title="Refresh CSFloat, Steam, Youpin898 & FX Rates">
             ↻ Refresh Live
           </button>
 
           <!-- Local JSON Vault -->
-          <button id="openVaultBtn" type="button" class="btn btn-sm" data-i18n="hdr.vault" title="Local JSON Backup & Restore">
+          <button id="openVaultBtn" type="button" class="btn btn-sm" data-i18n="hdr.vault"
+            title="Local JSON Backup & Restore">
             ⛁ Vault / JSON
           </button>
 
           <!-- Support & Contact -->
-          <button id="openSupportBtn" type="button" class="btn btn-sm" style="border-color: var(--gold-border); color: var(--gold);" data-i18n="hdr.support" title="Support SPREAD & Contact">
+          <button id="openSupportBtn" type="button" class="btn btn-sm"
+            style="border-color: var(--gold-border); color: var(--gold);" data-i18n="hdr.support"
+            title="Support SPREAD & Contact">
             ☕ Support
           </button>
 
           <!-- Quick Guide Toggle -->
-          <button id="showGuideQuickBtn" type="button" class="btn btn-icon" aria-label="Quick Start Guide" title="Toggle Quick Start Bar">
+          <button id="showGuideQuickBtn" type="button" class="btn btn-icon" aria-label="Quick Start Guide"
+            title="Toggle Quick Start Bar">
             ?
           </button>
 
           <!-- Theme Toggle -->
-          <button id="themeToggleBtn" type="button" class="btn btn-icon" aria-label="Toggle Theme" title="Dark / Light Theme">
+          <button id="themeToggleBtn" type="button" class="btn btn-icon" aria-label="Toggle Theme"
+            title="Dark / Light Theme">
             ◐
           </button>
         </div>
@@ -307,7 +302,8 @@
             <span data-i18n="hdr.steamFee">Steam:</span>
             <input id="steamFeeCustomInput" type="number" step="0.01" min="0" max="50" value="13.04" />
             <span>%</span>
-            <button id="steamFeeModeBtn" type="button" class="fee-mode-pill" title="Toggle Valve Cent / ÷1.15 / Custom %">
+            <button id="steamFeeModeBtn" type="button" class="fee-mode-pill"
+              title="Toggle Valve Cent / ÷1.15 / Custom %">
               Valve Cent
             </button>
           </div>
@@ -322,8 +318,10 @@
   <main class="app-main">
 
     <!-- Shared Deep-Link Loaded Banner -->
-    <div id="sharedLoadedBanner" class="alert-banner hidden" style="margin-bottom: 14px; border-color: var(--mint-border); background: var(--mint-soft);">
-      <span data-i18n="shared.banner">Shared Arbitrage Setup Loaded: Your friend’s exact loop configuration is now active on the desk.</span>
+    <div id="sharedLoadedBanner" class="alert-banner hidden"
+      style="margin-bottom: 14px; border-color: var(--mint-border); background: var(--mint-soft);">
+      <span data-i18n="shared.banner">Shared Arbitrage Setup Loaded: Your friend’s exact loop configuration is now
+        active on the desk.</span>
       <button id="dismissSharedBannerBtn" type="button" class="btn btn-sm" data-i18n="shared.clear">Clear URL</button>
     </div>
 
@@ -338,21 +336,26 @@
           <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <span class="pill pill-gold" data-i18n="onboard.badge">HOW IT WORKS</span>
             <p class="onboarding-pitch" data-i18n="onboard.pitch">
-              Buy discounted CS2 skins/cases on CSFloat → sell higher on Steam → cash out via fast liquid skins for real profit in a 14-day loop.
+              Buy discounted CS2 skins/cases on CSFloat → sell higher on Steam → cash out via fast liquid skins for real
+              profit in a 14-day loop.
             </p>
           </div>
           <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-            <a href="/academy" class="btn btn-sm btn-ghost" data-tab="academy" data-i18n="onboard.guide" style="text-decoration: none;">Full Guide →</a>
+            <a href="/academy" class="btn btn-sm btn-ghost" data-tab="academy" data-i18n="onboard.guide"
+              style="text-decoration: none;">Full Guide →</a>
             <button id="dismissOnboardingBtn" type="button" class="btn btn-sm btn-ghost" title="Dismiss">✕</button>
           </div>
         </div>
         <div class="onboarding-bar">
           <div class="onboarding-pills">
-            <span class="onboard-pill"><span class="onboard-num">1</span> <span data-i18n="onboard.s1">Enter your budget below</span></span>
+            <span class="onboard-pill"><span class="onboard-num">1</span> <span data-i18n="onboard.s1">Enter your budget
+                below</span></span>
             <span class="txt-muted">→</span>
-            <span class="onboard-pill"><span class="onboard-num">2</span> <span data-i18n="onboard.s2">Pick a ready strategy card</span></span>
+            <span class="onboard-pill"><span class="onboard-num">2</span> <span data-i18n="onboard.s2">Pick a ready
+                strategy card</span></span>
             <span class="txt-muted">→</span>
-            <span class="onboard-pill"><span class="onboard-num">3</span> <span data-i18n="onboard.s3">Track your 14-day cycle</span></span>
+            <span class="onboard-pill"><span class="onboard-num">3</span> <span data-i18n="onboard.s3">Track your 14-day
+                cycle</span></span>
           </div>
         </div>
       </div>
@@ -363,7 +366,8 @@
           <label for="calcCapitalInput" class="field-label">
             <span>
               <span data-i18n="calc.capital">Your Budget</span>
-              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.capital.tip" data-tip="Cash budget available on CSFloat or Youpin898 for your Step 1 purchases.">?</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.capital.tip"
+                data-tip="Cash budget available on CSFloat or Youpin898 for your Step 1 purchases.">?</span>
             </span>
           </label>
           <div class="input-prefix-wrap">
@@ -377,7 +381,8 @@
           <div>
             <div class="metric-cell-label">
               <span data-i18n="calc.mult">14-Day Return Multiplier</span>
-              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.mult.tip" data-tip="Combined return of Step 1 (Steam boost) × Step 2 (cashout rate). Anything above 1.0000x means net cash profit.">?</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.mult.tip"
+                data-tip="Combined return of Step 1 (Steam boost) × Step 2 (cashout rate). Anything above 1.0000x means net cash profit.">?</span>
             </div>
             <div class="metric-cell-val">
               <span id="heroMultVal">1.0000x</span>
@@ -389,25 +394,30 @@
           <div>
             <div class="metric-cell-label">
               <span data-i18n="calc.realProfit">Est. Cycle 1 Net Profit</span>
-              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.realProfit.tip" data-tip="Realistic net cash profit using whole items. Any leftover Steam Wallet cents are converted to true cash value.">?</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.realProfit.tip"
+                data-tip="Realistic net cash profit using whole items. Any leftover Steam Wallet cents are converted to true cash value.">?</span>
             </div>
             <div id="heroRealProfit" class="metric-cell-val txt-mint">+$0.00</div>
-            <div id="heroRealSub" class="metric-cell-sub" data-i18n="calc.realProfit.sub">Total Cash Value (incl. Steam)</div>
+            <div id="heroRealSub" class="metric-cell-sub" data-i18n="calc.realProfit.sub">Total Cash Value (incl. Steam)
+            </div>
           </div>
 
           <div>
             <div class="metric-cell-label">
               <span data-i18n="calc.breakEven">Safe Exit Loss Limit</span>
-              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.breakEven.tip" data-tip="Maximum cashout discount you can accept in Step 2 and still break even: 1 − (1 / Step 1 Boost).">?</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.breakEven.tip"
+                data-tip="Maximum cashout discount you can accept in Step 2 and still break even: 1 − (1 / Step 1 Boost).">?</span>
             </div>
             <div id="heroBreakEven" class="metric-cell-val">0.00%</div>
-            <div id="heroBreakEvenSub" class="metric-cell-sub" data-i18n="calc.breakEven.sub">Max Step 2 cashout discount</div>
+            <div id="heroBreakEvenSub" class="metric-cell-sub" data-i18n="calc.breakEven.sub">Max Step 2 cashout
+              discount</div>
           </div>
 
           <div>
             <div class="metric-cell-label">
               <span data-i18n="calc.monthly">Est. Monthly (2 Cycles)</span>
-              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.monthly.tip" data-tip="Estimated 28-day compounded return across 2 back-to-back 14-day trade-hold cycles.">?</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.monthly.tip"
+                data-tip="Estimated 28-day compounded return across 2 back-to-back 14-day trade-hold cycles.">?</span>
             </div>
             <div id="heroMonthlyRoi" class="metric-cell-val txt-gold">+0.00%</div>
             <div class="metric-cell-sub" data-i18n="calc.monthly.sub">28 Days • 2 Full Loops</div>
@@ -419,10 +429,12 @@
             + Track This Cycle
           </button>
           <div style="display: flex; gap: 6px;">
-            <button id="autoBestPairBtn" type="button" class="btn btn-sm" style="flex: 1;" data-i18n="calc.bestBtn" title="Automatically apply the highest-ranked strategy for your budget">
+            <button id="autoBestPairBtn" type="button" class="btn btn-sm" style="flex: 1;" data-i18n="calc.bestBtn"
+              title="Automatically apply the highest-ranked strategy for your budget">
               ⚡ Best Strategy
             </button>
-            <button id="openShareModalBtn" type="button" class="btn btn-sm" data-i18n="calc.shareBtn" title="Share this arbitrage configuration via URL">
+            <button id="openShareModalBtn" type="button" class="btn btn-sm" data-i18n="calc.shareBtn"
+              title="Share this arbitrage configuration via URL">
               ↗ Share
             </button>
           </div>
@@ -444,7 +456,8 @@
             <button id="openFilterGuideBtn" type="button" class="btn btn-sm btn-guide-pill" data-i18n="adv.howFilters">
               ⓘ Filter Guide
             </button>
-            <a href="/scanner" class="btn btn-sm" data-tab="scanner" data-i18n="adv.allItems" style="text-decoration: none;">
+            <a href="/scanner" class="btn btn-sm" data-tab="scanner" data-i18n="adv.allItems"
+              style="text-decoration: none;">
               All 4,500+ Items →
             </a>
           </div>
@@ -453,11 +466,14 @@
         <!-- Strategy Filter Toolbar -->
         <div class="advisor-toolbar">
           <div class="seg-group" role="group" aria-label="Strategy Mode">
-            <button type="button" class="seg-btn is-active" data-adv-style="ALL" data-i18n="adv.style.ALL">Best Mix</button>
-            <button type="button" class="seg-btn" data-adv-style="LOW_QTY" data-i18n="adv.style.LOW_QTY">Few Items (≤10)</button>
+            <button type="button" class="seg-btn is-active" data-adv-style="ALL" data-i18n="adv.style.ALL">Best
+              Mix</button>
+            <button type="button" class="seg-btn" data-adv-style="LOW_QTY" data-i18n="adv.style.LOW_QTY">Few Items
+              (≤10)</button>
             <button type="button" class="seg-btn" data-adv-style="FAST" data-i18n="adv.style.FAST">Fastest Cash</button>
             <button type="button" class="seg-btn" data-adv-style="CASES" data-i18n="adv.style.CASES">Cases Only</button>
-            <button type="button" class="seg-btn" data-adv-style="PATIENT" data-i18n="adv.style.PATIENT">High Profit / Knives</button>
+            <button type="button" class="seg-btn" data-adv-style="PATIENT" data-i18n="adv.style.PATIENT">High Profit /
+              Knives</button>
           </div>
 
           <div class="advisor-controls-right">
@@ -482,7 +498,8 @@
               </select>
             </label>
 
-            <label class="fee-chip" style="cursor: pointer;" data-i18n-title="adv.cleanPool.tip" title="Automatically hides hard-to-sell StatTrak™, Souvenir &amp; low-demand collector capsules">
+            <label class="fee-chip" style="cursor: pointer;" data-i18n-title="adv.cleanPool.tip"
+              title="Automatically hides hard-to-sell StatTrak™, Souvenir &amp; low-demand collector capsules">
               <input id="advisorCleanToggle" type="checkbox" checked style="width: auto;" />
               <span data-i18n="adv.cleanPool">Hide Rare/Dead Skins</span>
             </label>
@@ -493,7 +510,8 @@
           <div id="advisorDiagnosticsHost" class="diagnostics-stack"></div>
           <div id="advisorStrategiesGrid" class="strategies-grid"></div>
           <div class="split-plan-box">
-            <strong style="font-size: 12px; color: var(--text-secondary);" data-i18n="adv.splitTitle">Recommended Capital Allocation Plan</strong>
+            <strong style="font-size: 12px; color: var(--text-secondary);" data-i18n="adv.splitTitle">Recommended
+              Capital Allocation Plan</strong>
             <div id="advisorSplitPlan"></div>
           </div>
         </div>
@@ -507,7 +525,8 @@
         </div>
         <div class="timeline-bar" style="padding: 0;">
           <div class="tl-node">
-            <div class="tl-node-tag"><span data-i18n="tl.d0">Day 0 • Buy on</span> <span class="mkt-name">CSFloat</span></div>
+            <div class="tl-node-tag"><span data-i18n="tl.d0">Day 0 • Buy on</span> <span class="mkt-name">CSFloat</span>
+            </div>
             <div id="tlDay0Main" class="tl-node-main">$0.00 (0 units)</div>
             <div id="tlDay0Sub" class="tl-node-sub">Wallet leftover: $0.00</div>
           </div>
@@ -536,15 +555,18 @@
       <div id="executionRealityBanner" class="alert-banner is-danger hidden">
         <span id="executionRealityMsg">High item quantity may extend cycle duration.</span>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-          <button id="fixRealityBestBtn" type="button" class="btn btn-primary btn-sm" data-i18n="tl.fixBest">Apply Realistic Strategy</button>
-          <button id="fixRealitySearchBtn" type="button" class="btn btn-sm" data-i18n="tl.fixSearch">Search Higher-Tier Skins</button>
+          <button id="fixRealityBestBtn" type="button" class="btn btn-primary btn-sm" data-i18n="tl.fixBest">Apply
+            Realistic Strategy</button>
+          <button id="fixRealitySearchBtn" type="button" class="btn btn-sm" data-i18n="tl.fixSearch">Search Higher-Tier
+            Skins</button>
         </div>
       </div>
 
       <!-- Math / Fee Warning Banners -->
       <div id="insuffCapitalBanner" class="alert-banner hidden">
         <span id="insuffCapitalMsg">Starting capital is below 1 unit purchase price.</span>
-        <button id="setMinCapBtn" type="button" class="btn btn-primary btn-sm" data-i18n="tl.setMinCap">Match 1 Unit Cost</button>
+        <button id="setMinCapBtn" type="button" class="btn btn-primary btn-sm" data-i18n="tl.setMinCap">Match 1 Unit
+          Cost</button>
       </div>
       <div id="steamMinFeeBanner" class="alert-banner is-danger hidden">
         <span id="steamMinFeeDetail">Minimum Steam fee trap detected.</span>
@@ -574,7 +596,8 @@
               <div class="leg-inputs-2col">
                 <div>
                   <label for="calcPM1Input" class="field-label">
-                    <span><span class="mkt-name">CSFloat</span> <span data-i18n="leg1.buy">Buy Price</span> (<span class="cur-sym">$</span>)</span>
+                    <span><span class="mkt-name">CSFloat</span> <span data-i18n="leg1.buy">Buy Price</span> (<span
+                        class="cur-sym">$</span>)</span>
                   </label>
                   <input id="calcPM1Input" type="number" step="0.01" min="0.01" class="input num" />
                 </div>
@@ -640,7 +663,8 @@
                 </div>
                 <div>
                   <label for="calcPM2Input" class="field-label">
-                    <span><span class="mkt-name">CSFloat</span> <span data-i18n="leg2.sell">Sell Price</span> (<span class="cur-sym">$</span>)</span>
+                    <span><span class="mkt-name">CSFloat</span> <span data-i18n="leg2.sell">Sell Price</span> (<span
+                        class="cur-sym">$</span>)</span>
                   </label>
                   <input id="calcPM2Input" type="number" step="0.01" min="0.01" class="input num" />
                 </div>
@@ -650,7 +674,8 @@
 
           <div class="leg-breakdown">
             <div class="breakdown-row">
-              <span class="breakdown-label"><span class="mkt-name">CSFloat</span> <span data-i18n="leg2.net">Net Cash Proceeds / Unit (Net_M2)</span></span>
+              <span class="breakdown-label"><span class="mkt-name">CSFloat</span> <span data-i18n="leg2.net">Net Cash
+                  Proceeds / Unit (Net_M2)</span></span>
               <span id="outNetM2" class="breakdown-val">$0.0000</span>
             </div>
             <div class="breakdown-row">
@@ -679,7 +704,8 @@
             <option value="USD">$ USD</option>
             <option value="EUR">€ EUR</option>
           </select>
-          <input id="fxQuickAmount" type="number" step="0.01" min="0" value="1000" class="input num" style="width: 110px; padding: 5px 9px;" />
+          <input id="fxQuickAmount" type="number" step="0.01" min="0" value="1000" class="input num"
+            style="width: 110px; padding: 5px 9px;" />
           <span class="txt-muted">→</span>
           <select id="fxQuickTo" class="select num" style="width: 82px; padding: 5px 8px;">
             <option value="USD" selected>$ USD</option>
@@ -702,11 +728,14 @@
           <div class="panel-head">
             <div>
               <h3 class="panel-title" data-i18n="chart.compTitle">12-Cycle Compound Capital Curve (168 Days)</h3>
-              <p class="panel-subtitle" data-i18n="chart.compSub">Hover to compare Realistic Cash-Equivalent vs Theoretical Compounding.</p>
+              <p class="panel-subtitle" data-i18n="chart.compSub">Hover to compare Realistic Cash-Equivalent vs
+                Theoretical Compounding.</p>
             </div>
             <div class="chart-legend">
-              <span><i class="legend-dot" style="background: var(--gold);"></i><span data-i18n="chart.legReal">Realistic (Cash-Equiv)</span></span>
-              <span><i class="legend-dot" style="background: var(--mint);"></i><span data-i18n="chart.legTheo">Theoretical (Mⁿ)</span></span>
+              <span><i class="legend-dot" style="background: var(--gold);"></i><span data-i18n="chart.legReal">Realistic
+                  (Cash-Equiv)</span></span>
+              <span><i class="legend-dot" style="background: var(--mint);"></i><span
+                  data-i18n="chart.legTheo">Theoretical (Mⁿ)</span></span>
             </div>
           </div>
           <div class="canvas-stage">
@@ -719,7 +748,8 @@
           <div class="panel-head">
             <div>
               <h3 class="panel-title" data-i18n="chart.heatTitle">Price Volatility Risk Heatmap (7+7D Hold)</h3>
-              <p class="panel-subtitle" data-i18n="chart.heatSub">Net Cycle ROI if Steam (S1) or Cashout (M2) prices shift during trade hold.</p>
+              <p class="panel-subtitle" data-i18n="chart.heatSub">Net Cycle ROI if Steam (S1) or Cashout (M2) prices
+                shift during trade hold.</p>
             </div>
           </div>
           <div class="canvas-stage">
@@ -763,8 +793,10 @@
       <div class="panel panel-corner">
         <div class="panel-head">
           <div>
-            <h3 class="panel-title" data-i18n="scan.pairsTitle">⚡ Top Live Full-Cycle Pairs (Velocity &amp; Anti-Manipulation Verified)</h3>
-            <p class="panel-subtitle" data-i18n="scan.pairsSub">Highest-confidence, actively traded Leg 1 + Leg 2 pairs tailored to your budget.</p>
+            <h3 class="panel-title" data-i18n="scan.pairsTitle">⚡ Top Live Full-Cycle Pairs (Velocity &amp;
+              Anti-Manipulation Verified)</h3>
+            <p class="panel-subtitle" data-i18n="scan.pairsSub">Highest-confidence, actively traded Leg 1 + Leg 2 pairs
+              tailored to your budget.</p>
           </div>
         </div>
         <div id="optimalPairsGrid" class="pair-strip"></div>
@@ -775,31 +807,40 @@
         <div class="scanner-controls">
           <div class="scanner-row">
             <div class="seg-group" role="group" aria-label="Scanner Mode">
-              <button type="button" class="seg-btn is-active" data-scan-mode="LEG1" data-i18n="scan.mode.LEG1">Leg 1 (Steam Boost)</button>
-              <button type="button" class="seg-btn" data-scan-mode="LEG2" data-i18n="scan.mode.LEG2">Leg 2 (Low-Loss Cashout)</button>
+              <button type="button" class="seg-btn is-active" data-scan-mode="LEG1" data-i18n="scan.mode.LEG1">Leg 1
+                (Steam Boost)</button>
+              <button type="button" class="seg-btn" data-scan-mode="LEG2" data-i18n="scan.mode.LEG2">Leg 2 (Low-Loss
+                Cashout)</button>
               <button type="button" class="seg-btn" data-scan-mode="ALL" data-i18n="scan.mode.ALL">All Items</button>
-              <button type="button" class="seg-btn" data-scan-mode="WATCH" data-i18n="scan.mode.WATCH">★ Watchlist</button>
-              <button type="button" class="seg-btn" data-scan-mode="CUSTOM" data-i18n="scan.mode.CUSTOM">Custom Items</button>
+              <button type="button" class="seg-btn" data-scan-mode="WATCH" data-i18n="scan.mode.WATCH">★
+                Watchlist</button>
+              <button type="button" class="seg-btn" data-scan-mode="CUSTOM" data-i18n="scan.mode.CUSTOM">Custom
+                Items</button>
             </div>
 
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <label class="fee-chip" style="cursor: pointer;" title="Uses min(24h, 7d, 30d×1.12) to filter artificial Steam spikes">
+              <label class="fee-chip" style="cursor: pointer;"
+                title="Uses min(24h, 7d, 30d×1.12) to filter artificial Steam spikes">
                 <input id="toggleConservativeSteam" type="checkbox" checked style="width: auto;" />
                 <span data-i18n="scan.antiManip">Anti-Manipulation (24h/7d)</span>
               </label>
-              <label class="fee-chip" style="cursor: pointer;" title="Evaluate Leg 2 using CSFloat highest Buy Order instead of lowest listing">
+              <label class="fee-chip" style="cursor: pointer;"
+                title="Evaluate Leg 2 using CSFloat highest Buy Order instead of lowest listing">
                 <input id="toggleBuyOrderLeg2" type="checkbox" style="width: auto;" />
                 <span data-i18n="scan.buyOrder">Leg 2 Buy Order</span>
               </label>
-              <button id="toggleCustomItemBtn" type="button" class="btn btn-sm" data-i18n="scan.addCustom">+ Custom Item</button>
-              <button id="toggleImportItemsBtn" type="button" class="btn btn-sm" data-i18n="scan.importBulk">Import CSV / JSON</button>
+              <button id="toggleCustomItemBtn" type="button" class="btn btn-sm" data-i18n="scan.addCustom">+ Custom
+                Item</button>
+              <button id="toggleImportItemsBtn" type="button" class="btn btn-sm" data-i18n="scan.importBulk">Import CSV
+                / JSON</button>
             </div>
           </div>
 
           <div class="scanner-filters-grid">
             <div>
               <label for="scannerSearchInput" class="field-label" data-i18n="scan.searchLbl">Search</label>
-              <input id="scannerSearchInput" type="text" class="input" data-i18n-ph="scan.searchPh" placeholder="e.g. ak red ft, case, asiimov..." />
+              <input id="scannerSearchInput" type="text" class="input" data-i18n-ph="scan.searchPh"
+                placeholder="e.g. ak red ft, case, asiimov..." />
             </div>
             <div>
               <label for="scannerCategorySelect" class="field-label" data-i18n="scan.catLbl">Category</label>
@@ -826,11 +867,13 @@
               </select>
             </div>
             <div>
-              <label for="scannerMinPriceInput" class="field-label"><span><span data-i18n="scan.minPriceLbl">Min</span> (<span class="cur-sym">$</span>)</span></label>
+              <label for="scannerMinPriceInput" class="field-label"><span><span data-i18n="scan.minPriceLbl">Min</span>
+                  (<span class="cur-sym">$</span>)</span></label>
               <input id="scannerMinPriceInput" type="number" step="1" min="0" placeholder="0" class="input num" />
             </div>
             <div>
-              <label for="scannerMaxPriceInput" class="field-label"><span><span data-i18n="scan.maxPriceLbl">Max</span> (<span class="cur-sym">$</span>)</span></label>
+              <label for="scannerMaxPriceInput" class="field-label"><span><span data-i18n="scan.maxPriceLbl">Max</span>
+                  (<span class="cur-sym">$</span>)</span></label>
               <input id="scannerMaxPriceInput" type="number" step="1" min="0" placeholder="∞" class="input num" />
             </div>
             <div>
@@ -859,12 +902,16 @@
               <input id="customItemName" type="text" required class="input" placeholder="e.g. Gallery Case" />
             </div>
             <div>
-              <label for="customItemMkt" class="field-label"><span><span data-i18n="custom.mktPrice">Market Price</span> (<span class="cur-sym">$</span>)</span></label>
-              <input id="customItemMkt" type="number" step="0.01" min="0.01" required class="input num" placeholder="0.82" />
+              <label for="customItemMkt" class="field-label"><span><span data-i18n="custom.mktPrice">Market Price</span>
+                  (<span class="cur-sym">$</span>)</span></label>
+              <input id="customItemMkt" type="number" step="0.01" min="0.01" required class="input num"
+                placeholder="0.82" />
             </div>
             <div>
-              <label for="customItemSteam" class="field-label"><span><span data-i18n="custom.steamPrice">Steam Price</span> (<span class="cur-sym">$</span>)</span></label>
-              <input id="customItemSteam" type="number" step="0.01" min="0.03" required class="input num" placeholder="1.28" />
+              <label for="customItemSteam" class="field-label"><span><span data-i18n="custom.steamPrice">Steam
+                    Price</span> (<span class="cur-sym">$</span>)</span></label>
+              <input id="customItemSteam" type="number" step="0.01" min="0.03" required class="input num"
+                placeholder="1.28" />
             </div>
             <div>
               <label for="customItemCat" class="field-label" data-i18n="scan.catLbl">Category</label>
@@ -882,16 +929,22 @@
 
         <!-- Bulk CSV/JSON Import Drawer -->
         <div id="importItemsDrawer" class="drawer-box hidden">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px;">
+          <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px;">
             <span class="txt-sec">
-              <span data-lang-only="en">Paste CSV <code>name,marketPrice,steamPrice,category</code> or JSON in active currency (<span class="cur-sym">$</span>):</span>
-              <span data-lang-only="tr" class="hidden">Aktif para birimi (<span class="cur-sym">$</span>) cinsinden <code>ad,pazarFiyati,steamFiyati,kategori</code> veya JSON yapıştırın:</span>
+              <span data-lang-only="en">Paste CSV <code>name,marketPrice,steamPrice,category</code> or JSON in active
+                currency (<span class="cur-sym">$</span>):</span>
+              <span data-lang-only="tr" class="hidden">Aktif para birimi (<span class="cur-sym">$</span>) cinsinden
+                <code>ad,pazarFiyati,steamFiyati,kategori</code> veya JSON yapıştırın:</span>
             </span>
-            <button id="fillImportSampleBtn" type="button" class="btn btn-sm btn-ghost" data-i18n="bulk.fillSample">Fill Sample CSV</button>
+            <button id="fillImportSampleBtn" type="button" class="btn btn-sm btn-ghost" data-i18n="bulk.fillSample">Fill
+              Sample CSV</button>
           </div>
-          <textarea id="bulkImportTextarea" rows="3" class="textarea num" placeholder="Gallery Case,0.82,1.28,Case"></textarea>
+          <textarea id="bulkImportTextarea" rows="3" class="textarea num"
+            placeholder="Gallery Case,0.82,1.28,Case"></textarea>
           <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
-            <button id="runBulkImportBtn" type="button" class="btn btn-primary btn-sm" data-i18n="bulk.importBtn">Import Items</button>
+            <button id="runBulkImportBtn" type="button" class="btn btn-primary btn-sm" data-i18n="bulk.importBtn">Import
+              Items</button>
           </div>
         </div>
 
@@ -902,7 +955,8 @@
               <tr>
                 <th data-i18n="scan.colItem">Item / Visual / Rarity</th>
                 <th class="ta-right" data-i18n="scan.colSpeed">Sales Speed (24h/7d)</th>
-                <th class="ta-right"><span class="mkt-name">CSFloat</span> <span data-i18n="scan.colMkt">Price</span></th>
+                <th class="ta-right"><span class="mkt-name">CSFloat</span> <span data-i18n="scan.colMkt">Price</span>
+                </th>
                 <th class="ta-right" data-i18n="scan.colSteam">Steam Price</th>
                 <th class="ta-center" data-i18n="scan.colTrend">90d Trend</th>
                 <th class="ta-right" data-i18n="scan.colL1">Leg 1 Boost %</th>
@@ -952,15 +1006,19 @@
         </div>
       </div>
 
-      <div class="panel panel-pad" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <div class="panel panel-pad"
+        style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
         <div class="seg-group">
           <button type="button" class="seg-btn is-active" data-tracker-filter="ALL" data-i18n="tr.all">All</button>
-          <button type="button" class="seg-btn" data-tracker-filter="ACTIVE" data-i18n="tr.activeFilter">Active Hold</button>
+          <button type="button" class="seg-btn" data-tracker-filter="ACTIVE" data-i18n="tr.activeFilter">Active
+            Hold</button>
           <button type="button" class="seg-btn" data-tracker-filter="DONE" data-i18n="tr.doneFilter">Completed</button>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button id="exportCyclesCsvBtn" type="button" class="btn btn-sm" data-i18n="tr.csv">↓ Export CSV Ledger</button>
-          <button id="loadSampleCyclesBtn" type="button" class="btn btn-sm" data-i18n="tr.demo">Load Sample Cycles</button>
+          <button id="exportCyclesCsvBtn" type="button" class="btn btn-sm" data-i18n="tr.csv">↓ Export CSV
+            Ledger</button>
+          <button id="loadSampleCyclesBtn" type="button" class="btn btn-sm" data-i18n="tr.demo">Load Sample
+            Cycles</button>
         </div>
       </div>
 
@@ -980,14 +1038,13 @@
             What is CS2 Steam Arbitrage? How CSFloat &amp; Youpin898 ↔ Steam Loops Work
           </h2>
           <p class="academy-lead" data-i18n="acad.lead">
-            Items on the Steam Community Market typically trade 20% to 45% higher than real-cash P2P marketplaces like CSFloat and Youpin898 because Steam Wallet funds cannot be withdrawn directly to a bank account. Two-way CS2 arbitrage captures this structural price spread in a disciplined 14-day loop.
+            Items on the Steam Community Market typically trade 20% to 45% higher than real-cash P2P marketplaces like
+            CSFloat and Youpin898 because Steam Wallet funds cannot be withdrawn directly to a bank account. Two-way CS2
+            arbitrage captures this structural price spread in a disciplined 14-day loop.
           </p>
         </div>
         <div class="academy-hero-banner">
-          <img
-            src="/assets/brand/banner.jpg"
-            alt="SPREAD — CS2 Arbitrage Terminal Banner (spread.haking.tr)"
-          />
+          <img src="/assets/brand/banner.jpg" alt="SPREAD — CS2 Arbitrage Terminal Banner (spread.haking.tr)" />
         </div>
       </div>
 
@@ -996,8 +1053,10 @@
         <div class="arch-header-row">
           <span class="pill pill-mint" data-lang-only="en">VISUAL LOOP MECHANIC</span>
           <span class="pill pill-mint hidden" data-lang-only="tr">GÖRSEL DÖNGÜ ŞEMASI</span>
-          <strong style="font-size: 13.5px;" data-lang-only="en">How $200 Compounds Through a 2-Leg CS2 Arbitrage Cycle</strong>
-          <strong style="font-size: 13.5px;" data-lang-only="tr" class="hidden">$200 Sermaye 2 Yönlü CS2 Arbitraj Döngüsünde Nasıl Büyür?</strong>
+          <strong style="font-size: 13.5px;" data-lang-only="en">How $200 Compounds Through a 2-Leg CS2 Arbitrage
+            Cycle</strong>
+          <strong style="font-size: 13.5px;" data-lang-only="tr" class="hidden">$200 Sermaye 2 Yönlü CS2 Arbitraj
+            Döngüsünde Nasıl Büyür?</strong>
         </div>
         <div class="arch-pipeline">
           <div class="arch-node is-gold">
@@ -1036,28 +1095,32 @@
           <span class="step-num" data-i18n="acad.s1.num">STEP 01 • DAY 0</span>
           <h3 class="step-title" data-i18n="acad.s1.t">Buy Undervalued Liquid Items (Leg 1)</h3>
           <p class="step-desc" data-i18n="acad.s1.d">
-            Purchase high-spread, fast-selling CS2 cases or play skins on CSFloat (0% buy fee) or Youpin898 using real cash.
+            Purchase high-spread, fast-selling CS2 cases or play skins on CSFloat (0% buy fee) or Youpin898 using real
+            cash.
           </p>
         </div>
         <div class="panel step-card">
           <span class="step-num" data-i18n="acad.s2.num">STEP 02 • DAY 0–7</span>
           <h3 class="step-title" data-i18n="acad.s2.t">7-Day Valve Trade Protection</h3>
           <p class="step-desc" data-i18n="acad.s2.d">
-            Under Valve’s July 2025 Trade Protection rule, traded items remain locked for 7 days before market listing. Volatility risk is tracked live.
+            Under Valve’s July 2025 Trade Protection rule, traded items remain locked for 7 days before market listing.
+            Volatility risk is tracked live.
           </p>
         </div>
         <div class="panel step-card">
           <span class="step-num" data-i18n="acad.s3.num">STEP 03 • DAY 7</span>
           <h3 class="step-title" data-i18n="acad.s3.t">Sell on Steam &amp; Buy Exit Skin</h3>
           <p class="step-desc" data-i18n="acad.s3.d">
-            Sell on Steam Market to multiply wallet balance (M₁), then buy a high-liquidity, low-loss cashout skin (e.g. AK-47 Redline, Printstream).
+            Sell on Steam Market to multiply wallet balance (M₁), then buy a high-liquidity, low-loss cashout skin (e.g.
+            AK-47 Redline, Printstream).
           </p>
         </div>
         <div class="panel step-card">
           <span class="step-num" data-i18n="acad.s4.num">STEP 04 • DAY 14</span>
           <h3 class="step-title" data-i18n="acad.s4.t">Cash Out &amp; Compound (Leg 2)</h3>
           <p class="step-desc" data-i18n="acad.s4.d">
-            After the second 7-day hold clears, sell on CSFloat (2% fee) or Youpin898 (1% fee) back to cash. When M₁ × M₂ &gt; 1.00, reinvest profits.
+            After the second 7-day hold clears, sell on CSFloat (2% fee) or Youpin898 (1% fee) back to cash. When M₁ ×
+            M₂ &gt; 1.00, reinvest profits.
           </p>
         </div>
       </div>
@@ -1066,9 +1129,11 @@
       <div class="academy-2col">
         <div class="panel panel-pad">
           <span class="pill pill-crimson" data-i18n="acad.labBadge">EXACT FEE SIMULATOR</span>
-          <h3 style="margin-top: 8px; font-size: 16px;" data-i18n="acad.labTitle">Steam $0.01 + $0.01 Minimum Fee Trap Lab</h3>
+          <h3 style="margin-top: 8px; font-size: 16px;" data-i18n="acad.labTitle">Steam $0.01 + $0.01 Minimum Fee Trap
+            Lab</h3>
           <p class="txt-sec" style="font-size: 12.5px; margin-top: 6px;" data-i18n="acad.labDesc">
-            Most calculators assume a flat ÷ 1.15 (13.04%) Steam fee. In reality, Valve enforces a minimum $0.01 Steam fee + $0.01 CS2 fee per item — pushing real fees up to 66.7% on cheap items.
+            Most calculators assume a flat ÷ 1.15 (13.04%) Steam fee. In reality, Valve enforces a minimum $0.01 Steam
+            fee + $0.01 CS2 fee per item — pushing real fees up to 66.7% on cheap items.
           </p>
 
           <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
@@ -1111,7 +1176,8 @@
         <div class="panel panel-pad" style="display: flex; flex-direction: column; gap: 14px;">
           <div>
             <span class="pill pill-ice" data-i18n="acad.cmpBadge">MARKETPLACE BENCHMARK</span>
-            <h3 style="margin-top: 8px; font-size: 16px;" data-i18n="acad.cmpTitle">CSFloat vs Youpin898 (2025/2026 Real Fees)</h3>
+            <h3 style="margin-top: 8px; font-size: 16px;" data-i18n="acad.cmpTitle">CSFloat vs Youpin898 (2025/2026 Real
+              Fees)</h3>
           </div>
 
           <div class="table-wrap" data-lang-only="en">
@@ -1185,30 +1251,36 @@
           <div class="checklist-items" data-lang-only="en">
             <div class="checklist-row">
               <span class="check-dot">1</span>
-              <div><strong>Anti-Manipulation Guard:</strong> Uses <code>min(24h, 7d, 30d×1.12)</code> so artificial 1-day Steam spikes never fool the calculator.</div>
+              <div><strong>Anti-Manipulation Guard:</strong> Uses <code>min(24h, 7d, 30d×1.12)</code> so artificial
+                1-day Steam spikes never fool the calculator.</div>
             </div>
             <div class="checklist-row">
               <span class="check-dot">2</span>
-              <div><strong>Inventory &amp; Effort Realism:</strong> CS2 inventory holds 1,000 items. Strategy Advisor flags storage-unit bottlenecks and slow knives automatically.</div>
+              <div><strong>Inventory &amp; Effort Realism:</strong> CS2 inventory holds 1,000 items. Strategy Advisor
+                flags storage-unit bottlenecks and slow knives automatically.</div>
             </div>
             <div class="checklist-row">
               <span class="check-dot">3</span>
-              <div><strong>True Cash-Equivalent Math:</strong> Leftover Steam Wallet cents are never counted 1:1 as cash — they are discounted by your exact <code>M₂</code> exit rate.</div>
+              <div><strong>True Cash-Equivalent Math:</strong> Leftover Steam Wallet cents are never counted 1:1 as cash
+                — they are discounted by your exact <code>M₂</code> exit rate.</div>
             </div>
           </div>
 
           <div class="checklist-items hidden" data-lang-only="tr">
             <div class="checklist-row">
               <span class="check-dot">1</span>
-              <div><strong>Manipülasyon Koruması:</strong> <code>min(24s, 7g, 30g×1.12)</code> formülü ile 1 günlük sahte Steam fiyat sıçramalarını otomatik eler.</div>
+              <div><strong>Manipülasyon Koruması:</strong> <code>min(24s, 7g, 30g×1.12)</code> formülü ile 1 günlük
+                sahte Steam fiyat sıçramalarını otomatik eler.</div>
             </div>
             <div class="checklist-row">
               <span class="check-dot">2</span>
-              <div><strong>Envanter &amp; Gerçekçilik:</strong> CS2 envanter sınırı 1.000 eşyadır. Strateji Danışmanı depo yükünü ve yavaş satılan bıçakları önceden uyarır.</div>
+              <div><strong>Envanter &amp; Gerçekçilik:</strong> CS2 envanter sınırı 1.000 eşyadır. Strateji Danışmanı
+                depo yükünü ve yavaş satılan bıçakları önceden uyarır.</div>
             </div>
             <div class="checklist-row">
               <span class="check-dot">3</span>
-              <div><strong>Nakit Eşdeğeri Matematiği:</strong> Steam cüzdanında kalan küsurat 1:1 nakit sayılmaz; <code>M₂</code> dönüşüm oranıyla iskonto edilerek gerçek kâr hesaplanır.</div>
+              <div><strong>Nakit Eşdeğeri Matematiği:</strong> Steam cüzdanında kalan küsurat 1:1 nakit sayılmaz;
+                <code>M₂</code> dönüşüm oranıyla iskonto edilerek gerçek kâr hesaplanır.</div>
             </div>
           </div>
         </div>
@@ -1225,38 +1297,56 @@
         <div class="faq-grid" data-lang-only="en">
           <details class="faq-item" open>
             <summary>Why are CS2 skins 20% to 45% more expensive on Steam than CSFloat?</summary>
-            <p>Steam Wallet funds are closed-loop store credit that cannot be withdrawn to a bank account. Traders selling for real cash on CSFloat or Youpin898 accept a liquidity discount (typically 20%–35%), creating a repeatable spread for disciplined two-way arbitrageurs.</p>
+            <p>Steam Wallet funds are closed-loop store credit that cannot be withdrawn to a bank account. Traders
+              selling for real cash on CSFloat or Youpin898 accept a liquidity discount (typically 20%–35%), creating a
+              repeatable spread for disciplined two-way arbitrageurs.</p>
           </details>
           <details class="faq-item">
             <summary>What is the difference between Leg 1 (Steam Boost) and Leg 2 (Cashout)?</summary>
-            <p>Leg 1 converts real cash into expanded Steam Wallet credit (maximizing <code>M₁</code> via high-spread cases or liquid skins). Leg 2 converts that Steam Wallet balance back into real cash with the smallest possible discount (maximizing <code>M₂</code>). Profit exists whenever <code>M₁ × M₂ &gt; 1.0000</code>.</p>
+            <p>Leg 1 converts real cash into expanded Steam Wallet credit (maximizing <code>M₁</code> via high-spread
+              cases or liquid skins). Leg 2 converts that Steam Wallet balance back into real cash with the smallest
+              possible discount (maximizing <code>M₂</code>). Profit exists whenever <code>M₁ × M₂ &gt; 1.0000</code>.
+            </p>
           </details>
           <details class="faq-item">
             <summary>How does SPREAD prevent dead-item or rare-float traps?</summary>
-            <p>Our Quant Engine cross-checks real 24h/7d/30d sales volume (Skinport + Market.CSGO + live Steam 24h verification), CSFloat Bid/Ask spread ratio, pattern-sensitive finishes (Crimson Web, Doppler, Case Hardened), and thin-book Leg 2 anomalies — scoring every pair with a transparent <strong>Trust % (Confidence Score)</strong>.</p>
+            <p>Our Quant Engine cross-checks real 24h/7d/30d sales volume (Skinport + Market.CSGO + live Steam 24h
+              verification), CSFloat Bid/Ask spread ratio, pattern-sensitive finishes (Crimson Web, Doppler, Case
+              Hardened), and thin-book Leg 2 anomalies — scoring every pair with a transparent <strong>Trust %
+                (Confidence Score)</strong>.</p>
           </details>
           <details class="faq-item">
             <summary>How much capital do I need to start CS2 arbitrage?</summary>
-            <p>You can test the mechanics with $25–$100 using active liquid cases and affordable play skins. The sweet spot for low effort and high fill speed is typically $150–$1,000, where you can combine fast cases or low-count ($15–$120) skins without hitting inventory clutter.</p>
+            <p>You can test the mechanics with $25–$100 using active liquid cases and affordable play skins. The sweet
+              spot for low effort and high fill speed is typically $150–$1,000, where you can combine fast cases or
+              low-count ($15–$120) skins without hitting inventory clutter.</p>
           </details>
         </div>
 
         <div class="faq-grid hidden" data-lang-only="tr">
           <details class="faq-item" open>
             <summary>CS2 skinleri Steam Pazarı'nda neden CSFloat'tan %20–%45 daha pahalı?</summary>
-            <p>Steam cüzdan bakiyesi doğrudan banka hesabına çekilemeyen kapalı devre bir kredidir. Gerçek nakit isteyen oyuncular CSFloat veya Youpin898'de %20–%35 iskonto ile satış yapar; iki yönlü arbitraj bu yapısal farkı düzenli kâra çevirir.</p>
+            <p>Steam cüzdan bakiyesi doğrudan banka hesabına çekilemeyen kapalı devre bir kredidir. Gerçek nakit isteyen
+              oyuncular CSFloat veya Youpin898'de %20–%35 iskonto ile satış yapar; iki yönlü arbitraj bu yapısal farkı
+              düzenli kâra çevirir.</p>
           </details>
           <details class="faq-item">
             <summary>1. Yön (Bakiye Büyütme) ile 2. Yön (Nakit Dönüş) farkı nedir?</summary>
-            <p>1. Yön, nakit paranı Steam cüzdan bakiyesine çevirirken en yüksek artışı (<code>M₁</code>) hedefler. 2. Yön ise büyüyen Steam bakiyesini en az kayıpla (en yüksek <code>M₂</code> ile) tekrar nakde çevirir. <code>M₁ × M₂ &gt; 1.0000</code> olduğunda net nakit kârı oluşur.</p>
+            <p>1. Yön, nakit paranı Steam cüzdan bakiyesine çevirirken en yüksek artışı (<code>M₁</code>) hedefler. 2.
+              Yön ise büyüyen Steam bakiyesini en az kayıpla (en yüksek <code>M₂</code> ile) tekrar nakde çevirir.
+              <code>M₁ × M₂ &gt; 1.0000</code> olduğunda net nakit kârı oluşur.</p>
           </details>
           <details class="faq-item">
             <summary>SPREAD zor satılan ölü kapsülleri veya float tuzaklarını nasıl engeller?</summary>
-            <p>Kantitatif motorumuz gerçek 24s/7g/30g satış hacmini (Skinport + Market.CSGO + canlı Steam 24s doğrulaması), CSFloat Bid/Ask oranını, desen/float hassas skinleri (Crimson Web, Doppler, Case Hardened) ve dar tahta anomalilerini çapraz denetler; her stratejiye şeffaf bir <strong>Güven % Skoru</strong> verir.</p>
+            <p>Kantitatif motorumuz gerçek 24s/7g/30g satış hacmini (Skinport + Market.CSGO + canlı Steam 24s
+              doğrulaması), CSFloat Bid/Ask oranını, desen/float hassas skinleri (Crimson Web, Doppler, Case Hardened)
+              ve dar tahta anomalilerini çapraz denetler; her stratejiye şeffaf bir <strong>Güven % Skoru</strong>
+              verir.</p>
           </details>
           <details class="faq-item">
             <summary>CS2 arbitrajına başlamak için minimum ne kadar bütçe gerekir?</summary>
-            <p>$25–$100 aralığında aktif düşen kasalar ve uygun fiyatlı likit skinlerle sistemin mantığını risksiz test edebilirsiniz. En akıcı ve düşük eforlu verim aralığı genellikle $150–$1.000 bandıdır.</p>
+            <p>$25–$100 aralığında aktif düşen kasalar ve uygun fiyatlı likit skinlerle sistemin mantığını risksiz test
+              edebilirsiniz. En akıcı ve düşük eforlu verim aralığı genellikle $150–$1.000 bandıdır.</p>
           </details>
         </div>
       </div>
@@ -1275,7 +1365,8 @@
             How SPREAD Works Under the Hood &amp; Why You Can Trust It
           </h2>
           <p class="academy-lead" data-i18n="about.lead">
-            SPREAD is built from the ground up as a zero-login, open-source quantitative desk for CS2 traders. No account access, no hidden backend tracking, and 100% verifiable real-market math.
+            SPREAD is built from the ground up as a zero-login, open-source quantitative desk for CS2 traders. No
+            account access, no hidden backend tracking, and 100% verifiable real-market math.
           </p>
           <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;">
             <span class="pill pill-mint">Zero Steam Login</span>
@@ -1291,31 +1382,37 @@
         <div class="panel trust-card">
           <div class="trust-icon is-mint">🔒</div>
           <h3 data-i18n="about.t1.t">Zero Login &amp; Zero API Keys</h3>
-          <p data-i18n="about.t1.d">We never ask for Steam login, Steam Guard, trade URLs, CSFloat API keys, or browser extensions. Your inventory stays 100% untouched.</p>
+          <p data-i18n="about.t1.d">We never ask for Steam login, Steam Guard, trade URLs, CSFloat API keys, or browser
+            extensions. Your inventory stays 100% untouched.</p>
         </div>
         <div class="panel trust-card">
           <div class="trust-icon is-gold">⛁</div>
           <h3 data-i18n="about.t2.t">100% Local-First Browser Vault</h3>
-          <p data-i18n="about.t2.d">Your tracked cycles, custom prices, and watchlist stay strictly in your own browser (localStorage) with SHA-256 verified JSON backups.</p>
+          <p data-i18n="about.t2.d">Your tracked cycles, custom prices, and watchlist stay strictly in your own browser
+            (localStorage) with SHA-256 verified JSON backups.</p>
         </div>
         <div class="panel trust-card">
           <div class="trust-icon is-ice">🛡</div>
           <h3 data-i18n="about.t3.t">Strict CSP &amp; Zero-XSS Hardening</h3>
-          <p data-i18n="about.t3.d">Zero runtime third-party JS libraries, zero inline scripts, zero innerHTML sinks, strict Content-Security-Policy, and open-source MIT code on GitHub.</p>
+          <p data-i18n="about.t3.d">Zero runtime third-party JS libraries, zero inline scripts, zero innerHTML sinks,
+            strict Content-Security-Policy, and open-source MIT code on GitHub.</p>
         </div>
         <div class="panel trust-card">
           <div class="trust-icon is-mint">⚡</div>
           <h3 data-i18n="about.t4.t">Real Sales Velocity &amp; Anomaly Guard</h3>
-          <p data-i18n="about.t4.d">Unlike naive spread tables that push dead capsules or manipulated floats, SPREAD cross-checks 24h/7d/30d sales volume, Bid/Ask depth, and Steam price history.</p>
+          <p data-i18n="about.t4.d">Unlike naive spread tables that push dead capsules or manipulated floats, SPREAD
+            cross-checks 24h/7d/30d sales volume, Bid/Ask depth, and Steam price history.</p>
         </div>
       </div>
 
       <!-- Live System Pipeline Architecture + Live Feed Telemetry -->
       <div class="panel panel-pad">
         <span class="pill pill-ice">EDGE ARCHITECTURE</span>
-        <h3 style="margin-top: 8px; font-size: 17px;" data-i18n="about.pipeTitle">Live Multi-Source Data Pipeline (Cloudflare Edge)</h3>
+        <h3 style="margin-top: 8px; font-size: 17px;" data-i18n="about.pipeTitle">Live Multi-Source Data Pipeline
+          (Cloudflare Edge)</h3>
         <p class="txt-sec" style="font-size: 12.5px; margin-top: 4px;" data-i18n="about.pipeDesc">
-          Every 5 minutes, our open-source Cloudflare Worker aggregates 5 independent public feeds into a normalized 4,500-item quant matrix, plus on-demand live Steam 24h verification:
+          Every 5 minutes, our open-source Cloudflare Worker aggregates 5 independent public feeds into a normalized
+          4,500-item quant matrix, plus on-demand live Steam 24h verification:
         </p>
 
         <!-- Visual 4-Stage Pipeline Schematic -->
@@ -1357,38 +1454,46 @@
         <div class="quant-cards-grid" data-lang-only="en" style="margin-top: 12px;">
           <div class="quant-card">
             <strong>1. Exact Valve Cent Fee Solver</strong>
-            <p>Solves Steam’s exact <code>floor(net × 0.05, min $0.01) + floor(net × 0.10, min $0.01)</code> cent rounding instead of naive <code>÷ 1.15</code>, preventing hidden 20%–66% fee traps on low-cost items.</p>
+            <p>Solves Steam’s exact <code>floor(net × 0.05, min $0.01) + floor(net × 0.10, min $0.01)</code> cent
+              rounding instead of naive <code>÷ 1.15</code>, preventing hidden 20%–66% fee traps on low-cost items.</p>
           </div>
           <div class="quant-card">
             <strong>2. Cash-Equivalent M₂ Accounting</strong>
-            <p>Integer unit purchases always leave fractional Steam Wallet balance. SPREAD discounts leftover Steam credit by <code>M₂</code> so Realistic ROI never inflates above Theoretical ROI.</p>
+            <p>Integer unit purchases always leave fractional Steam Wallet balance. SPREAD discounts leftover Steam
+              credit by <code>M₂</code> so Realistic ROI never inflates above Theoretical ROI.</p>
           </div>
           <div class="quant-card">
             <strong>3. Pattern &amp; Thin-Book Float Guard</strong>
-            <p>Detects pattern-sensitive skins (Doppler, Crimson Web, Case Hardened, Fade) and flags unrealistic &lt;3% Leg 2 conversion gaps caused by 1–2 low-float outliers on thin order books.</p>
+            <p>Detects pattern-sensitive skins (Doppler, Crimson Web, Case Hardened, Fade) and flags unrealistic &lt;3%
+              Leg 2 conversion gaps caused by 1–2 low-float outliers on thin order books.</p>
           </div>
           <div class="quant-card">
             <strong>4. Confidence / Trust Score (35–99%)</strong>
-            <p>Every recommended strategy earns an honest composite score weighing 24h/7d sales velocity, Bid/Ask spread stability, inventory click burden, and anomaly penalties — and never labels slow knives as "Fast".</p>
+            <p>Every recommended strategy earns an honest composite score weighing 24h/7d sales velocity, Bid/Ask spread
+              stability, inventory click burden, and anomaly penalties — and never labels slow knives as "Fast".</p>
           </div>
         </div>
 
         <div class="quant-cards-grid hidden" data-lang-only="tr" style="margin-top: 12px;">
           <div class="quant-card">
             <strong>1. Gerçek Valve Cent Komisyon Çözücü</strong>
-            <p>Düz <code>÷ 1.15</code> yerine Valve’ın gerçek <code>min $0.01 Steam + min $0.01 CS2</code> cent yuvarlamasını çözer; ucuz eşyalardaki gizli %20–%66 kesinti tuzaklarını anında yakalar.</p>
+            <p>Düz <code>÷ 1.15</code> yerine Valve’ın gerçek <code>min $0.01 Steam + min $0.01 CS2</code> cent
+              yuvarlamasını çözer; ucuz eşyalardaki gizli %20–%66 kesinti tuzaklarını anında yakalar.</p>
           </div>
           <div class="quant-card">
             <strong>2. M₂ Nakit Eşdeğeri Muhasebesi</strong>
-            <p>Tam sayı adet alımlarında Steam cüzdanında her zaman küsurat kalır. SPREAD bu kalanı 1:1 nakit saymaz; <code>M₂</code> dönüşüm oranıyla iskonto ederek gerçekçi kârı gösterir.</p>
+            <p>Tam sayı adet alımlarında Steam cüzdanında her zaman küsurat kalır. SPREAD bu kalanı 1:1 nakit saymaz;
+              <code>M₂</code> dönüşüm oranıyla iskonto ederek gerçekçi kârı gösterir.</p>
           </div>
           <div class="quant-card">
             <strong>3. Desen &amp; Dar Tahta Float Koruması</strong>
-            <p>Desen/float hassasiyeti yüksek skinleri (Doppler, Crimson Web, Case Hardened, Fade) ve 1–2 ilanlık dar tahtalardaki yapay &lt;%3 kayıplı 2. yön anomalilerini otomatik tespit eder.</p>
+            <p>Desen/float hassasiyeti yüksek skinleri (Doppler, Crimson Web, Case Hardened, Fade) ve 1–2 ilanlık dar
+              tahtalardaki yapay &lt;%3 kayıplı 2. yön anomalilerini otomatik tespit eder.</p>
           </div>
           <div class="quant-card">
             <strong>4. Şeffaf Güven Skoru (%35–%99)</strong>
-            <p>Her strateji; 24s/7g gerçek satış hızı, Bid/Ask derinliği, işlem adedi yorgunluğu ve anomali riskine göre puanlanır. Yavaş satılan bıçaklar asla "Hızlı" etiketiyle gösterilmez.</p>
+            <p>Her strateji; 24s/7g gerçek satış hızı, Bid/Ask derinliği, işlem adedi yorgunluğu ve anomali riskine göre
+              puanlanır. Yavaş satılan bıçaklar asla "Hızlı" etiketiyle gösterilmez.</p>
           </div>
         </div>
 
@@ -1398,9 +1503,13 @@
             <div class="num" style="font-size: 13.5px; font-weight: 700; margin-top: 2px;">spread@haking.tr</div>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <a href="mailto:spread@haking.tr" class="btn btn-sm" style="text-decoration: none;" data-i18n="support.sendMail">✉ Send Email</a>
-            <a href="https://buymeacoffee.com/haking" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-coffee" style="text-decoration: none;">☕ Buy Me a Coffee</a>
-            <a href="https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-steam" style="text-decoration: none;" data-i18n="footer.steamBtn">⇄ Support via Steam Trade</a>
+            <a href="mailto:spread@haking.tr" class="btn btn-sm" style="text-decoration: none;"
+              data-i18n="support.sendMail">✉ Send Email</a>
+            <a href="https://buymeacoffee.com/haking" target="_blank" rel="noopener noreferrer"
+              class="btn btn-sm btn-coffee" style="text-decoration: none;">☕ Buy Me a Coffee</a>
+            <a href="https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7" target="_blank"
+              rel="noopener noreferrer" class="btn btn-sm btn-steam" style="text-decoration: none;"
+              data-i18n="footer.steamBtn">⇄ Support via Steam Trade</a>
           </div>
         </div>
       </div>
@@ -1415,7 +1524,8 @@
       <div>
         <div class="footer-col-title">SPREAD • spread.haking.tr</div>
         <p style="line-height: 1.6;" data-i18n="footer.desc">
-          100% local-first, open-source CS2 two-way arbitrage terminal. Zero Steam login required. Not affiliated with Valve Corporation, Steam, CSFloat, or Youpin898.
+          100% local-first, open-source CS2 two-way arbitrage terminal. Zero Steam login required. Not affiliated with
+          Valve Corporation, Steam, CSFloat, or Youpin898.
         </p>
       </div>
 
@@ -1440,23 +1550,13 @@
           SPREAD is free and open-source. Support server &amp; dev costs:
         </p>
         <div class="footer-support-actions">
-          <a
-            href="https://buymeacoffee.com/haking"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="btn btn-sm btn-coffee"
-            style="text-decoration: none;"
-          >
+          <a href="https://buymeacoffee.com/haking" target="_blank" rel="noopener noreferrer"
+            class="btn btn-sm btn-coffee" style="text-decoration: none;">
             ☕ Buy Me a Coffee
           </a>
-          <a
-            href="https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="btn btn-sm btn-steam"
-            style="text-decoration: none;"
-            data-i18n="footer.steamBtn"
-          >
+          <a href="https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7" target="_blank"
+            rel="noopener noreferrer" class="btn btn-sm btn-steam" style="text-decoration: none;"
+            data-i18n="footer.steamBtn">
             ⇄ Support via Steam Trade
           </a>
         </div>
@@ -1482,23 +1582,20 @@
         <button id="cmdCloseBtn" type="button" class="btn btn-sm btn-ghost">ESC ✕</button>
       </div>
       <div class="modal-body" style="gap: 11px;">
-        <input
-          id="cmdSearchInput"
-          type="text"
-          class="input"
-          data-i18n-ph="cmd.ph"
-          placeholder="Search by name (e.g. ak red ft, printstream) or leave blank &amp; set Min/Max price..."
-        />
+        <input id="cmdSearchInput" type="text" class="input" data-i18n-ph="cmd.ph"
+          placeholder="Search by name (e.g. ak red ft, printstream) or leave blank &amp; set Min/Max price..." />
 
         <!-- Price Range + Category + Sort -->
         <div class="cmd-filters-bar">
           <div class="input-prefix-wrap">
             <span class="input-prefix cur-sym">$</span>
-            <input id="cmdMinPriceInput" type="number" step="1" min="0" data-i18n-ph="cmd.minPh" placeholder="Min price" class="input num" />
+            <input id="cmdMinPriceInput" type="number" step="1" min="0" data-i18n-ph="cmd.minPh" placeholder="Min price"
+              class="input num" />
           </div>
           <div class="input-prefix-wrap">
             <span class="input-prefix cur-sym">$</span>
-            <input id="cmdMaxPriceInput" type="number" step="1" min="0" data-i18n-ph="cmd.maxPh" placeholder="Max price" class="input num" />
+            <input id="cmdMaxPriceInput" type="number" step="1" min="0" data-i18n-ph="cmd.maxPh" placeholder="Max price"
+              class="input num" />
           </div>
           <select id="cmdCategorySelect" class="select">
             <option value="ALL" data-i18n="cat.ALL">All Categories</option>
@@ -1517,7 +1614,8 @@
             <option value="PRICE_ASC" data-i18n="sort.PRICE_ASC">Price: Low → High</option>
             <option value="PRICE_DESC" data-i18n="sort.PRICE_DESC">Price: High → Low</option>
           </select>
-          <button id="cmdClearFiltersBtn" type="button" class="btn btn-sm btn-ghost" data-i18n="cmd.reset" title="Reset Filters">Reset</button>
+          <button id="cmdClearFiltersBtn" type="button" class="btn btn-sm btn-ghost" data-i18n="cmd.reset"
+            title="Reset Filters">Reset</button>
         </div>
 
         <!-- Quick Price Range Chips -->
@@ -1531,7 +1629,8 @@
             <button type="button" class="preset-chip" data-cmd-range="100:0">$100+</button>
             <button type="button" class="preset-chip" data-cmd-range="250:0">$250+</button>
           </div>
-          <span class="txt-muted" style="font-size: 11px;" data-i18n="cmd.hint">Set Min $50 to filter top high-tier spreads instantly</span>
+          <span class="txt-muted" style="font-size: 11px;" data-i18n="cmd.hint">Set Min $50 to filter top high-tier
+            spreads instantly</span>
         </div>
 
         <div id="cmdResultsList" class="cmd-list"></div>
@@ -1542,10 +1641,12 @@
   <!-- =================================================================== -->
   <!-- MODAL 2: COMPLETE CYCLE & LOG REALIZED PROFIT                       -->
   <!-- =================================================================== -->
-  <div id="completeCycleModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="completeTitle">
+  <div id="completeCycleModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="completeTitle">
     <div class="modal-card" style="max-width: 480px;">
       <div class="modal-head">
-        <h3 id="completeTitle" class="panel-title" data-i18n="modal.completeTitle">✓ Complete Cycle &amp; Log Realized Profit</h3>
+        <h3 id="completeTitle" class="panel-title" data-i18n="modal.completeTitle">✓ Complete Cycle &amp; Log Realized
+          Profit</h3>
         <button id="closeCompleteModalBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
       </div>
       <form id="confirmCompleteForm">
@@ -1553,13 +1654,15 @@
           <p id="completeCycleSummary" class="txt-sec" style="font-size: 12.5px;"></p>
           <div>
             <label for="actualEndAmountInput" class="field-label">
-              <span><span data-i18n="modal.actualEndLbl">Actual Net Cash Received</span> (<span class="cur-sym">$</span>)</span>
+              <span><span data-i18n="modal.actualEndLbl">Actual Net Cash Received</span> (<span
+                  class="cur-sym">$</span>)</span>
             </label>
             <input id="actualEndAmountInput" type="number" step="0.01" min="0" required class="input num" />
           </div>
           <div>
             <label for="actualCycleNoteInput" class="field-label" data-i18n="modal.noteLbl">Note (Optional)</label>
-            <input id="actualCycleNoteInput" type="text" maxlength="240" class="input" data-i18n-ph="modal.notePh" placeholder="e.g. Sold instantly via CSFloat buy order" />
+            <input id="actualCycleNoteInput" type="text" maxlength="240" class="input" data-i18n-ph="modal.notePh"
+              placeholder="e.g. Sold instantly via CSFloat buy order" />
           </div>
         </div>
         <div class="modal-foot">
@@ -1576,12 +1679,14 @@
   <div id="vaultModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="vaultTitle">
     <div class="modal-card">
       <div class="modal-head">
-        <h3 id="vaultTitle" class="panel-title" data-i18n="vault.title">⛁ Local Data Vault — JSON Backup &amp; Restore</h3>
+        <h3 id="vaultTitle" class="panel-title" data-i18n="vault.title">⛁ Local Data Vault — JSON Backup &amp; Restore
+        </h3>
         <button id="closeVaultBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
       </div>
       <div class="modal-body">
         <p class="txt-sec" style="font-size: 12.5px;" data-i18n="vault.desc">
-          All cycles, watchlist items, and custom prices live exclusively in your browser (localStorage) — never sent to any server. Export a SHA-256 verified JSON backup anytime.
+          All cycles, watchlist items, and custom prices live exclusively in your browser (localStorage) — never sent to
+          any server. Export a SHA-256 verified JSON backup anytime.
         </p>
 
         <div id="vaultStatsGrid" class="fee-lab-result" style="grid-template-columns: repeat(4, minmax(0, 1fr));"></div>
@@ -1601,8 +1706,10 @@
 
         <div id="vaultImportPreview" class="hidden"></div>
 
-        <div style="padding-top: 12px; border-top: 1px solid var(--border-hair); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <span class="txt-muted" style="font-size: 11.5px;" data-i18n="vault.danger">Danger Zone: Permanently clears all local SPREAD data in this browser.</span>
+        <div
+          style="padding-top: 12px; border-top: 1px solid var(--border-hair); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span class="txt-muted" style="font-size: 11.5px;" data-i18n="vault.danger">Danger Zone: Permanently clears
+            all local SPREAD data in this browser.</span>
           <button id="vaultResetBtn" type="button" class="btn btn-danger btn-sm" data-i18n="vault.clear">
             Clear All Local Data
           </button>
@@ -1621,10 +1728,12 @@
         <button id="closeShareModalBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
       </div>
       <div class="modal-body">
-        <p id="sharePreviewSummary" class="panel panel-pad num" style="background: var(--bg-inset); font-size: 12px; padding: 11px 13px;"></p>
+        <p id="sharePreviewSummary" class="panel panel-pad num"
+          style="background: var(--bg-inset); font-size: 12px; padding: 11px 13px;"></p>
 
         <div>
-          <label for="shareUrlInput" class="field-label" data-i18n="share.lbl">Direct Share Link (opens this exact configuration for your friend)</label>
+          <label for="shareUrlInput" class="field-label" data-i18n="share.lbl">Direct Share Link (opens this exact
+            configuration for your friend)</label>
           <div class="share-url-row">
             <input id="shareUrlInput" type="text" readonly class="input num" style="font-size: 11.5px;" />
             <button id="copyShareUrlBtn" type="button" class="btn btn-primary" data-i18n="share.copy">Copy</button>
@@ -1632,10 +1741,14 @@
         </div>
 
         <div class="share-socials">
-          <button id="copyShareSummaryBtn" type="button" class="btn btn-sm" data-i18n="share.copySummary">📋 Copy Discord / Chat Summary</button>
-          <a id="shareWhatsappLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-mint" style="text-decoration: none;">WhatsApp ↗</a>
-          <a id="shareTelegramLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-steam" style="text-decoration: none;">Telegram ↗</a>
-          <a id="shareXLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="text-decoration: none;">X (Twitter) ↗</a>
+          <button id="copyShareSummaryBtn" type="button" class="btn btn-sm" data-i18n="share.copySummary">📋 Copy
+            Discord / Chat Summary</button>
+          <a id="shareWhatsappLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-mint"
+            style="text-decoration: none;">WhatsApp ↗</a>
+          <a id="shareTelegramLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-steam"
+            style="text-decoration: none;">Telegram ↗</a>
+          <a id="shareXLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm"
+            style="text-decoration: none;">X (Twitter) ↗</a>
         </div>
       </div>
     </div>
@@ -1652,7 +1765,8 @@
       </div>
       <div class="modal-body">
         <p class="txt-sec" style="font-size: 12.5px; line-height: 1.6;" data-i18n="support.desc">
-          SPREAD (spread.haking.tr) is free, ad-free, and open-source. If it helps you spot profitable spreads, you can voluntarily support hosting &amp; development:
+          SPREAD (spread.haking.tr) is free, ad-free, and open-source. If it helps you spot profitable spreads, you can
+          voluntarily support hosting &amp; development:
         </p>
 
         <div class="support-cards-grid">
@@ -1664,13 +1778,8 @@
                 Buy the developer a coffee to help keep live edge feeds and updates running.
               </p>
             </div>
-            <a
-              href="https://buymeacoffee.com/haking"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="btn btn-coffee"
-              style="width: 100%; text-decoration: none;"
-            >
+            <a href="https://buymeacoffee.com/haking" target="_blank" rel="noopener noreferrer" class="btn btn-coffee"
+              style="width: 100%; text-decoration: none;">
               ☕ buymeacoffee.com/haking ↗
             </a>
           </div>
@@ -1683,14 +1792,9 @@
                 Prefer donating a spare CS2 case, sticker, or skin directly via Steam Trade Offer?
               </p>
             </div>
-            <a
-              href="https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="btn btn-steam"
-              style="width: 100%; text-decoration: none;"
-              data-i18n="support.steamBtn"
-            >
+            <a href="https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7" target="_blank"
+              rel="noopener noreferrer" class="btn btn-steam" style="width: 100%; text-decoration: none;"
+              data-i18n="support.steamBtn">
               ⇄ Send Steam Trade Offer ↗
             </a>
           </div>
@@ -1702,8 +1806,10 @@
             <div class="num" style="font-size: 13.5px; font-weight: 700; margin-top: 2px;">spread@haking.tr</div>
           </div>
           <div style="display: flex; gap: 7px;">
-            <button id="copySupportEmailBtn" type="button" class="btn btn-sm" data-i18n="support.copyMail">Copy Address</button>
-            <a href="mailto:spread@haking.tr" class="btn btn-sm btn-primary" style="text-decoration: none;" data-i18n="support.sendMail">✉ Send Email</a>
+            <button id="copySupportEmailBtn" type="button" class="btn btn-sm" data-i18n="support.copyMail">Copy
+              Address</button>
+            <a href="mailto:spread@haking.tr" class="btn btn-sm btn-primary" style="text-decoration: none;"
+              data-i18n="support.sendMail">✉ Send Email</a>
           </div>
         </div>
       </div>
@@ -1713,10 +1819,12 @@
   <!-- =================================================================== -->
   <!-- MODAL 6: INTERACTIVE FILTER & CONFIDENCE SCORE GUIDE POPUP          -->
   <!-- =================================================================== -->
-  <div id="filterGuideModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="fguideTitle">
+  <div id="filterGuideModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="fguideTitle">
     <div class="modal-card" style="max-width: 640px;">
       <div class="modal-head">
-        <h3 id="fguideTitle" class="panel-title" data-i18n="fguide.title">ⓘ Strategy Filters &amp; Confidence Score Explained</h3>
+        <h3 id="fguideTitle" class="panel-title" data-i18n="fguide.title">ⓘ Strategy Filters &amp; Confidence Score
+          Explained</h3>
         <button id="closeFilterGuideBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
       </div>
       <div class="modal-body" style="gap: 12px;">
@@ -1728,35 +1836,45 @@
         <div class="filter-guide-list" data-lang-only="en">
           <div class="fguide-row">
             <span class="pill pill-gold">Best Mix</span>
-            <div><strong>Best All-Round Selection:</strong> Automatically shows up to 6 diverse strategies for your budget — combining Top Profit, Few Items, Fastest Cash, Cases Only, and High Profit plays.</div>
+            <div><strong>Best All-Round Selection:</strong> Automatically shows up to 6 diverse strategies for your
+              budget — combining Top Profit, Few Items, Fastest Cash, Cases Only, and High Profit plays.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-mint">Few Items (≤10)</span>
-            <div><strong>Zero Click Fatigue:</strong> Limits Step 1 to 1–10 skins instead of buying 80+ cases. Perfect if you want minimal Steam trade confirmations.</div>
+            <div><strong>Zero Click Fatigue:</strong> Limits Step 1 to 1–10 skins instead of buying 80+ cases. Perfect
+              if you want minimal Steam trade confirmations.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-ice">Fastest Cash</span>
-            <div><strong>Sells Instantly Only:</strong> Picks only the highest-volume CS2 skins and cases selling dozens or hundreds of times per week so your money never sits idle waiting for a buyer.</div>
+            <div><strong>Sells Instantly Only:</strong> Picks only the highest-volume CS2 skins and cases selling dozens
+              or hundreds of times per week so your money never sits idle waiting for a buyer.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-gold">Cases Only</span>
-            <div><strong>Classic Case Spread Loop:</strong> Uses actively traded CS2 weapon cases in Step 1 to maximize your Steam balance, then exits via popular liquid skins.</div>
+            <div><strong>Classic Case Spread Loop:</strong> Uses actively traded CS2 weapon cases in Step 1 to maximize
+              your Steam balance, then exits via popular liquid skins.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-amber">High Profit / Knives</span>
-            <div><strong>Patient Higher-Profit Plays:</strong> Unlocks knives, gloves, and slower plays with bigger margins — always displaying an honest 7d/30d sales wait warning.</div>
+            <div><strong>Patient Higher-Profit Plays:</strong> Unlocks knives, gloves, and slower plays with bigger
+              margins — always displaying an honest 7d/30d sales wait warning.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-muted">Max Items &amp; Speed</span>
-            <div><strong>Simple Precision Controls:</strong> Cap how many Step 1 items you are willing to trade (<code>≤5</code> to <code>≤150</code>), and choose between <em>Sells Instantly</em>, <em>Fast Sellers</em>, or <em>All (Incl. Slower)</em>.</div>
+            <div><strong>Simple Precision Controls:</strong> Cap how many Step 1 items you are willing to trade
+              (<code>≤5</code> to <code>≤150</code>), and choose between <em>Sells Instantly</em>, <em>Fast
+                Sellers</em>, or <em>All (Incl. Slower)</em>.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-mint">Hide Rare/Dead Skins</span>
-            <div><strong>Anti-Trap Filter (Recommended ON):</strong> Automatically hides slow StatTrak™ skins, Souvenirs, and obscure collector capsules that look profitable on paper but rarely sell.</div>
+            <div><strong>Anti-Trap Filter (Recommended ON):</strong> Automatically hides slow StatTrak™ skins,
+              Souvenirs, and obscure collector capsules that look profitable on paper but rarely sell.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-mint">Trust 85%+ Score</span>
-            <div><strong>Composite Confidence Score (35–99%):</strong> Grades every strategy on real 24h/7d sales speed, active buy orders, pattern/float sensitivity, and anomaly checks. Aim for <strong>80%+</strong> for smooth loops.</div>
+            <div><strong>Composite Confidence Score (35–99%):</strong> Grades every strategy on real 24h/7d sales speed,
+              active buy orders, pattern/float sensitivity, and anomaly checks. Aim for <strong>80%+</strong> for smooth
+              loops.</div>
           </div>
         </div>
 
@@ -1764,35 +1882,45 @@
         <div class="filter-guide-list hidden" data-lang-only="tr">
           <div class="fguide-row">
             <span class="pill pill-gold">Karma (Önerilen)</span>
-            <div><strong>En Dengeli Seçim:</strong> Bütçene özel en iyi 6 farklı profili (Maksimum Kâr, Az İşlem, En Hızlı Nakit, Sadece Kasalar ve Sabırlı) tek ekranda kıyaslar.</div>
+            <div><strong>En Dengeli Seçim:</strong> Bütçene özel en iyi 6 farklı profili (Maksimum Kâr, Az İşlem, En
+              Hızlı Nakit, Sadece Kasalar ve Sabırlı) tek ekranda kıyaslar.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-mint">Az İşlem (≤10)</span>
-            <div><strong>Zahmetsiz Döngü:</strong> 80–100 tane kasa almak yerine sadece 1–10 adet kaliteli skinle döngü kurar. Steam onaylarıyla uğraşmak istemeyenler için idealdir.</div>
+            <div><strong>Zahmetsiz Döngü:</strong> 80–100 tane kasa almak yerine sadece 1–10 adet kaliteli skinle döngü
+              kurar. Steam onaylarıyla uğraşmak istemeyenler için idealdir.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-ice">En Hızlı Nakit</span>
-            <div><strong>Yalnızca Anında Satılanlar:</strong> Son 24 saat ve 7 günde onlarca kez satılan en popüler eşyaları seçer; paran alıcı beklerken kilitlenmez.</div>
+            <div><strong>Yalnızca Anında Satılanlar:</strong> Son 24 saat ve 7 günde onlarca kez satılan en popüler
+              eşyaları seçer; paran alıcı beklerken kilitlenmez.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-gold">Sadece Kasalar</span>
-            <div><strong>Klasik Kasa Döngüsü:</strong> 1. adımda yüksek makaslı CS2 kasalarıyla Steam bakiyesini büyütür, 2. adımda hızlı satılan skinle nakde döner.</div>
+            <div><strong>Klasik Kasa Döngüsü:</strong> 1. adımda yüksek makaslı CS2 kasalarıyla Steam bakiyesini
+              büyütür, 2. adımda hızlı satılan skinle nakde döner.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-amber">Yüksek Kâr / Bıçak</span>
-            <div><strong>Sabırlı Yüksek Getiri:</strong> Bıçak, eldiven ve orta hızda satılan yüksek kârlı skinleri açar — satışı uzun sürebilecek her eşyada şeffaf 7g/30g satış uyarısı verir.</div>
+            <div><strong>Sabırlı Yüksek Getiri:</strong> Bıçak, eldiven ve orta hızda satılan yüksek kârlı skinleri açar
+              — satışı uzun sürebilecek her eşyada şeffaf 7g/30g satış uyarısı verir.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-muted">Adet &amp; Satış Hızı</span>
-            <div><strong>İnce Ayarlar:</strong> 1. adımda en fazla kaç eşya alacağını (<code>≤5</code> – <code>≤150</code>) sınırla; <em>Anında Satılanlar</em>, <em>Hızlı Satılanlar</em> veya <em>Tümü (Yavaş Dahil)</em> arasından seç.</div>
+            <div><strong>İnce Ayarlar:</strong> 1. adımda en fazla kaç eşya alacağını (<code>≤5</code> –
+              <code>≤150</code>) sınırla; <em>Anında Satılanlar</em>, <em>Hızlı Satılanlar</em> veya <em>Tümü (Yavaş
+                Dahil)</em> arasından seç.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-mint">Zor Satılanları Gizle</span>
-            <div><strong>Tuzak Filtresi (Açık Önerilir):</strong> Kâğıt üstünde yüksek kâr gösterip gerçekte alıcısı olmayan StatTrak™, Hatıra ve ölü koleksiyon kapsüllerini otomatik gizler.</div>
+            <div><strong>Tuzak Filtresi (Açık Önerilir):</strong> Kâğıt üstünde yüksek kâr gösterip gerçekte alıcısı
+              olmayan StatTrak™, Hatıra ve ölü koleksiyon kapsüllerini otomatik gizler.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-mint">Güven %85+ Skoru</span>
-            <div><strong>Gerçekçilik ve Güven Puanı (%35–%99):</strong> 24s/7g gerçek satış hızı, anında alım emirleri, desen/float hassasiyeti ve fiyat anomalilerine göre hesaplanır. Sorunsuz döngüler için <strong>%80+</strong> hedefleyin.</div>
+            <div><strong>Gerçekçilik ve Güven Puanı (%35–%99):</strong> 24s/7g gerçek satış hızı, anında alım emirleri,
+              desen/float hassasiyeti ve fiyat anomalilerine göre hesaplanır. Sorunsuz döngüler için
+              <strong>%80+</strong> hedefleyin.</div>
           </div>
         </div>
       </div>
@@ -1805,4 +1933,5 @@
   <!-- Modular ES Entry Point -->
   <script type="module" src="/js/main.js"></script>
 </body>
+
 </html>
