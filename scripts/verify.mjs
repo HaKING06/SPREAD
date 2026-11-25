@@ -203,16 +203,44 @@ async function main() {
     { marketplace: 'CSFLOAT', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true },
     200
   );
+  const adv800 = analyzeCapitalStrategies(
+    mergedSample,
+    { marketplace: 'CSFLOAT', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true },
+    800
+  );
   const allHaveConfidence = adv.strategies.every(
     (s) => Number.isFinite(s.pair?.confidenceScore) && s.pair.confidenceScore >= 35 && s.pair.confidenceScore <= 99
   );
   const noFalseFastOnSlow = adv.strategies.every((s) => !(s.pair?.hasSlowLeg && /FAST|HIZLI/i.test(s.tag)));
-  if (adv.strategies.length >= 2 && adv.tier.id === 'STARTER' && allHaveConfidence && noFalseFastOnSlow) {
+  const top800 = adv800.strategies[0]?.pair;
+  const noParetoSuboptimal800 =
+    top800 &&
+    !adv800.strategies.some((other) => {
+      const altExit = other.pair.leg2;
+      if (altExit.item.n === top800.leg2.item.n) return false;
+      const altSim = computeLoopMetrics({
+        capitalUsd: 800,
+        pM1Usd: top800.leg1.m.marketBuyUsd,
+        pS1Usd: top800.leg1.m.steamUsd,
+        pS2Usd: altExit.m.steamUsd,
+        pM2Usd: altExit.m.marketSellUsd,
+        sellFeePct: 2
+      });
+      const altReal = estimateExecutionReality(altSim, top800.leg1.item, altExit.item, { marketplace: 'CSFLOAT' });
+      return (
+        altSim.firstCycle.netProfit > top800.c1.netProfit + 0.5 &&
+        altReal.maxDays <= top800.reality.maxDays &&
+        altSim.firstCycle.q2 <= top800.c1.q2
+      );
+    });
+  if (adv.strategies.length >= 2 && adv.tier.id === 'STARTER' && allHaveConfidence && noFalseFastOnSlow && noParetoSuboptimal800) {
     pass(
-      `Capital Strategy Advisor V2 verified: ${adv.strategies.length} strategies for $200 (${adv.tier.badge}) | Trust scores [${adv.strategies.map((s) => s.pair.confidenceScore).join(', ')}] | Zero false-fast labels.`
+      `SPREAD Agent V5 Pareto Optimizer verified: $200 (${adv.strategies.length} strats) | $800 Top=${top800.leg1.item.n} -> ${top800.c1.q2}x ${top800.leg2.item.n} (+$${top800.c1.netProfit.toFixed(2)}) | Zero Pareto-suboptimal exits.`
     );
   } else {
-    fail(`Capital Strategy Advisor V2 check failed: count=${adv.strategies.length}, conf=${allHaveConfidence}, noFalseFast=${noFalseFastOnSlow}`);
+    fail(
+      `SPREAD Agent V5 check failed: count=${adv.strategies.length}, conf=${allHaveConfidence}, noFalseFast=${noFalseFastOnSlow}, paretoOk=${noParetoSuboptimal800}`
+    );
   }
 
   // Verify high-budget ($5000) realistic quantity cap & impracticality detector

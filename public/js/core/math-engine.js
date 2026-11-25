@@ -118,8 +118,15 @@ export function computeVelocityProfile(item) {
 
   const sp7 = Math.max(v7, Math.round(v30 / 4.3));
   const weeklyUsd = Math.round(sp7 * priceRef);
-  const spDaily = Math.max(v24 * 0.45 + (v7 / 7) * 0.55, v30 / 30);
-  const estDailySales = Math.max(0.05, Math.round((spDaily * 1.15 + (mv / 30) * 0.35) * 100) / 100);
+
+  // V5 Bayesian Winsorized Multi-Window True Daily Volume:
+  // Prevents a single noisy 24h spike from outweighing stronger 7d/30d + order-book depth.
+  const rate30 = v30 / 30;
+  const rate7 = v7 / 7;
+  const rate24Capped = Math.min(v24, Math.max(rate7, rate30, 0.5) * 1.65 + 1);
+  const spDaily = rate30 * 0.45 + rate7 * 0.40 + rate24Capped * 0.15;
+  const depthDaily = q > 0 ? (q / 25) * (bidAskPct >= 92 ? 1.0 : bidAskPct >= 88 ? 0.65 : 0.25) : 0;
+  const estDailySales = Math.max(0.08, Math.round((spDaily * 1.9 + (mv / 14) * 0.45 + depthDaily * 0.3) * 100) / 100);
 
   const isKnifeOrGlove = item.c === 'Knives' || item.c === 'Gloves';
   const isCapsule = item.c === 'Capsule';
@@ -640,14 +647,13 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
   const vel1 = computeVelocityProfile(item1);
   const vel2 = computeVelocityProfile(item2);
 
-  // Quantity-relative fill-time model: selling 1x liquid knife (~1.4/day) takes ~1 day,
-  // whereas selling 10x of the same knife takes ~9 days!
+  // Quantity-relative fill-time model using V5 multi-window cross-market daily volume
   const estFillDays1 =
     q1 <= 0 ? 0 : Math.min(18, Math.max(0, Math.ceil(q1 / Math.max(0.25, vel1.estDailySales * 0.85)) - 1));
   const estFillDays2 =
     opts.useBuyOrderForLeg2 || q2 <= 0
       ? 0
-      : Math.min(14, Math.max(0, Math.ceil(q2 / Math.max(0.3, vel2.estDailySales * 0.9)) - 1));
+      : Math.min(14, Math.max(0, Math.ceil(q2 / Math.max(0.35, vel2.estDailySales * 0.95)) - 1));
 
   let extraBuyDays = 0;
   let extraSellSteamDays = Math.max(vel1.extraSellDays, estFillDays1);
@@ -917,20 +923,27 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     }
   }
 
-  const l1ByProfit = [...leg1Pool].sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 14);
-  const l1BySpeed = [...leg1Pool].sort((a, b) => b.vel.score - a.vel.score || b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 12);
-  const l1LowQty = [...leg1Pool].filter((x) => x.q1Est <= 10).sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 12);
-  const l1Cases = [...leg1Pool].filter((x) => x.item.c === 'Case').sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 8);
+  // V5 Expanded Multi-Bracket Candidate Pools (zero blind spots across price tiers)
+  const l1ByProfit = [...leg1Pool].sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 22);
+  const l1BySpeed = [...leg1Pool].sort((a, b) => b.vel.score - a.vel.score || b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 14);
+  const l1LowQty = [...leg1Pool].filter((x) => x.q1Est <= 10).sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 16);
+  const l1Cases = [...leg1Pool].filter((x) => x.item.c === 'Case').sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 10);
 
-  const l2ByLoss = [...leg2Pool].sort((a, b) => a.m.leg2LossPct - b.m.leg2LossPct).slice(0, 14);
-  const l2BySpeed = [...leg2Pool].sort((a, b) => b.vel.score - a.vel.score || a.m.leg2LossPct - b.m.leg2LossPct).slice(0, 12);
+  const l2ByLoss = [...leg2Pool].sort((a, b) => a.m.leg2LossPct - b.m.leg2LossPct).slice(0, 22);
+  const l2BySpeed = [...leg2Pool].sort((a, b) => b.vel.score - a.vel.score || a.m.leg2LossPct - b.m.leg2LossPct).slice(0, 16);
+  const l2ByOrder = [...leg2Pool]
+    .filter((x) => x.vel.bidAskPct >= 92)
+    .sort((a, b) => a.m.leg2LossPct - b.m.leg2LossPct)
+    .slice(0, 12);
 
   const l1Candidates = Array.from(
     new Map([...l1ByProfit, ...l1BySpeed, ...l1LowQty, ...l1Cases].map((x) => [x.item.n, x])).values()
   );
-  const l2Candidates = Array.from(new Map([...l2ByLoss, ...l2BySpeed].map((x) => [x.item.n, x])).values());
+  const l2Candidates = Array.from(
+    new Map([...l2ByLoss, ...l2BySpeed, ...l2ByOrder].map((x) => [x.item.n, x])).values()
+  );
 
-  const evaluatedPairs = [];
+  const rawEvaluatedPairs = [];
 
   for (const l1 of l1Candidates) {
     for (const l2 of l2Candidates) {
@@ -955,7 +968,7 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       const maxRealisticQ2 = Math.min(
         Math.max(20, Math.floor(l2.vel.estWeeklyCap * 1.2)),
         isCSFloat && l2.qty > 0 ? Math.max(12, Math.floor(l2.qty * 0.8)) : 60,
-        style === 'LOW_QTY' ? Math.max(15, effectiveMaxQ1 * 2) : cap >= 1500 ? 60 : 35
+        style === 'LOW_QTY' ? Math.max(15, effectiveMaxQ1 * 2) : cap >= 1500 ? 60 : 38
       );
       if (c1.q2 > maxRealisticQ2) continue;
 
@@ -963,8 +976,26 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       const utilizedPct = c1.steamAfterLeg1 > 0 ? ((c1.steamAfterLeg1 - c1.steamWallet) / c1.steamAfterLeg1) * 100 : 0;
       const speedScore = Math.round((l1.vel.score + l2.vel.score) / 2);
       const avgDays = (reality.minDays + reality.maxDays) / 2;
-      const roiPer14d = c1.netRoiPct * (14 / Math.max(14, avgDays));
+
+      // V5 Square-Root Order-Book Market Impact / Slippage Model
+      const slip1Pct = c1.q1 <= 1 ? 0 : Math.min(4.5, 1.8 * Math.sqrt(c1.q1 / Math.max(15, l1.qty || 30)));
+      const slip2Pct =
+        c1.q2 <= 1 || opts.useBuyOrderForLeg2 ? 0 : Math.min(4.5, 1.5 * Math.sqrt(c1.q2 / Math.max(15, l2.qty || 30)));
+      const estSlippagePct = Math.round((slip1Pct + slip2Pct) * 100) / 100;
+      const slippageAdjProfit = c1.netProfit - c1.spentM1 * (slip1Pct / 100) - c1.cashReturnM2 * (slip2Pct / 100);
+      const slippageAdjRoi = cap > 0 ? (slippageAdjProfit / cap) * 100 : 0;
+
+      // V5 Instant Buy-Order Guaranteed Downside Floor (0-second dump into CSFloat highest_order)
+      const instantSellPrice = isCSFloat && l2.item.cfo > 0 ? l2.item.cfo : l2.m.marketSellUsd;
+      const instantNetM2 = calcNetSellUsd(instantSellPrice, opts.sellFeePct, opts.withdrawFeePct);
+      const instantM2 = l2.m.steamUsd > 0 ? instantNetM2 / l2.m.steamUsd : 0;
+      const instantFloorEnd = c1.cashLeftAfterLeg1 + c1.q2 * instantNetM2 + c1.steamWallet * instantM2;
+      const instantFloorProfit = Math.round((instantFloorEnd - cap) * 100) / 100;
+      const instantFloorRoi = cap > 0 ? (instantFloorProfit / cap) * 100 : 0;
+
+      const roiPer14d = slippageAdjRoi * (14 / Math.max(14, avgDays));
       const roiPerDay = c1.netRoiPct / Math.max(14, avgDays);
+
       // Quantity-aware slow check: 1-3x liquid Tier B knife/glove (~1+ sale/day) is NOT slow!
       const slowDayLimit = cap >= 1500 ? 27 : 21;
       const hasSlowLeg =
@@ -976,9 +1007,15 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       const confidenceScore = computePairConfidence(l1, l2, c1, reality);
       const buffBonus = l1.m.isBelowBuff ? 3.5 : l1.m.isOverBuff ? -4 : 0;
       const trendBonus = l1.m.trendStatus === 'FALLING' ? -6 : l1.m.trendStatus === 'STABLE' ? 1.5 : 0;
-      const agentScore = Math.round((roiPer14d * 1.4 + confidenceScore * 0.28 + utilizedPct * 0.08 + buffBonus + trendBonus) * 10) / 10;
+      const floorBonus = instantFloorProfit > 0 ? Math.min(3.5, instantFloorRoi * 0.14) : -3;
+      const q2EffortPenalty = c1.q2 > 18 ? (c1.q2 - 18) * 0.08 : 0;
+      const agentScore =
+        Math.round(
+          (roiPer14d * 1.45 + confidenceScore * 0.25 + utilizedPct * 0.08 + buffBonus + trendBonus + floorBonus - q2EffortPenalty) *
+            10
+        ) / 10;
 
-      evaluatedPairs.push({
+      rawEvaluatedPairs.push({
         leg1: l1,
         leg2: l2,
         sim,
@@ -987,6 +1024,11 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
         utilizedPct,
         speedScore,
         avgDays,
+        estSlippagePct,
+        slippageAdjProfit,
+        slippageAdjRoi,
+        instantFloorProfit,
+        instantFloorRoi,
         roiPer14d,
         roiPerDay,
         hasSlowLeg,
@@ -996,12 +1038,51 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     }
   }
 
+  // V5 STRICT PER-LEG-1 PARETO FRONTIER PRUNING:
+  // Mathematically guarantees that for any Leg 1 item, a strictly dominated Leg 2 exit
+  // (lower profit AND slower/equal days AND higher/equal item count AND lower/equal trust) can NEVER be chosen!
+  const byLeg1 = new Map();
+  for (const p of rawEvaluatedPairs) {
+    if (p.c1.netProfit <= 0) continue;
+    const k = p.leg1.item.n;
+    if (!byLeg1.has(k)) byLeg1.set(k, []);
+    byLeg1.get(k).push(p);
+  }
+
+  const evaluatedPairs = [];
+  for (const group of byLeg1.values()) {
+    for (let i = 0; i < group.length; i++) {
+      const a = group[i];
+      let dominated = false;
+      for (let j = 0; j < group.length; j++) {
+        if (i === j) continue;
+        const b = group[j];
+        const betterOrEqAll =
+          b.c1.netProfit >= a.c1.netProfit - 0.01 &&
+          b.reality.maxDays <= a.reality.maxDays &&
+          b.c1.q2 <= a.c1.q2 &&
+          b.confidenceScore >= a.confidenceScore - 1;
+        const strictlyBetterOne =
+          b.c1.netProfit > a.c1.netProfit + 0.25 ||
+          b.reality.maxDays < a.reality.maxDays ||
+          b.c1.q2 < a.c1.q2 ||
+          b.confidenceScore > a.confidenceScore + 1;
+        if (betterOrEqAll && strictlyBetterOne) {
+          dominated = true;
+          break;
+        }
+      }
+      if (!dominated) evaluatedPairs.push(a);
+    }
+  }
+
   const usedL1 = new Set();
   const usedL2Counts = new Map();
   const usedPairs = new Set();
   const strategies = [];
 
-  const pickBest = (predicate, scorer, requireUniqueL1 = true) => {
+  const pickBest = (predicate, scorer, optsPick = {}) => {
+    const { requireUniqueL1 = true, l2PenaltyWeight = 0.6 } = optsPick;
     let best = null;
     let bestScore = -Infinity;
     for (const p of evaluatedPairs) {
@@ -1010,7 +1091,7 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       const pk = `${p.leg1.item.n}|${p.leg2.item.n}`;
       if (usedPairs.has(pk)) continue;
       if (requireUniqueL1 && usedL1.has(p.leg1.item.n)) continue;
-      const l2RepeatPenalty = (usedL2Counts.get(p.leg2.item.n) || 0) * 4.5;
+      const l2RepeatPenalty = (usedL2Counts.get(p.leg2.item.n) || 0) * l2PenaltyWeight;
       const sc = scorer(p) - l2RepeatPenalty;
       if (sc > bestScore) {
         bestScore = sc;
@@ -1018,7 +1099,7 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       }
     }
     if (!best && requireUniqueL1) {
-      return pickBest(predicate, scorer, false);
+      return pickBest(predicate, scorer, { requireUniqueL1: false, l2PenaltyWeight });
     }
     return best;
   };
@@ -1051,7 +1132,7 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     });
   };
 
-  // 1. TOP NET PROFIT (Leads main screen! Surfaces liquid 1-3x knives/gloves & top rifles when ROI/14d is #1)
+  // 1. TOP NET PROFIT (Zero artificial L2 penalty — ALWAYS picks the mathematically optimal exit!)
   addStrategy(
     'MAX_PROFIT',
     (p) => (p.hasSlowLeg ? bi('TOP PROFIT · PATIENT', 'EN YÜKSEK KÂR · SABIRLI') : bi('TOP NET PROFIT', 'EN YÜKSEK KÂR')),
@@ -1059,11 +1140,12 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     bi('Highest Realistic 14d Return', 'En Yüksek Gerçekçi Net Kâr'),
     pickBest(
       (p) => (!p.hasSlowLeg || minSpeed === 'MODERATE') && p.confidenceScore >= 65,
-      (p) => p.roiPer14d * 1.35 + p.confidenceScore * 0.1 + p.utilizedPct * 0.04
+      (p) => p.agentScore,
+      { l2PenaltyWeight: 0 }
     )
   );
 
-  // 2. Low-Count Precision Strike (≤10 items, clean & fast)
+  // 2. Low-Count Precision Strike (≤10 items, clean & fast, zero L2 sabotage!)
   addStrategy(
     'LOW_QTY_STRIKE',
     (p) => (p.hasSlowLeg ? bi('FEW ITEMS · PATIENT', 'AZ İŞLEM · SABIRLI') : bi('FEW ITEMS · FAST', 'AZ İŞLEM · HIZLI')),
@@ -1071,7 +1153,8 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     bi('Minimal Clicks, Clean Cycle', 'Az Eşya, Zahmetsiz Döngü'),
     pickBest(
       (p) => p.c1.q1 <= 10 && (!p.hasSlowLeg || minSpeed === 'MODERATE'),
-      (p) => p.roiPer14d * 1.1 + p.confidenceScore * 0.22 + (p.c1.q1 <= 5 ? 5 : 0)
+      (p) => p.roiPer14d * 1.15 + p.confidenceScore * 0.24 + (p.c1.q1 <= 5 ? 5 : 0) - p.c1.q2 * 0.08,
+      { l2PenaltyWeight: 0 }
     )
   );
 
@@ -1083,7 +1166,8 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     bi('Instant-Sell High Volume Pair', 'Anında Satılan Çift'),
     pickBest(
       (p) => !p.hasSlowLeg && p.leg1.vel.tier === 'A' && p.speedScore >= 72,
-      (p) => p.speedScore * 0.7 + p.roiPer14d * 0.95 + p.confidenceScore * 0.2
+      (p) => p.speedScore * 0.7 + p.roiPer14d * 0.95 + p.confidenceScore * 0.2,
+      { l2PenaltyWeight: 0.4 }
     )
   );
 
@@ -1095,7 +1179,8 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     bi('Minimal Leftover Steam Balance', 'En Az Atıl Steam Bakiyesi'),
     pickBest(
       (p) => p.utilizedPct >= 88 && (!p.hasSlowLeg || minSpeed === 'MODERATE'),
-      (p) => p.utilizedPct * 1.25 + p.roiPer14d * 0.85 + p.confidenceScore * 0.15
+      (p) => p.utilizedPct * 1.1 + p.roiPer14d * 1.0 + p.confidenceScore * 0.15,
+      { l2PenaltyWeight: 0.5 }
     )
   );
 
@@ -1107,7 +1192,8 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     bi('High-Volume CS2 Cases', 'Hızlı CS2 Kasa Motoru'),
     pickBest(
       (p) => p.leg1.item.c === 'Case' && p.leg1.vel.score >= 65,
-      (p) => p.roiPer14d + p.leg1.vel.score * 0.2
+      (p) => p.roiPer14d + p.leg1.vel.score * 0.2,
+      { l2PenaltyWeight: 0.5 }
     )
   );
 
@@ -1119,34 +1205,46 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     (p) => (p.hasSlowLeg ? bi('Higher Profit (Allow Extra Time)', 'Yüksek Kâr (Satış Uzayabilir)') : bi('Strong Alternative Lane', 'Güçlü Alternatif Fırsat')),
     pickBest(
       () => true,
-      (p) => (minSpeed === 'MODERATE' ? p.c1.netRoiPct + p.confidenceScore * 0.15 : p.roiPer14d * 1.15 + p.confidenceScore * 0.18)
+      (p) => (minSpeed === 'MODERATE' ? p.c1.netRoiPct + p.confidenceScore * 0.15 : p.agentScore),
+      { l2PenaltyWeight: 0.6 }
     )
   );
 
   const finalStrategies = strategies.slice(0, 6);
 
-  // SPREAD Agent Executive Briefing: picks the sharpest risk-adjusted play + clear reasoning pills
+  // SPREAD Agent V5 Executive Briefing + Automatic 2-Lane Knapsack Idle-Cash Optimizer!
   let agentBrief = null;
   if (finalStrategies.length > 0) {
     const ranked = [...finalStrategies].sort((a, b) => (b.pair.agentScore || 0) - (a.pair.agentScore || 0));
     const topStrat = ranked[0];
     const p = topStrat.pair;
-    const altFast = finalStrategies.find((s) => s !== topStrat && (s.id === 'ULTRA_FAST' || s.id === 'LIQUID_CASES' || s.pair.leg1.vel.tier === 'A'));
+    const altFast = finalStrategies.find(
+      (s) => s !== topStrat && (s.id === 'ULTRA_FAST' || s.id === 'LIQUID_CASES' || s.pair.leg1.vel.tier === 'A')
+    );
     const reasons = [];
 
     reasons.push(
       bi(
-        `+${p.roiPerDay.toFixed(2)}%/day yield (~${p.reality.minDays}–${p.reality.maxDays}d)`,
-        `Günde +%${p.roiPerDay.toFixed(2)} getiri (~${p.reality.minDays}–${p.reality.maxDays}g)`
+        `+${p.roiPerDay.toFixed(2)}%/day (~${p.reality.minDays}–${p.reality.maxDays}d)`,
+        `Günde +%${p.roiPerDay.toFixed(2)} (~${p.reality.minDays}–${p.reality.maxDays}g)`
       )
     );
+
+    if (p.instantFloorProfit > 0) {
+      reasons.push(
+        bi(
+          `Instant Buy-Order Floor: +$${p.instantFloorProfit.toFixed(0)}`,
+          `Anında Satış Tabanı: +$${p.instantFloorProfit.toFixed(0)}`
+        )
+      );
+    }
 
     if (p.leg1.m.vsBuffPct !== null) {
       if (p.leg1.m.vsBuffPct <= 0) {
         reasons.push(
           bi(
             `${Math.abs(p.leg1.m.vsBuffPct).toFixed(1)}% below Buff163`,
-            `Buff163'ten %${Math.abs(p.leg1.m.vsBuffPct).toFixed(1)} daha ucuz`
+            `Buff163'ten %${Math.abs(p.leg1.m.vsBuffPct).toFixed(1)} ucuz`
           )
         );
       } else if (p.leg1.m.vsBuffPct <= 3.5) {
@@ -1157,24 +1255,50 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     if (p.leg1.m.trendStatus === 'FALLING') {
       reasons.push(bi('Caution: 30d downtrend', 'Dikkat: 30g düşüş trendi'));
     } else if (p.leg1.m.trendStatus === 'STABLE') {
-      reasons.push(bi('Stable 30d price', 'Stabil 30g fiyat'));
+      reasons.push(bi('Stable 30d trend', 'Stabil 30g trend'));
     } else if (p.leg1.m.trendStatus === 'RISING') {
-      reasons.push(bi('Healthy upward trend', 'Sağlıklı yükseliş trendi'));
+      reasons.push(bi('Healthy uptrend', 'Sağlıklı yükseliş'));
     }
 
-    if (p.c1.q1 <= 5) {
-      reasons.push(bi(`Low effort (${p.c1.q1}x buy)`, `Zahmetsiz (${p.c1.q1} adet alım)`));
-    } else {
-      reasons.push(bi(`${p.leg1.vel.sold7d}+ sold/7d`, `7g'de ${p.leg1.vel.sold7d}+ satış`));
+    if (p.estSlippagePct > 0.1) {
+      reasons.push(
+        bi(`Est. slippage ${p.estSlippagePct.toFixed(1)}%`, `Tahmini kayma %${p.estSlippagePct.toFixed(1)}`)
+      );
+    }
+
+    // V5 KNAPSACK IDLE-CASH OPTIMIZER:
+    // If buying q1 leaves >= $25 AND >= 12% of budget sitting idle, find the best Lane 2 to deploy it!
+    let knapsackLane2 = null;
+    const idleCash = p.c1.cashLeftAfterLeg1 || 0;
+    if (!filters._isSubKnapsack && idleCash >= 25 && idleCash >= cap * 0.12) {
+      const subItems = items.filter((it) => it.n !== p.leg1.item.n);
+      const subRes = analyzeCapitalStrategies(subItems, opts, idleCash, {
+        style: 'ALL',
+        maxQty: Math.min(25, effectiveMaxQ1),
+        minSpeed: 'FAST',
+        cleanOnly,
+        _isSubKnapsack: true
+      });
+      const subBest = subRes.strategies[0]?.pair;
+      if (subBest && subBest.c1.netProfit >= 4 && subBest.confidenceScore >= 75) {
+        const totalProfit = p.c1.netProfit + subBest.c1.netProfit;
+        const totalRoiPct = (totalProfit / cap) * 100;
+        const totalDeployedPct = ((p.c1.spentM1 + subBest.c1.spentM1) / cap) * 100;
+        knapsackLane2 = {
+          idleCashUsd: idleCash,
+          pair: subBest,
+          combinedProfitUsd: totalProfit,
+          combinedRoiPct: totalRoiPct,
+          deployedPct: Math.min(100, totalDeployedPct)
+        };
+      }
     }
 
     let splitHint = '';
-    if (cap >= 350 && altFast && altFast.pair.leg1.item.n !== p.leg1.item.n) {
-      const a1Pct = 65;
-      const a2Pct = 35;
+    if (!knapsackLane2 && cap >= 350 && altFast && altFast.pair.leg1.item.n !== p.leg1.item.n) {
       splitHint = bi(
-        `Pro Split: ${a1Pct}% in ${p.leg1.item.n} (top profit) + ${a2Pct}% in ${altFast.pair.leg1.item.n} (instant liquidity).`,
-        `Akıllı Dağılım: %${a1Pct} ${p.leg1.item.n} (yüksek kâr) + %${a2Pct} ${altFast.pair.leg1.item.n} (anında likidite).`
+        `Pro Split: 65% in ${p.leg1.item.n} (top profit) + 35% in ${altFast.pair.leg1.item.n} (instant liquidity).`,
+        `Akıllı Dağılım: %65 ${p.leg1.item.n} (yüksek kâr) + %35 ${altFast.pair.leg1.item.n} (anında likidite).`
       );
     }
 
@@ -1185,7 +1309,8 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
         `Buy ${p.c1.q1}x ${p.leg1.item.n} → cash out via ${p.c1.q2}x ${p.leg2.item.n}`,
         `${p.c1.q1}x ${p.leg1.item.n} al → Steam'de sat → ${p.c1.q2}x ${p.leg2.item.n} ile nakde dön`
       ),
-      reasons: reasons.slice(0, 4),
+      reasons: reasons.slice(0, 5),
+      knapsackLane2,
       splitHint
     };
   }

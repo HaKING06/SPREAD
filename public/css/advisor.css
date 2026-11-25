@@ -982,6 +982,22 @@
   margin-top: 2px;
 }
 
+.agent-knapsack-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ice-border);
+  background: var(--ice-soft);
+  color: var(--text-primary);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
 .agent-cta-col {
   display: flex;
   flex-direction: column;

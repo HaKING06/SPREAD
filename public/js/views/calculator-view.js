@@ -404,7 +404,33 @@ export function initCalculatorView(app) {
               { className: 'agent-reasons' },
               brief.reasons.map((r) => el('span', { className: 'agent-chip num' }, r))
             ),
-            brief.splitHint ? el('div', { className: 'agent-split-note' }, brief.splitHint) : null
+            brief.knapsackLane2
+              ? el(
+                  'div',
+                  { className: 'agent-knapsack-box' },
+                  el(
+                    'span',
+                    null,
+                    trA
+                      ? `🧩 Artan ${money(brief.knapsackLane2.idleCashUsd)} nakit boşta kalmasın: +${brief.knapsackLane2.pair.c1.q1}x ${brief.knapsackLane2.pair.leg1.item.n} ekleyerek toplam kârı ${money(brief.knapsackLane2.combinedProfitUsd, true)} (${fmtPct(brief.knapsackLane2.combinedRoiPct, true)}) yapabilirsin.`
+                      : `🧩 Deploy idle ${money(brief.knapsackLane2.idleCashUsd)} cash: add ${brief.knapsackLane2.pair.c1.q1}x ${brief.knapsackLane2.pair.leg1.item.n} to lift total profit to ${money(brief.knapsackLane2.combinedProfitUsd, true)} (${fmtPct(brief.knapsackLane2.combinedRoiPct, true)}).`
+                  ),
+                  el(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'btn btn-sm btn-ghost',
+                      onClick: () => {
+                        const k2 = brief.knapsackLane2.pair;
+                        app.applyPair(k2.leg1.item, k2.leg2.item, k2.leg1.m, k2.leg2.m);
+                      }
+                    },
+                    trA ? '2. Hattı İncele →' : 'Inspect Lane 2 →'
+                  )
+                )
+              : brief.splitHint
+              ? el('div', { className: 'agent-split-note' }, brief.splitHint)
+              : null
           )
         );
 
