@@ -102,8 +102,8 @@
 
 .scanner-filters-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
-  gap: 10px;
+  grid-template-columns: 1.8fr 1fr 0.9fr 0.75fr 0.75fr 1.1fr auto;
+  gap: 9px;
   align-items: end;
 }
 

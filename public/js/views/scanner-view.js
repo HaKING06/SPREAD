@@ -16,6 +16,7 @@ export function initScannerView(app) {
     category: 'ALL',
     search: '',
     minQty: 15,
+    minPriceUsd: 0,
     maxPriceUsd: 500,
     sortBy: 'AUTO',
     page: 1
@@ -31,7 +32,8 @@ export function initScannerView(app) {
   const searchInp = document.getElementById('scannerSearchInput');
   const catSel = document.getElementById('scannerCategorySelect');
   const qtySel = document.getElementById('scannerMinQtySelect');
-  const maxPriceSel = document.getElementById('scannerMaxPriceSelect');
+  const minPriceInp = document.getElementById('scannerMinPriceInput');
+  const maxPriceInp = document.getElementById('scannerMaxPriceInput');
   const sortSel = document.getElementById('scannerSortSelect');
   const buyOrderToggle = document.getElementById('toggleBuyOrderLeg2');
   const conservativeToggle = document.getElementById('toggleConservativeSteam');
@@ -166,7 +168,9 @@ export function initScannerView(app) {
 
       const m = evaluateItemMetrics(item, evalOpts);
       if (!m.hasValidMarket) continue;
-      if (filterState.maxPriceUsd > 0 && m.steamUsd > filterState.maxPriceUsd) continue;
+      const refPriceUsd = filterState.mode === 'LEG2' ? m.steamUsd : m.marketBuyUsd;
+      if (filterState.minPriceUsd > 0 && refPriceUsd < filterState.minPriceUsd) continue;
+      if (filterState.maxPriceUsd > 0 && refPriceUsd > filterState.maxPriceUsd) continue;
 
       if (filterState.mode === 'LEG1' && (m.leg1ProfitPct <= 0 || m.leg1ProfitPct > 85)) continue;
       if (filterState.mode === 'LEG2' && (m.leg2LossPct > 15 || m.leg2LossPct < -8)) continue;
@@ -415,8 +419,16 @@ export function initScannerView(app) {
     renderTable();
   });
 
-  maxPriceSel?.addEventListener('change', (e) => {
-    filterState.maxPriceUsd = Number(e.target.value) || 0;
+  minPriceInp?.addEventListener('input', (e) => {
+    const v = parseFloat(e.target.value);
+    filterState.minPriceUsd = Number.isFinite(v) && v > 0 ? toUsd(v, app.settings.currency, app.market.fxRates) : 0;
+    filterState.page = 1;
+    renderTable();
+  });
+
+  maxPriceInp?.addEventListener('input', (e) => {
+    const v = parseFloat(e.target.value);
+    filterState.maxPriceUsd = Number.isFinite(v) && v > 0 ? toUsd(v, app.settings.currency, app.market.fxRates) : 0;
     filterState.page = 1;
     renderTable();
   });

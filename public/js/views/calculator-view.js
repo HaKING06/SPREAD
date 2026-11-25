@@ -8,7 +8,8 @@ import {
   analyzeCapitalStrategies,
   computeLoopMetrics,
   computeSensitivityMatrix,
-  diagnoseCurrentSetup
+  diagnoseCurrentSetup,
+  estimateExecutionReality
 } from '../core/math-engine.js';
 import { fmtMoneyFromUsd, fmtMult, fmtPct, fromUsd, getCurrencyMeta, toUsd } from '../core/formatters.js';
 import { renderCompoundChart, renderSensitivityHeatmap } from '../charts/canvas-charts.js';
@@ -287,7 +288,7 @@ export function initCalculatorView(app) {
     // Live Diagnostics on current selection
     if (diagHost && app.latestMetrics) {
       clearNode(diagHost);
-      const alerts = diagnoseCurrentSetup(app.latestMetrics, advisor);
+      const alerts = diagnoseCurrentSetup(app.latestMetrics, advisor, app.latestReality);
       for (const al of alerts) {
         const icon = al.level === 'danger' ? '⚠' : al.level === 'warn' ? '!' : al.level === 'good' ? '✓' : '★';
         diagHost.appendChild(
@@ -366,9 +367,9 @@ export function initCalculatorView(app) {
           el(
             'div',
             { className: 'strategy-meta-strip num' },
-            el('span', null, `Verim: %${p.utilizedPct.toFixed(0)}`),
-            el('span', null, `Likidite: ${p.liquidityScore}/100`),
-            el('span', null, `Slot: ${p.c1.q1}`)
+            el('span', null, `~${p.reality.minDays}–${p.reality.maxDays}G`),
+            el('span', null, `Verim %${p.utilizedPct.toFixed(0)}`),
+            el('span', null, `Adet ${p.c1.q1}`)
           ),
           el(
             'button',
@@ -444,6 +445,33 @@ export function initCalculatorView(app) {
 
     app.latestMetrics = d;
     const c1 = d.firstCycle;
+
+    // Realistic Execution & Duration Estimation (Order-book depth, 1000-slot limit, listing effort)
+    const item1Obj = app.findItemByName(s.leg1.name);
+    const item2Obj = app.findItemByName(s.leg2.name);
+    const reality = estimateExecutionReality(d, item1Obj, item2Obj, {
+      marketplace: s.marketplace,
+      useBuyOrderForLeg2: s.useBuyOrderForLeg2
+    });
+    app.latestReality = reality;
+
+    const realityBadge = document.getElementById('tlRealityBadge');
+    if (realityBadge) {
+      realityBadge.textContent = reality.label;
+      realityBadge.className = `pill ${reality.pillCls}`;
+    }
+
+    const realityBanner = document.getElementById('executionRealityBanner');
+    const realityMsg = document.getElementById('executionRealityMsg');
+    if (realityBanner && realityMsg) {
+      if (reality.needsUpperTierSuggestion && c1.q1 > 0) {
+        realityBanner.classList.remove('hidden');
+        realityBanner.className = `alert-banner ${reality.level === 'impractical' ? 'is-danger' : ''}`;
+        realityMsg.textContent = `${reality.label}: ${reality.reasons[0] || 'Yüksek adet veya düşük likidite nedeniyle döngü süresi 14 günü aşabilir.'}`;
+      } else {
+        realityBanner.classList.add('hidden');
+      }
+    }
 
     // Preview wells
     renderSkinPreview('leg1PreviewWell', s.leg1.name, 1);
@@ -678,6 +706,21 @@ export function initCalculatorView(app) {
       return;
     }
     app.applyPair(best.leg1.item, best.leg2.item, best.leg1.m, best.leg2.m);
+  });
+
+  document.getElementById('fixRealityBestBtn')?.addEventListener('click', () => {
+    const best = lastAdvisorResult?.bestBenchmark;
+    if (best) {
+      app.applyPair(best.leg1.item, best.leg2.item, best.leg1.m, best.leg2.m);
+    } else {
+      const minUsd = Math.max(5, Math.round(app.settings.capitalUsd / 120));
+      app.openCommandPalette(1, minUsd);
+    }
+  });
+
+  document.getElementById('fixRealitySearchBtn')?.addEventListener('click', () => {
+    const minUsd = Math.max(5, Math.round(app.settings.capitalUsd / 100));
+    app.openCommandPalette(1, minUsd);
   });
 
   // Set min capital button

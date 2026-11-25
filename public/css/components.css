@@ -2,13 +2,14 @@
    SPREAD — Core UI Components (Tactical Panels, Controls, Badges, Modals)
    ========================================================================== */
 
-/* Tactical Quant Card with subtle machined corner brackets */
+/* Tactical Quant Card with specular top highlight */
 .panel {
   position: relative;
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
+  background-image: var(--surface-sheen);
   border: 1px solid var(--border-hair);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), var(--shadow-sm);
 }
 
 .panel-pad {

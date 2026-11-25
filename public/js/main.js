@@ -89,8 +89,8 @@ class SpreadApp {
     this.renderAll();
   }
 
-  openCommandPalette(legHint = null) {
-    this.cmdPalette?.open(legHint);
+  openCommandPalette(legHint = null, presetMinUsd = null) {
+    this.cmdPalette?.open(legHint, presetMinUsd);
   }
 
   switchTab(tabName, opts = {}) {

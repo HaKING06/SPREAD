@@ -93,7 +93,7 @@
               <h1 class="brand-name">SPREAD</h1>
               <span class="brand-domain">spread.haking.tr</span>
             </div>
-            <span class="brand-sub">CS2 İki Yönlü Arbitraj Terminali • CSFloat &amp; Youpin898 ↔ Steam</span>
+            <span class="brand-sub">CS2 Canlı Arbitraj Terminali</span>
           </div>
         </a>
 
@@ -215,39 +215,20 @@
     <!-- ================================================================= -->
     <section id="view-calculator" class="view-panel">
 
-      <!-- Yeni Başlayanlar İçin 30 Saniyelik Rehber Şeridi (Kapatılabilir) -->
+      <!-- Tek Satırlık Hızlı Başlangıç Şeridi (Kapatılabilir) -->
       <div id="onboardingGuideCard" class="panel onboarding-card">
-        <div class="onboarding-head">
-          <div style="display: flex; align-items: center; gap: 9px; flex-wrap: wrap;">
-            <span class="pill pill-gold">30 SANİYEDE BAŞLA</span>
-            <strong style="font-size: 13.5px;">İlk kez mi geliyorsun? CS2 arbitraj döngüsünü 3 adımda kur:</strong>
+        <div class="onboarding-bar">
+          <div class="onboarding-pills">
+            <span class="pill pill-gold">BAŞLANGIÇ</span>
+            <span class="onboard-pill"><span class="onboard-num">1</span> Bütçeni gir</span>
+            <span class="txt-muted">→</span>
+            <span class="onboard-pill"><span class="onboard-num">2</span> Bütçene özel stratejiyi seç</span>
+            <span class="txt-muted">→</span>
+            <span class="onboard-pill"><span class="onboard-num">3</span> Takibe al veya paylaş</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <a href="/akademi" class="btn btn-sm btn-ghost" data-tab="academy" style="text-decoration: none;">Detaylı Akademi →</a>
-            <button id="dismissOnboardingBtn" type="button" class="btn btn-sm">Anladım, Gizle ✕</button>
-          </div>
-        </div>
-        <div class="onboarding-steps">
-          <div class="onboard-step">
-            <span class="onboard-num">01</span>
-            <div>
-              <strong>Bütçeni ve Pazarını Seç</strong>
-              <span>Aşağıya başlangıç sermayeni yaz (veya hazır bütçe butonuna tıkla). Sistem 4.500 canlı CS2 eşyasını anında bütçene göre tarar.</span>
-            </div>
-          </div>
-          <div class="onboard-step">
-            <span class="onboard-num">02</span>
-            <div>
-              <strong>Bütçene Özel Stratejiyi Uygula</strong>
-              <span>Akıllı Strateji Danışmanı envanter slotunu ve atıl Steam bakiyesini hesaplayıp en mantıklı 3 stratejiyi sunar. Tek tıkla uygula.</span>
-            </div>
-          </div>
-          <div class="onboard-step">
-            <span class="onboard-num">03</span>
-            <div>
-              <strong>14G Takibe Al veya Arkadaşınla Paylaş</strong>
-              <span>"+ Takibe Al" ile 7+7 günlük kilit sayacını başlat, "↗ Paylaş" ile bu kurulumu tek linkle arkadaşına gönder.</span>
-            </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <a href="/akademi" class="btn btn-sm btn-ghost" data-tab="academy" style="text-decoration: none;">Rehber →</a>
+            <button id="dismissOnboardingBtn" type="button" class="btn btn-sm btn-ghost" title="Gizle">✕</button>
           </div>
         </div>
       </div>
@@ -324,63 +305,70 @@
         </div>
       </div>
 
-      <!-- AKILLI BÜTÇE & STRATEJİ DANIŞMANI (QUANT CAPITAL ADVISOR) -->
+      <!-- Bütçeye Özel Akıllı Strateji Danışmanı -->
       <div class="panel panel-corner advisor-panel">
         <div class="panel-head">
           <div>
             <h3 class="panel-title">
-              <span>⚡ Bütçene Özel Akıllı Strateji Danışmanı</span>
+              <span>⚡ Bütçene Özel Strateji Danışmanı</span>
               <span id="advisorTierBadge" class="pill pill-gold">Büyüme Bütçesi</span>
             </h3>
             <p id="advisorTierAdvice" class="advisor-advice-text" style="margin-top: 4px;"></p>
           </div>
           <a href="/tarayici" class="btn btn-sm" data-tab="scanner" style="text-decoration: none;">
-            Tüm 4.500 Eşyayı Gör →
+            Tüm Eşyalar →
           </a>
         </div>
 
         <div class="advisor-body">
-          <!-- Mevcut Seçim İçin Canlı Uyarı & Fırsat Tanıları -->
           <div id="advisorDiagnosticsHost" class="diagnostics-stack"></div>
-
-          <!-- 3 Farklı Profilde Canlı Hesaplanan Strateji Kartları -->
           <div id="advisorStrategiesGrid" class="strategies-grid"></div>
-
-          <!-- Bütçe Dağıtım / Sepet Planı -->
           <div class="split-plan-box">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
-              <strong style="font-size: 12.5px;">Önerilen Sermaye Dağıtım Planı (Risk &amp; Envanter Optimizasyonu)</strong>
-              <span class="txt-muted" style="font-size: 11px;">1.000 CS2 envanter slotu ve 7G fiyat oynaklığı dikkate alınır</span>
-            </div>
+            <strong style="font-size: 12px; color: var(--text-secondary);">Önerilen Bütçe Dağılımı</strong>
             <div id="advisorSplitPlan"></div>
           </div>
         </div>
       </div>
 
-      <!-- 14 Günlük 2 Fazlı Zaman Çizelgesi -->
-      <div class="panel timeline-bar">
-        <div class="tl-node">
-          <div class="tl-node-tag">Gün 0 • <span class="mkt-name">CSFloat</span> Alım</div>
-          <div id="tlDay0Main" class="tl-node-main">$0.00 (0 adet)</div>
-          <div id="tlDay0Sub" class="tl-node-sub">Cüzdan kalanı: $0.00</div>
+      <!-- 14 Günlük Zaman Çizelgesi + Gerçekçi Süre Göstergesi -->
+      <div class="panel timeline-shell">
+        <div class="timeline-top-meta">
+          <span>Tahmini Gerçekçi Döngü Süresi (7+7G Trade Hold + Alım/Satım Likiditesi)</span>
+          <span id="tlRealityBadge" class="pill pill-mint">Akıcı (~14–15 Gün)</span>
         </div>
-        <div class="tl-bridge">
-          <span>───→</span>
-          <span class="tl-hold-pill">7G Trade Hold</span>
+        <div class="timeline-bar" style="padding: 0;">
+          <div class="tl-node">
+            <div class="tl-node-tag">Gün 0 • <span class="mkt-name">CSFloat</span> Alım</div>
+            <div id="tlDay0Main" class="tl-node-main">$0.00 (0 adet)</div>
+            <div id="tlDay0Sub" class="tl-node-sub">Cüzdan kalanı: $0.00</div>
+          </div>
+          <div class="tl-bridge">
+            <span>───→</span>
+            <span class="tl-hold-pill">7G Hold</span>
+          </div>
+          <div class="tl-node">
+            <div class="tl-node-tag">Gün 7 • Steam Net &amp; Dönüş</div>
+            <div id="tlDay7Main" class="tl-node-main txt-ice">$0.00 Steam Net</div>
+            <div id="tlDay7Sub" class="tl-node-sub">0 adet dönüş eşyası</div>
+          </div>
+          <div class="tl-bridge">
+            <span>───→</span>
+            <span class="tl-hold-pill">7G Hold</span>
+          </div>
+          <div class="tl-node">
+            <div class="tl-node-tag">Gün 14+ • Nakit Eşdeğeri</div>
+            <div id="tlDay14Main" class="tl-node-main txt-mint">$0.00 (+$0.00)</div>
+            <div id="tlDay14Sub" class="tl-node-sub">Nakit + Steam(M₂)</div>
+          </div>
         </div>
-        <div class="tl-node">
-          <div class="tl-node-tag">Gün 7 • Steam Satış &amp; Dönüş Eşyası</div>
-          <div id="tlDay7Main" class="tl-node-main txt-ice">$0.00 Steam Net</div>
-          <div id="tlDay7Sub" class="tl-node-sub">0 adet dönüş eşyası</div>
-        </div>
-        <div class="tl-bridge">
-          <span>───→</span>
-          <span class="tl-hold-pill">7G Trade Hold</span>
-        </div>
-        <div class="tl-node">
-          <div class="tl-node-tag">Gün 14 • Nakit Eşdeğeri Portföy</div>
-          <div id="tlDay14Main" class="tl-node-main txt-mint">$0.00 (+$0.00)</div>
-          <div id="tlDay14Sub" class="tl-node-sub">Nakit + Steam(M₂)</div>
+      </div>
+
+      <!-- Gerçekçi Uygulama / Aşırı Adet / Süre Uzaması Uyarı Bandı -->
+      <div id="executionRealityBanner" class="alert-banner is-danger hidden">
+        <span id="executionRealityMsg">Yüksek adet nedeniyle döngü süresi uzayabilir.</span>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button id="fixRealityBestBtn" type="button" class="btn btn-primary btn-sm">Gerçekçi Strateji Uygula</button>
+          <button id="fixRealitySearchBtn" type="button" class="btn btn-sm">Üst Fiyatlı Skin Ara</button>
         </div>
       </div>
 
@@ -641,52 +629,50 @@
 
           <div class="scanner-filters-grid">
             <div>
-              <label for="scannerSearchInput" class="field-label">Akıllı Arama (Çoklu Kelime: örn. "ak red ft" veya "case")</label>
-              <input id="scannerSearchInput" type="text" class="input" placeholder="Skin, kasa, aşınma veya silah adı yazın..." />
+              <label for="scannerSearchInput" class="field-label">Arama</label>
+              <input id="scannerSearchInput" type="text" class="input" placeholder="Örn: ak red ft, case, asiimov..." />
             </div>
             <div>
               <label for="scannerCategorySelect" class="field-label">Kategori</label>
               <select id="scannerCategorySelect" class="select">
-                <option value="ALL">Tüm Kategoriler</option>
+                <option value="ALL">Tümü</option>
                 <option value="Case">Kasa (Case)</option>
-                <option value="Rifles">Tüfekler (Rifles)</option>
-                <option value="Pistols">Tabancalar (Pistols)</option>
+                <option value="Rifles">Tüfekler</option>
+                <option value="Pistols">Tabancalar</option>
                 <option value="SMGs">SMG</option>
-                <option value="Heavy">Ağır Silahlar</option>
-                <option value="Knives">Bıçaklar (Knives)</option>
-                <option value="Gloves">Eldivenler (Gloves)</option>
-                <option value="Agent">Ajanlar (Agents)</option>
-                <option value="Capsule">Kapsüller (Capsules)</option>
+                <option value="Heavy">Ağır</option>
+                <option value="Knives">Bıçaklar</option>
+                <option value="Gloves">Eldivenler</option>
+                <option value="Agent">Ajanlar</option>
+                <option value="Capsule">Kapsüller</option>
               </select>
             </div>
             <div>
-              <label for="scannerMinQtySelect" class="field-label">Min. İlan Derinliği</label>
+              <label for="scannerMinQtySelect" class="field-label">Min. İlan</label>
               <select id="scannerMinQtySelect" class="select num">
-                <option value="0">Tümü (0+)</option>
-                <option value="15" selected>Orta+ (15+ ilan)</option>
-                <option value="50">Yüksek (50+ ilan)</option>
-                <option value="150">Çok Yüksek (150+ ilan)</option>
+                <option value="0">0+</option>
+                <option value="15" selected>15+ ilan</option>
+                <option value="50">50+ ilan</option>
+                <option value="150">150+ ilan</option>
               </select>
             </div>
             <div>
-              <label for="scannerMaxPriceSelect" class="field-label">Maks. Steam Fiyatı</label>
-              <select id="scannerMaxPriceSelect" class="select num">
-                <option value="0">Limitsiz</option>
-                <option value="5">≤ $5</option>
-                <option value="25">≤ $25</option>
-                <option value="100">≤ $100</option>
-                <option value="500" selected>≤ $500</option>
-              </select>
+              <label for="scannerMinPriceInput" class="field-label">Min (<span class="cur-sym">$</span>)</label>
+              <input id="scannerMinPriceInput" type="number" step="1" min="0" placeholder="0" class="input num" />
+            </div>
+            <div>
+              <label for="scannerMaxPriceInput" class="field-label">Maks (<span class="cur-sym">$</span>)</label>
+              <input id="scannerMaxPriceInput" type="number" step="1" min="0" placeholder="500" value="500" class="input num" />
             </div>
             <div>
               <label for="scannerSortSelect" class="field-label">Sıralama</label>
               <select id="scannerSortSelect" class="select">
-                <option value="AUTO">Otomatik (Yöne Göre)</option>
-                <option value="LEG1_DESC">1. Yön Kâr % (Azalan)</option>
-                <option value="LEG2_ASC">2. Yön Kayıp % (Artan)</option>
-                <option value="QTY_DESC">Likidite / İlan Sayısı</option>
-                <option value="PRICE_ASC">Fiyat (Ucuzdan Pahalıya)</option>
-                <option value="PRICE_DESC">Fiyat (Pahalıdan Ucuza)</option>
+                <option value="AUTO">Otomatik</option>
+                <option value="LEG1_DESC">1. Yön Kâr %</option>
+                <option value="LEG2_ASC">2. Yön Kayıp %</option>
+                <option value="QTY_DESC">Likidite</option>
+                <option value="PRICE_ASC">Fiyat ↑</option>
+                <option value="PRICE_DESC">Fiyat ↓</option>
               </select>
             </div>
             <div style="text-align: right;">
@@ -1035,27 +1021,75 @@
     </div>
 
     <div class="footer-bottom">
-      <span>© 2026 haking.tr • MIT Lisansı • Katalog: ByMykel/CSGO-API</span>
+      <span>© 2026 SPREAD • spread.haking.tr • MIT</span>
       <span>Yatırım tavsiyesi değildir — piyasa fiyatları anlık değişebilir.</span>
     </div>
   </footer>
 
   <!-- =================================================================== -->
-  <!-- MODAL 1: KOMUT ARAMA PALETİ (CTRL+K)                                -->
+  <!-- MODAL 1: GELİŞMİŞ FİYAT & SKİN ARAMA PALETİ (CTRL+K)                -->
   <!-- =================================================================== -->
   <div id="cmdPaletteModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="cmdTitle">
-    <div class="modal-card">
+    <div class="modal-card cmd-modal-wide">
       <div class="modal-head">
-        <h3 id="cmdTitle" class="panel-title">⌕ Hızlı CS2 Skin &amp; Kasa Arama (4.500+ Eşya)</h3>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h3 id="cmdTitle" class="panel-title">⌕ CS2 Skin &amp; Fiyat Aralığı Arama</h3>
+          <span id="cmdMatchCount" class="pill pill-muted">0 sonuç</span>
+        </div>
         <button id="cmdCloseBtn" type="button" class="btn btn-sm btn-ghost">ESC ✕</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="gap: 11px;">
         <input
           id="cmdSearchInput"
           type="text"
           class="input"
-          placeholder="Skin veya kasa adı yazın (örn: revolution, ak redline ft, printstream, asiimov)..."
+          placeholder="İsimle ara (örn: ak red ft, printstream) veya boş bırakıp aşağıdaki fiyat aralığıyla en kârlıları listele..."
         />
+
+        <!-- Fiyat Aralığı + Kategori + Akıllı Sıralama -->
+        <div class="cmd-filters-bar">
+          <div class="input-prefix-wrap">
+            <span class="input-prefix cur-sym">$</span>
+            <input id="cmdMinPriceInput" type="number" step="1" min="0" placeholder="Min fiyat" class="input num" />
+          </div>
+          <div class="input-prefix-wrap">
+            <span class="input-prefix cur-sym">$</span>
+            <input id="cmdMaxPriceInput" type="number" step="1" min="0" placeholder="Maks fiyat" class="input num" />
+          </div>
+          <select id="cmdCategorySelect" class="select">
+            <option value="ALL">Tüm Kategoriler</option>
+            <option value="Case">Kasa (Case)</option>
+            <option value="Rifles">Tüfekler</option>
+            <option value="Pistols">Tabancalar</option>
+            <option value="SMGs">SMG</option>
+            <option value="Knives">Bıçaklar</option>
+            <option value="Gloves">Eldivenler</option>
+            <option value="Agent">Ajanlar</option>
+          </select>
+          <select id="cmdSortSelect" class="select">
+            <option value="LEG1_DESC">1. Yön En Kârlı</option>
+            <option value="LEG2_ASC">2. Yön En Az Kayıp</option>
+            <option value="QTY_DESC">En Yüksek Likidite</option>
+            <option value="PRICE_ASC">Fiyat: Artan</option>
+            <option value="PRICE_DESC">Fiyat: Azalan</option>
+          </select>
+          <button id="cmdClearFiltersBtn" type="button" class="btn btn-sm btn-ghost" title="Filtreleri Temizle">Sıfırla</button>
+        </div>
+
+        <!-- Hızlı Fiyat Bandı Seçicileri -->
+        <div class="cmd-chips-row">
+          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+            <button type="button" class="preset-chip" data-cmd-range="0:0">Tümü</button>
+            <button type="button" class="preset-chip" data-cmd-range="0:5">$0–$5</button>
+            <button type="button" class="preset-chip" data-cmd-range="5:25">$5–$25</button>
+            <button type="button" class="preset-chip" data-cmd-range="25:100">$25–$100</button>
+            <button type="button" class="preset-chip" data-cmd-range="50:0">$50+</button>
+            <button type="button" class="preset-chip" data-cmd-range="100:0">$100+</button>
+            <button type="button" class="preset-chip" data-cmd-range="250:0">$250+</button>
+          </div>
+          <span class="txt-muted" style="font-size: 11px;">Min $50 seçerek yüksek bütçeye uygun en iyi sonuçları görün</span>
+        </div>
+
         <div id="cmdResultsList" class="cmd-list"></div>
       </div>
     </div>

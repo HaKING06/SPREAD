@@ -9,17 +9,18 @@
   --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Dark Palette (Default — Carbon Foundry) */
-  --bg-void: #08090c;
-  --bg-surface: #0f1218;
-  --bg-elevated: #151922;
-  --bg-inset: #0a0c10;
-  --bg-glass: rgba(15, 18, 24, 0.88);
-  --grid-line: rgba(255, 255, 255, 0.025);
+  /* Dark Palette (Default — Obsidian Machined Quant Desk) */
+  --bg-void: #06080b;
+  --bg-surface: #0d1016;
+  --bg-elevated: #141923;
+  --bg-inset: #080a0f;
+  --bg-glass: rgba(11, 14, 20, 0.88);
+  --surface-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.032) 0%, rgba(255, 255, 255, 0.005) 100%);
+  --grid-line: rgba(255, 255, 255, 0.022);
 
-  --border-hair: rgba(255, 255, 255, 0.075);
-  --border-med: rgba(255, 255, 255, 0.13);
-  --border-strong: rgba(255, 255, 255, 0.22);
+  --border-hair: rgba(255, 255, 255, 0.08);
+  --border-med: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.24);
 
   --text-primary: #f2efe9;
   --text-secondary: #9ba3b4;
@@ -69,8 +70,9 @@
   --bg-surface: #fbfaf7;
   --bg-elevated: #ffffff;
   --bg-inset: #eae6dc;
-  --bg-glass: rgba(251, 250, 247, 0.92);
-  --grid-line: rgba(17, 19, 24, 0.035);
+  --bg-glass: rgba(251, 250, 247, 0.94);
+  --surface-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+  --grid-line: rgba(17, 19, 24, 0.032);
 
   --border-hair: rgba(17, 19, 24, 0.09);
   --border-med: rgba(17, 19, 24, 0.16);

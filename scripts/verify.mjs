@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 import {
   analyzeCapitalStrategies,
   calcExactValveSteamFee,
-  computeLoopMetrics
+  computeLoopMetrics,
+  estimateExecutionReality
 } from '../public/js/core/math-engine.js';
 import { parseSharedSetupFromUrl } from '../public/js/core/router-share.js';
 
@@ -184,6 +185,23 @@ async function main() {
     pass(`Capital Strategy Advisor verified: ${adv.strategies.length} tailored strategies generated for $200 (${adv.tier.badge}).`);
   } else {
     fail(`Capital Strategy Advisor returned insufficient strategies: ${adv.strategies.length}`);
+  }
+
+  // Verify high-budget ($5000) realistic quantity cap & impracticality detector
+  const extremeLoop = computeLoopMetrics({ capitalUsd: 5000, pM1Usd: 0.31, pS1Usd: 0.46, pS2Usd: 20, pM2Usd: 18.4, sellFeePct: 2 });
+  const extremeReality = estimateExecutionReality(extremeLoop, { q: 400 }, { q: 200 }, { marketplace: 'CSFLOAT' });
+  const whaleAdv = analyzeCapitalStrategies(
+    mergedSample,
+    { marketplace: 'CSFLOAT', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true },
+    5000
+  );
+  const whaleMaxQ1 = whaleAdv.bestBenchmark?.c1?.q1 || 0;
+  if (extremeReality.level === 'impractical' && extremeReality.storageUnits > 10 && whaleMaxQ1 > 0 && whaleMaxQ1 <= 120) {
+    pass(
+      `Execution Reality Engine verified: 16k-case warning (${extremeReality.label}) + $5,000 advisor caps Q1=${whaleMaxQ1} (realistic!).`
+    );
+  } else {
+    fail(`Execution Reality check failed: level=${extremeReality.level}, whaleQ1=${whaleMaxQ1}`);
   }
 
   const parsedShare = parseSharedSetupFromUrl('?m=cf&cur=TRY&cap=250&l1=Revolution+Case&p1m=0.55&p1s=0.89&l2=AK-47+%7C+Redline+%28Field-Tested%29&p2s=20&p2m=18.2');
