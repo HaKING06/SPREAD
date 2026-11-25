@@ -607,6 +607,18 @@
         <span id="steamMinFeeDetail">Minimum Steam fee trap detected.</span>
       </div>
 
+      <!-- Active Multi-Item Basket Desk Banner (Shown when full basket is loaded on Trade Desk) -->
+      <div id="deskBasketBanner" class="desk-basket-banner hidden">
+        <div style="display: flex; align-items: center; gap: 9px; flex-wrap: wrap;">
+          <span class="pill pill-gold" data-i18n="split.deskActive">🔀 Basket Mode Active on Desk</span>
+          <span id="deskBasketSummaryText" class="num" style="font-size: 12px; color: var(--text-secondary);"></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <button id="deskBasketMatchCapBtn" type="button" class="btn btn-sm btn-primary hidden">Match Budget</button>
+          <button id="exitDeskBasketBtn" type="button" class="btn btn-sm" data-i18n="split.backSingle">Single Mode</button>
+        </div>
+      </div>
+
       <!-- Side-by-Side Leg 1 & Leg 2 Trade Cards -->
       <div class="legs-grid">
         <!-- LEG 1 -->
@@ -620,27 +632,31 @@
               <span id="leg1MultBadge" class="pill pill-mint" title="Leg 1 Steam Balance Multiplier">M₁ = 1.0000x</span>
             </div>
 
-            <div id="leg1PreviewWell" class="leg-preview-row" style="margin-top: 14px;"></div>
+            <div id="leg1BasketDeskHost" class="desk-basket-host hidden"></div>
 
-            <div style="margin-top: 13px; display: flex; flex-direction: column; gap: 11px;">
-              <div>
-                <label for="calcLeg1Name" class="field-label" data-i18n="leg1.name">Leg 1 Item Name</label>
-                <input id="calcLeg1Name" type="text" class="input" placeholder="e.g. Revolution Case" />
-              </div>
+            <div id="leg1SingleBox">
+              <div id="leg1PreviewWell" class="leg-preview-row" style="margin-top: 14px;"></div>
 
-              <div class="leg-inputs-2col">
+              <div style="margin-top: 13px; display: flex; flex-direction: column; gap: 11px;">
                 <div>
-                  <label for="calcPM1Input" class="field-label">
-                    <span><span class="mkt-name">CSFloat</span> <span data-i18n="leg1.buy">Buy Price</span> (<span
-                        class="cur-sym">$</span>)</span>
-                  </label>
-                  <input id="calcPM1Input" type="number" step="0.01" min="0.01" class="input num" />
+                  <label for="calcLeg1Name" class="field-label" data-i18n="leg1.name">Leg 1 Item Name</label>
+                  <input id="calcLeg1Name" type="text" class="input" placeholder="e.g. Revolution Case" />
                 </div>
-                <div>
-                  <label for="calcPS1Input" class="field-label">
-                    <span><span data-i18n="leg1.sell">Steam Sell</span> (<span class="cur-sym">$</span>)</span>
-                  </label>
-                  <input id="calcPS1Input" type="number" step="0.01" min="0.03" class="input num" />
+
+                <div class="leg-inputs-2col">
+                  <div>
+                    <label for="calcPM1Input" class="field-label">
+                      <span><span class="mkt-name">CSFloat</span> <span data-i18n="leg1.buy">Buy Price</span> (<span
+                          class="cur-sym">$</span>)</span>
+                    </label>
+                    <input id="calcPM1Input" type="number" step="0.01" min="0.01" class="input num" />
+                  </div>
+                  <div>
+                    <label for="calcPS1Input" class="field-label">
+                      <span><span data-i18n="leg1.sell">Steam Sell</span> (<span class="cur-sym">$</span>)</span>
+                    </label>
+                    <input id="calcPS1Input" type="number" step="0.01" min="0.03" class="input num" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -681,28 +697,32 @@
               <span id="leg2MultBadge" class="pill pill-gold" title="Leg 2 Cashout Multiplier">M₂ = 0.0000x</span>
             </div>
 
-            <div id="leg2PreviewWell" class="leg-preview-row" style="margin-top: 14px;"></div>
-            <div id="leg2SmartExitsBar" class="smart-exits-bar hidden"></div>
+            <div id="leg2BasketDeskHost" class="desk-basket-host hidden"></div>
 
-            <div style="margin-top: 13px; display: flex; flex-direction: column; gap: 11px;">
-              <div>
-                <label for="calcLeg2Name" class="field-label" data-i18n="leg2.name">Leg 2 Cashout Item Name</label>
-                <input id="calcLeg2Name" type="text" class="input" placeholder="e.g. AK-47 | Redline (Field-Tested)" />
-              </div>
+            <div id="leg2SingleBox">
+              <div id="leg2PreviewWell" class="leg-preview-row" style="margin-top: 14px;"></div>
+              <div id="leg2SmartExitsBar" class="smart-exits-bar hidden"></div>
 
-              <div class="leg-inputs-2col">
+              <div style="margin-top: 13px; display: flex; flex-direction: column; gap: 11px;">
                 <div>
-                  <label for="calcPS2Input" class="field-label">
-                    <span><span data-i18n="leg2.buy">Steam Buy</span> (<span class="cur-sym">$</span>)</span>
-                  </label>
-                  <input id="calcPS2Input" type="number" step="0.01" min="0.01" class="input num" />
+                  <label for="calcLeg2Name" class="field-label" data-i18n="leg2.name">Leg 2 Cashout Item Name</label>
+                  <input id="calcLeg2Name" type="text" class="input" placeholder="e.g. AK-47 | Redline (Field-Tested)" />
                 </div>
-                <div>
-                  <label for="calcPM2Input" class="field-label">
-                    <span><span class="mkt-name">CSFloat</span> <span data-i18n="leg2.sell">Sell Price</span> (<span
-                        class="cur-sym">$</span>)</span>
-                  </label>
-                  <input id="calcPM2Input" type="number" step="0.01" min="0.01" class="input num" />
+
+                <div class="leg-inputs-2col">
+                  <div>
+                    <label for="calcPS2Input" class="field-label">
+                      <span><span data-i18n="leg2.buy">Steam Buy</span> (<span class="cur-sym">$</span>)</span>
+                    </label>
+                    <input id="calcPS2Input" type="number" step="0.01" min="0.01" class="input num" />
+                  </div>
+                  <div>
+                    <label for="calcPM2Input" class="field-label">
+                      <span><span class="mkt-name">CSFloat</span> <span data-i18n="leg2.sell">Sell Price</span> (<span
+                          class="cur-sym">$</span>)</span>
+                    </label>
+                    <input id="calcPM2Input" type="number" step="0.01" min="0.01" class="input num" />
+                  </div>
                 </div>
               </div>
             </div>

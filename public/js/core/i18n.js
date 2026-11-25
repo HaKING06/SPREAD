@@ -114,7 +114,11 @@ export const DICT = {
     'split.sellCol': 'STEP 2 • PARALLEL CASHOUT BASKET',
     'split.copyPlan': '📋 Copy Buy/Sell List',
     'split.trackBasket': '+ Track Basket Cycle',
-    'split.loadPrimary': 'Load Top Pair to Desk',
+    'split.loadPrimary': '⚡ Load Full Basket to Desk',
+    'split.deskActive': '🔀 Basket Mode Active on Desk',
+    'split.addItem': '+ Add Skin',
+    'split.backSingle': 'Single Mode',
+    'split.qtyLbl': 'Qty',
 
     // Timeline & Reality
     'tl.meta': 'Estimated Realistic Cycle Duration (7+7D Trade Hold + Buy/Sell Speed)',
@@ -442,7 +446,11 @@ export const DICT = {
     'split.sellCol': '2. ADIM • PARALEL ÇIKIŞ SEPETİ',
     'split.copyPlan': '📋 Alış/Satış Listesini Kopyala',
     'split.trackBasket': '+ Sepeti Takibe Al',
-    'split.loadPrimary': 'Ana Çifti Masaya Yükle',
+    'split.loadPrimary': '⚡ Tüm Sepeti Masaya Yükle',
+    'split.deskActive': '🔀 Masada Çoklu Sepet Aktif',
+    'split.addItem': '+ Eşya Ekle',
+    'split.backSingle': 'Tekli Moda Dön',
+    'split.qtyLbl': 'Adet',
 
     // Timeline & Reality
     'tl.meta': 'Tahmini Gerçekçi Döngü Süresi (7+7G Takas Kilidi + Alım/Satım Hızı)',

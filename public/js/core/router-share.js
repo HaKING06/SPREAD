@@ -37,8 +37,37 @@ export function syncUrlForTab(tabName, replace = false) {
   }
 }
 
+function encodeBasketLines(lines, isLeg1) {
+  return lines
+    .slice(0, 6)
+    .map((l) => {
+      const safeName = String(l.name || '').replace(/[~|]/g, ' ').trim();
+      const q = Math.max(0, Math.floor(Number(l.qty) || 0));
+      const p1 = Math.round((isLeg1 ? l.marketUsd : l.steamUsd) * 100) / 100;
+      const p2 = Math.round((isLeg1 ? l.steamUsd : l.marketUsd) * 100) / 100;
+      return `${safeName}~${q}~${p1}~${p2}`;
+    })
+    .join('|');
+}
+
+function decodeBasketLines(raw, isLeg1) {
+  if (!raw || typeof raw !== 'string') return [];
+  const out = [];
+  for (const seg of raw.split('|').slice(0, 6)) {
+    const parts = seg.split('~');
+    if (parts.length !== 4) continue;
+    const name = cleanText(parts[0], 120);
+    const qty = Math.floor(clampNumber(parts[1], 0, 10000, 1));
+    const p1 = clampNumber(parts[2], 0.01, 100000, 0);
+    const p2 = clampNumber(parts[3], 0.01, 100000, 0);
+    if (!name || p1 <= 0 || p2 <= 0) continue;
+    out.push(isLeg1 ? { name, qty, marketUsd: p1, steamUsd: p2 } : { name, qty, steamUsd: p1, marketUsd: p2 });
+  }
+  return out;
+}
+
 /**
- * Encodes the current calculator trade setup into a compact, public shareable URL.
+ * Encodes the current calculator trade setup (single pair OR full multi-item basket) into a compact shareable URL.
  */
 export function buildShareUrl(settings) {
   const origin =
@@ -50,6 +79,12 @@ export function buildShareUrl(settings) {
   params.set('m', settings.marketplace === 'YOUPIN' ? 'yp' : 'cf');
   params.set('cur', settings.currency || 'USD');
   params.set('cap', String(Math.round(settings.capitalUsd * 100) / 100));
+
+  if (settings.activeBasket?.leg1?.length && settings.activeBasket?.leg2?.length) {
+    params.set('b1', encodeBasketLines(settings.activeBasket.leg1, true));
+    params.set('b2', encodeBasketLines(settings.activeBasket.leg2, false));
+  }
+
   params.set('l1', settings.leg1.name);
   params.set('p1m', String(Math.round(settings.leg1.marketUsd * 100) / 100));
   params.set('p1s', String(Math.round(settings.leg1.steamUsd * 100) / 100));
@@ -69,18 +104,22 @@ export function buildShareUrl(settings) {
 }
 
 /**
- * Parses and strictly validates an incoming shared URL query string.
+ * Parses and strictly validates an incoming shared URL query string (supports single pair & multi-item basket).
  */
 export function parseSharedSetupFromUrl(searchStr) {
-  if (!searchStr || !searchStr.includes('l1=')) return null;
+  if (!searchStr || (!searchStr.includes('l1=') && !searchStr.includes('b1='))) return null;
   const params = new URLSearchParams(searchStr);
 
-  const l1 = cleanText(params.get('l1') || '', 120);
-  const l2 = cleanText(params.get('l2') || '', 120);
-  const p1m = clampNumber(params.get('p1m'), 0.01, 100000, 0);
-  const p1s = clampNumber(params.get('p1s'), 0.03, 100000, 0);
-  const p2s = clampNumber(params.get('p2s'), 0.03, 100000, 0);
-  const p2m = clampNumber(params.get('p2m'), 0.01, 100000, 0);
+  const b1 = decodeBasketLines(params.get('b1'), true);
+  const b2 = decodeBasketLines(params.get('b2'), false);
+  const hasBasket = b1.length > 0 && b2.length > 0;
+
+  const l1 = cleanText(params.get('l1') || b1[0]?.name || '', 120);
+  const l2 = cleanText(params.get('l2') || b2[0]?.name || '', 120);
+  const p1m = clampNumber(params.get('p1m'), 0.01, 100000, b1[0]?.marketUsd || 0);
+  const p1s = clampNumber(params.get('p1s'), 0.03, 100000, b1[0]?.steamUsd || 0);
+  const p2s = clampNumber(params.get('p2s'), 0.03, 100000, b2[0]?.steamUsd || 0);
+  const p2m = clampNumber(params.get('p2m'), 0.01, 100000, b2[0]?.marketUsd || 0);
 
   if (!l1 || !l2 || p1m <= 0 || p1s <= 0 || p2s <= 0 || p2m <= 0) {
     return null;
@@ -107,13 +146,15 @@ export function parseSharedSetupFromUrl(searchStr) {
     sellFeePct,
     withdrawFeePct,
     steamFeeMode,
+    splitMode: hasBasket,
+    activeBasket: hasBasket ? { leg1: b1, leg2: b2 } : null,
     leg1: { name: l1, marketUsd: p1m, steamUsd: p1s },
     leg2: { name: l2, steamUsd: p2s, marketUsd: p2m }
   };
 }
 
 /**
- * Formats a clean social/Discord summary card text for sharing.
+ * Formats a clean social/Discord summary card text for sharing (supports single pair & multi-item basket).
  */
 export function buildShareSummaryText(settings, metrics, fxRates, shareUrl) {
   const mkt = MARKETPLACES[settings.marketplace]?.name || 'CSFloat';
@@ -121,22 +162,30 @@ export function buildShareSummaryText(settings, metrics, fxRates, shareUrl) {
   const money = (u, sign = false) => fmtMoneyFromUsd(u, cur, fxRates, { withSign: sign });
   const c1 = metrics.firstCycle;
 
+  const basket = settings.activeBasket;
+  const l1Text = basket?.leg1?.length
+    ? basket.leg1.map((l) => `${l.qty}x ${l.name}`).join(' + ')
+    : `${c1.q1}x ${settings.leg1.name}`;
+  const l2Text = basket?.leg2?.length
+    ? basket.leg2.map((l) => `${l.qty}x ${l.name}`).join(' + ')
+    : `${c1.q2}x ${settings.leg2.name}`;
+
   if (isTr()) {
     return [
-      `SPREAD — CS2 Arbitraj Döngüsü (${mkt} ↔ Steam)`,
+      `SPREAD — CS2 Arbitraj ${basket ? 'Sepeti' : 'Döngüsü'} (${mkt} ↔ Steam)`,
       `Sermaye: ${money(metrics.capitalUsd)}`,
-      `1. Yön: ${c1.q1}x ${settings.leg1.name} (${fmtPct(metrics.leg1ProfitPct, true)})`,
-      `2. Yön: ${c1.q2}x ${settings.leg2.name} (${fmtPct(metrics.conversionLossPct, false)} kayıp)`,
+      `1. Yön: ${l1Text} (${fmtPct(metrics.leg1ProfitPct, true)})`,
+      `2. Yön: ${l2Text} (${fmtPct(metrics.conversionLossPct, false)} kayıp)`,
       `14 Günlük Tahmini Net Kâr: ${money(c1.netProfit, true)} (${fmtPct(c1.netRoiPct, true)} ROI)`,
       `Canlı incele: ${shareUrl}`
     ].join('\n');
   }
 
   return [
-    `SPREAD — CS2 Arbitrage Loop (${mkt} ↔ Steam)`,
+    `SPREAD — CS2 Arbitrage ${basket ? 'Basket' : 'Loop'} (${mkt} ↔ Steam)`,
     `Capital: ${money(metrics.capitalUsd)}`,
-    `Leg 1: ${c1.q1}x ${settings.leg1.name} (${fmtPct(metrics.leg1ProfitPct, true)})`,
-    `Leg 2: ${c1.q2}x ${settings.leg2.name} (${fmtPct(metrics.conversionLossPct, false)} loss)`,
+    `Leg 1: ${l1Text} (${fmtPct(metrics.leg1ProfitPct, true)})`,
+    `Leg 2: ${l2Text} (${fmtPct(metrics.conversionLossPct, false)} loss)`,
     `Est. 14-Day Net Profit: ${money(c1.netProfit, true)} (${fmtPct(c1.netRoiPct, true)} ROI)`,
     `Inspect live: ${shareUrl}`
   ].join('\n');

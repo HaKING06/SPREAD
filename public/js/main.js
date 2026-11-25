@@ -94,8 +94,8 @@ class SpreadApp {
     this.renderAll();
   }
 
-  openCommandPalette(legHint = null, presetMinUsd = null) {
-    this.cmdPalette?.open(legHint, presetMinUsd);
+  openCommandPalette(legHint = null, presetMinUsd = null, appendBasket = false) {
+    this.cmdPalette?.open(legHint, presetMinUsd, appendBasket);
   }
 
   switchTab(tabName, opts = {}) {
@@ -120,7 +120,7 @@ class SpreadApp {
     if (tabName === 'about') this.views.about?.render();
   }
 
-  applyItemToLeg(item, legNum) {
+  applyItemToLeg(item, legNum, opts = {}) {
     const s = this.settings;
     const m = evaluateItemMetrics(item, {
       marketplace: s.marketplace,
@@ -133,6 +133,30 @@ class SpreadApp {
       conservativeSteamPrice: s.conservativeSteamPrice
     });
 
+    if (opts.appendBasket && s.activeBasket) {
+      const key = legNum === 1 ? 'leg1' : 'leg2';
+      const arr = s.activeBasket[key];
+      const existing = arr.find((x) => x.name.toLowerCase() === item.n.toLowerCase());
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        arr.push(
+          legNum === 1
+            ? { name: item.n, qty: 1, marketUsd: m.marketBuyUsd, steamUsd: m.steamUsd }
+            : { name: item.n, qty: 1, steamUsd: m.steamUsd, marketUsd: m.marketSellUsd }
+        );
+      }
+      this.saveSettings();
+      this.views.calculator?.render();
+      this.toast(
+        isTr()
+          ? `"${item.n}" ${legNum}. Adım sepetine eklendi.`
+          : `"${item.n}" added to Step ${legNum} basket.`
+      );
+      return;
+    }
+
+    s.activeBasket = null;
     if (legNum === 1) {
       s.leg1 = {
         name: item.n,
@@ -154,6 +178,7 @@ class SpreadApp {
   }
 
   applyPair(item1, item2, m1, m2) {
+    this.settings.activeBasket = null;
     this.settings.leg1 = {
       name: item1.n,
       marketUsd: m1.marketBuyUsd,
@@ -168,6 +193,52 @@ class SpreadApp {
     this.switchTab('calculator');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     this.toast(isTr() ? `Strateji uygulandı: ${item1.n} → ${item2.n}` : `Strategy applied: ${item1.n} → ${item2.n}`);
+  }
+
+  applyBasket(plan) {
+    if (!plan || !plan.leg1Lines?.length || !plan.leg2Lines?.length) return;
+    const s = this.settings;
+    s.activeBasket = {
+      leg1: plan.leg1Lines.map((l) => ({
+        name: l.item.n,
+        qty: l.qty,
+        marketUsd: l.unitBuyUsd,
+        steamUsd: l.unitSteamUsd
+      })),
+      leg2: plan.leg2Lines.map((l) => ({
+        name: l.item.n,
+        qty: l.qty,
+        steamUsd: l.unitSteamUsd,
+        marketUsd: l.unitSellUsd
+      }))
+    };
+    // Keep leg1/leg2 fallback synced to primary items
+    s.leg1 = {
+      name: plan.leg1Lines[0].item.n,
+      marketUsd: plan.leg1Lines[0].unitBuyUsd,
+      steamUsd: plan.leg1Lines[0].unitSteamUsd
+    };
+    s.leg2 = {
+      name: plan.leg2Lines[0].item.n,
+      steamUsd: plan.leg2Lines[0].unitSteamUsd,
+      marketUsd: plan.leg2Lines[0].unitSellUsd
+    };
+    this.saveSettings();
+    this.switchTab('calculator');
+    const deskAnchor = document.getElementById('deskBasketBanner') || document.querySelector('.legs-grid');
+    deskAnchor?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    this.toast(
+      isTr()
+        ? `Tüm sepet masaya yüklendi: ${plan.k1} Alım → ${plan.k2} Paralel Çıkış (tüm adet ve fiyatlar düzenlenebilir).`
+        : `Full basket loaded to desk: ${plan.k1} Buy → ${plan.k2} Parallel Exit (all quantities & prices live-editable).`
+    );
+  }
+
+  clearActiveBasket() {
+    this.settings.activeBasket = null;
+    this.saveSettings();
+    this.views.calculator?.render();
+    this.toast(isTr() ? 'Tekli çift (1 → 1) masa görünümüne dönüldü.' : 'Switched back to single-pair (1 → 1) desk view.');
   }
 
   toggleWatchlist(itemName) {
@@ -210,9 +281,61 @@ class SpreadApp {
 
     const s = this.settings;
     const c1 = d.firstCycle;
+    const nowIso = new Date().toISOString();
+    const tr = isTr();
+
+    if (s.activeBasket?.leg1?.length && s.activeBasket?.leg2?.length) {
+      const b1 = s.activeBasket.leg1.map((l) => ({
+        name: l.name,
+        qty: l.qty,
+        img: this.findItemByName(l.name)?.img || ''
+      }));
+      const b2 = s.activeBasket.leg2.map((l) => ({
+        name: l.name,
+        qty: l.qty,
+        img: this.findItemByName(l.name)?.img || ''
+      }));
+      const l1Summary = b1.map((l) => `${l.qty}x ${l.name}`).join(' + ');
+      const l2Summary = b2.map((l) => `${l.qty}x ${l.name}`).join(' + ');
+
+      this.cycles.unshift({
+        id: `cyc-basket-${Date.now()}`,
+        marketplace: s.marketplace,
+        capitalUsd: Math.round(d.capitalUsd * 100) / 100,
+        item1Name: b1.length === 1 ? b1[0].name : `${tr ? 'Sepet' : 'Basket'} (${b1.length}): ${l1Summary}`,
+        item1Img: b1[0]?.img || '',
+        qty1: c1.q1,
+        item2Name: b2.length === 1 ? b2[0].name : `${tr ? 'Paralel Çıkış' : 'Split Exit'} (${b2.length}): ${l2Summary}`,
+        item2Img: b2[0]?.img || '',
+        qty2: c1.q2,
+        basketLeg1: b1,
+        basketLeg2: b2,
+        expectedEndUsd: Math.round(c1.cashEquivPortfolio * 100) / 100,
+        expectedProfitUsd: Math.round(c1.netProfit * 100) / 100,
+        expectedRoiPct: Math.round(c1.netRoiPct * 100) / 100,
+        actualEndUsd: null,
+        actualProfitUsd: null,
+        note: tr
+          ? `Masa Sepeti (${b1.length} Al → ${b2.length} Sat)`
+          : `Desk Basket (${b1.length} Buy → ${b2.length} Sell)`,
+        phase: 1,
+        phaseStartedAt: nowIso,
+        cycleStartedAt: nowIso,
+        completedAt: null
+      });
+
+      this.saveCycles();
+      this.switchTab('tracker');
+      this.toast(
+        tr
+          ? `Masadaki çoklu sepet (${b1.length} Al → ${b2.length} Sat) takibe alındı.`
+          : `Desk basket (${b1.length} Buy → ${b2.length} Sell) added to Tracker.`
+      );
+      return;
+    }
+
     const item1 = this.findItemByName(s.leg1.name);
     const item2 = this.findItemByName(s.leg2.name);
-    const nowIso = new Date().toISOString();
 
     this.cycles.unshift({
       id: `cyc-${Date.now()}`,
@@ -224,6 +347,8 @@ class SpreadApp {
       item2Name: s.leg2.name,
       item2Img: item2?.img || '',
       qty2: c1.q2,
+      basketLeg1: null,
+      basketLeg2: null,
       expectedEndUsd: Math.round(c1.cashEquivPortfolio * 100) / 100,
       expectedProfitUsd: Math.round(c1.netProfit * 100) / 100,
       expectedRoiPct: Math.round(c1.netRoiPct * 100) / 100,
@@ -238,27 +363,31 @@ class SpreadApp {
 
     this.saveCycles();
     this.switchTab('tracker');
-    this.toast(isTr() ? 'Döngü Faz 1 (Gün 0–7) olarak takibe alındı.' : 'Cycle added to Tracker (Phase 1 • Day 0–7).');
+    this.toast(tr ? 'Döngü Faz 1 (Gün 0–7) olarak takibe alındı.' : 'Cycle added to Tracker (Phase 1 • Day 0–7).');
   }
 
   createTrackedBasketCycle(plan) {
     if (!plan || !plan.leg1Lines?.length || !plan.leg2Lines?.length) return;
     const s = this.settings;
     const nowIso = new Date().toISOString();
-    const l1Summary = plan.leg1Lines.map((l) => `${l.qty}x ${l.item.n}`).join(' + ');
-    const l2Summary = plan.leg2Lines.map((l) => `${l.qty}x ${l.item.n}`).join(' + ');
+    const b1 = plan.leg1Lines.map((l) => ({ name: l.item.n, qty: l.qty, img: l.item.img || '' }));
+    const b2 = plan.leg2Lines.map((l) => ({ name: l.item.n, qty: l.qty, img: l.item.img || '' }));
+    const l1Summary = b1.map((l) => `${l.qty}x ${l.name}`).join(' + ');
+    const l2Summary = b2.map((l) => `${l.qty}x ${l.name}`).join(' + ');
     const tr = isTr();
 
     this.cycles.unshift({
       id: `cyc-basket-${Date.now()}`,
       marketplace: s.marketplace,
       capitalUsd: Math.round(s.capitalUsd * 100) / 100,
-      item1Name: plan.k1 === 1 ? plan.leg1Lines[0].item.n : `${tr ? 'Sepet' : 'Basket'} (${plan.k1}): ${l1Summary}`,
-      item1Img: plan.leg1Lines[0].item.img || '',
+      item1Name: plan.k1 === 1 ? b1[0].name : `${tr ? 'Sepet' : 'Basket'} (${plan.k1}): ${l1Summary}`,
+      item1Img: b1[0]?.img || '',
       qty1: plan.totalQ1,
-      item2Name: plan.k2 === 1 ? plan.leg2Lines[0].item.n : `${tr ? 'Paralel Çıkış' : 'Split Exit'} (${plan.k2}): ${l2Summary}`,
-      item2Img: plan.leg2Lines[0].item.img || '',
+      item2Name: plan.k2 === 1 ? b2[0].name : `${tr ? 'Paralel Çıkış' : 'Split Exit'} (${plan.k2}): ${l2Summary}`,
+      item2Img: b2[0]?.img || '',
       qty2: plan.totalQ2,
+      basketLeg1: b1,
+      basketLeg2: b2,
       expectedEndUsd: Math.round(plan.endCashEquivUsd * 100) / 100,
       expectedProfitUsd: Math.round(plan.netProfitUsd * 100) / 100,
       expectedRoiPct: Math.round(plan.netRoiPct * 100) / 100,
@@ -441,6 +570,22 @@ class SpreadApp {
         if (l2Item) {
           const m = evaluateItemMetrics(l2Item, evalOpts);
           if (m.marketSellUsd > 0) this.settings.leg2.marketUsd = m.marketSellUsd;
+        }
+        if (this.settings.activeBasket) {
+          for (const line of this.settings.activeBasket.leg1 || []) {
+            const it = this.findItemByName(line.name);
+            if (it) {
+              const m = evaluateItemMetrics(it, evalOpts);
+              if (m.marketBuyUsd > 0) line.marketUsd = m.marketBuyUsd;
+            }
+          }
+          for (const line of this.settings.activeBasket.leg2 || []) {
+            const it = this.findItemByName(line.name);
+            if (it) {
+              const m = evaluateItemMetrics(it, evalOpts);
+              if (m.marketSellUsd > 0) line.marketUsd = m.marketSellUsd;
+            }
+          }
         }
 
         this.saveSettings();

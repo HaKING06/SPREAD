@@ -49,19 +49,24 @@ export function initShareAndSupportModals(app) {
     lastShareUrl = buildShareUrl(s);
     lastShareSummary = buildShareSummaryText(s, metrics, fx, lastShareUrl);
 
+    const basket = s.activeBasket;
+    const setupTitle = basket?.leg1?.length && basket?.leg2?.length
+      ? `${basket.leg1.map((l) => `${l.qty}x ${l.name}`).join(' + ')} → ${basket.leg2.map((l) => `${l.qty}x ${l.name}`).join(' + ')}`
+      : `${s.leg1.name} → ${s.leg2.name}`;
+
     if (shareUrlInput) shareUrlInput.value = lastShareUrl;
     if (sharePreviewCard) {
       sharePreviewCard.textContent = isTr()
-        ? `${mkt} ↔ Steam • ${s.leg1.name} → ${s.leg2.name} | Sermaye: ${money(metrics.capitalUsd)} | 1. Döngü: ${money(metrics.firstCycle.netProfit, true)} (${fmtPct(metrics.firstCycle.netRoiPct, true)})`
-        : `${mkt} ↔ Steam • ${s.leg1.name} → ${s.leg2.name} | Capital: ${money(metrics.capitalUsd)} | Cycle 1: ${money(metrics.firstCycle.netProfit, true)} (${fmtPct(metrics.firstCycle.netRoiPct, true)})`;
+        ? `${mkt} ↔ Steam • ${setupTitle} | Sermaye: ${money(metrics.capitalUsd)} | 1. Döngü: ${money(metrics.firstCycle.netProfit, true)} (${fmtPct(metrics.firstCycle.netRoiPct, true)})`
+        : `${mkt} ↔ Steam • ${setupTitle} | Capital: ${money(metrics.capitalUsd)} | Cycle 1: ${money(metrics.firstCycle.netProfit, true)} (${fmtPct(metrics.firstCycle.netRoiPct, true)})`;
     }
 
     const encodedSummary = encodeURIComponent(lastShareSummary);
     const encodedUrl = encodeURIComponent(lastShareUrl);
     const shortTweet = encodeURIComponent(
       isTr()
-        ? `SPREAD CS2 Arbitraj kurulumum: ${s.leg1.name} → ${s.leg2.name} | 14 Günlük Tahmini ROI: ${fmtPct(metrics.firstCycle.netRoiPct, true)}`
-        : `My SPREAD CS2 Arbitrage loop: ${s.leg1.name} → ${s.leg2.name} | Est. 14-Day ROI: ${fmtPct(metrics.firstCycle.netRoiPct, true)}`
+        ? `SPREAD CS2 Arbitraj ${basket ? 'sepetim' : 'kurulumum'}: ${setupTitle} | 14 Günlük Tahmini ROI: ${fmtPct(metrics.firstCycle.netRoiPct, true)}`
+        : `My SPREAD CS2 Arbitrage ${basket ? 'basket' : 'loop'}: ${setupTitle} | Est. 14-Day ROI: ${fmtPct(metrics.firstCycle.netRoiPct, true)}`
     );
 
     if (waLink) waLink.setAttribute('href', `https://api.whatsapp.com/send?text=${encodedSummary}`);

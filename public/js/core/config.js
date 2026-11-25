@@ -102,6 +102,7 @@ export const DEFAULT_SETTINGS = {
   splitMode: false,             // V6 Multi-Item Split / Basket Mode toggle
   splitBuyCount: 0,             // 0 = Auto (Agent), 1 | 2 | 3
   splitSellCount: 0,            // 0 = Auto (Agent), 1 | 2 | 3 | 4
+  activeBasket: null,           // V6.1 Full Multi-Item Basket loaded on Trade Desk ({ leg1: [...], leg2: [...] })
   leg1: {
     name: 'Revolution Case',
     marketUsd: 0,

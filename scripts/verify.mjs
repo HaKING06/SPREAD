@@ -14,9 +14,10 @@ import {
   estimateExecutionReality,
   findBestExitsForLeg1
 } from '../public/js/core/math-engine.js';
-import { optimizeMultiItemBasket } from '../public/js/core/basket-optimizer.js';
+import { computeBasketLoopMetrics, optimizeMultiItemBasket } from '../public/js/core/basket-optimizer.js';
 import { DICT, setLang, t } from '../public/js/core/i18n.js';
-import { parseSharedSetupFromUrl } from '../public/js/core/router-share.js';
+import { buildShareUrl, parseSharedSetupFromUrl } from '../public/js/core/router-share.js';
+import { validateSettings } from '../public/js/services/vault-storage.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -325,9 +326,49 @@ async function main() {
       split1x3.baseline11 &&
       split1x3.plan.risk.sigma14dPct < split1x3.baseline11.risk.sigma14dPct;
     if (autoOk && split1x3Ok) {
-      pass(
-        `SPREAD Agent V6 Multi-Item Basket Optimizer verified: $800 Auto (${autoBasket800.plan.k1}→${autoBasket800.plan.k2}, +$${autoBasket800.plan.netProfitUsd.toFixed(2)}, PoP ${autoBasket800.plan.risk.popPct}%, ${autoBasket800.plan.deployedCashPct}% deployed) | 1→3 Split (+$${split1x3.plan.netProfitUsd.toFixed(2)}, σ ${split1x3.plan.risk.sigma14dPct}% < ${split1x3.baseline11.risk.sigma14dPct}%).`
-      );
+      // V6.1 Full Desk Basket Math, Vault Persistence & Share URL Roundtrip Check
+      const deskBasket = {
+        leg1: split1x3.plan.leg1Lines.map((l) => ({ name: l.item.n, qty: l.qty, marketUsd: l.unitBuyUsd, steamUsd: l.unitSteamUsd })),
+        leg2: split1x3.plan.leg2Lines.map((l) => ({ name: l.item.n, qty: l.qty, steamUsd: l.unitSteamUsd, marketUsd: l.unitSellUsd }))
+      };
+      const deskMetrics = computeBasketLoopMetrics({
+        capitalUsd: 800,
+        leg1Lines: deskBasket.leg1,
+        leg2Lines: deskBasket.leg2,
+        buyFeePct: 0,
+        sellFeePct: 2,
+        withdrawFeePct: 0,
+        steamFeeMode: 'EXACT_VALVE'
+      });
+      const savedSettings = validateSettings({
+        marketplace: 'CSFLOAT',
+        currency: 'USD',
+        capitalUsd: 800,
+        splitMode: true,
+        splitBuyCount: 1,
+        splitSellCount: 3,
+        activeBasket: deskBasket,
+        leg1: { name: deskBasket.leg1[0].name, marketUsd: deskBasket.leg1[0].marketUsd, steamUsd: deskBasket.leg1[0].steamUsd },
+        leg2: { name: deskBasket.leg2[0].name, steamUsd: deskBasket.leg2[0].steamUsd, marketUsd: deskBasket.leg2[0].marketUsd }
+      });
+      globalThis.window = { location: { hostname: 'spread.haking.tr', origin: 'https://spread.haking.tr' } };
+      const sharedBasketUrl = buildShareUrl(savedSettings);
+      const parsedBasket = parseSharedSetupFromUrl(sharedBasketUrl.slice(sharedBasketUrl.indexOf('?')));
+      delete globalThis.window;
+
+      const deskMatchOk =
+        Math.abs(deskMetrics.firstCycle.netProfit - split1x3.plan.netProfitUsd) < 1.0 &&
+        savedSettings.activeBasket?.leg2?.length === 3 &&
+        parsedBasket?.activeBasket?.leg2?.length === 3 &&
+        parsedBasket.activeBasket.leg1[0].qty === deskBasket.leg1[0].qty;
+
+      if (deskMatchOk) {
+        pass(
+          `SPREAD Agent V6.1 Multi-Item Basket Desk, Vault & Share URL verified: $800 Auto (${autoBasket800.plan.k1}→${autoBasket800.plan.k2}, +$${autoBasket800.plan.netProfitUsd.toFixed(2)}, PoP ${autoBasket800.plan.risk.popPct}%) | Desk 1→3 (+$${deskMetrics.firstCycle.netProfit.toFixed(2)}, 3 exits persisted & URL-shareable).`
+        );
+      } else {
+        fail(`SPREAD Agent V6.1 Desk/Vault/URL roundtrip failed: deskProfit=${deskMetrics.firstCycle.netProfit}, planProfit=${split1x3.plan.netProfitUsd}, vaultL2=${savedSettings.activeBasket?.leg2?.length}, urlL2=${parsedBasket?.activeBasket?.leg2?.length}`);
+      }
     } else {
       fail(`SPREAD Agent V6 Basket Optimizer failed: autoOk=${autoOk}, split1x3Ok=${split1x3Ok}`);
     }

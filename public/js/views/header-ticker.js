@@ -117,6 +117,7 @@ export function initCommandPalette(app) {
   const openBtn = document.getElementById('openCmdSearchBtn');
 
   let targetLegHint = null;
+  let appendBasketMode = false;
 
   function renderResults() {
     clearNode(list);
@@ -245,11 +246,11 @@ export function initCommandPalette(app) {
               type: 'button',
               className: `btn btn-sm ${targetLegHint === 1 ? 'btn-primary' : ''}`,
               onClick: () => {
-                app.applyItemToLeg(item, 1);
+                app.applyItemToLeg(item, 1, { appendBasket: appendBasketMode });
                 close();
               }
             },
-            tr ? '1. Yön' : 'Leg 1'
+            appendBasketMode ? (tr ? '+ 1. Sepet' : '+ Step 1') : (tr ? '1. Yön' : 'Leg 1')
           ),
           el(
             'button',
@@ -257,11 +258,11 @@ export function initCommandPalette(app) {
               type: 'button',
               className: `btn btn-sm ${targetLegHint === 2 ? 'btn-primary' : ''}`,
               onClick: () => {
-                app.applyItemToLeg(item, 2);
+                app.applyItemToLeg(item, 2, { appendBasket: appendBasketMode });
                 close();
               }
             },
-            tr ? '2. Yön' : 'Leg 2'
+            appendBasketMode ? (tr ? '+ 2. Sepet' : '+ Step 2') : (tr ? '2. Yön' : 'Leg 2')
           )
         )
       );
@@ -269,8 +270,9 @@ export function initCommandPalette(app) {
     }
   }
 
-  function open(legHint = null, presetMinUsd = null) {
+  function open(legHint = null, presetMinUsd = null, appendBasket = false) {
     targetLegHint = legHint;
+    appendBasketMode = Boolean(appendBasket);
     if (sortSel) {
       sortSel.value = legHint === 2 ? 'LEG2_ASC' : 'LEG1_DESC';
     }

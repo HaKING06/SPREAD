@@ -194,6 +194,26 @@ export function initTrackerView(app) {
       const displayEnd = c.phase === 3 && c.actualEndUsd !== null ? c.actualEndUsd : c.expectedEndUsd;
       const displayRoi = c.capitalUsd > 0 ? (displayProfit / c.capitalUsd) * 100 : 0;
 
+      const hasMultiBasket = (c.basketLeg1?.length || 0) > 1 || (c.basketLeg2?.length || 0) > 1;
+      const renderBasketChips = (itemsArr, label, cls) =>
+        el(
+          'div',
+          { className: 'tracker-basket-group' },
+          el('span', { className: `tracker-basket-tag ${cls}` }, label),
+          el(
+            'div',
+            { className: 'tracker-basket-pills' },
+            itemsArr.map((it) =>
+              el(
+                'span',
+                { className: 'tracker-basket-chip num' },
+                it.img ? el('img', { src: buildImageUrl(it.img), alt: it.name, className: 'tracker-chip-img' }) : null,
+                el('span', null, `${it.qty}x ${it.name}`)
+              )
+            )
+          )
+        );
+
       const card = el(
         'article',
         { className: 'panel cycle-card', dataset: { cycleId: c.id } },
@@ -209,6 +229,15 @@ export function initTrackerView(app) {
               { style: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' } },
               el('span', { className: `pill ${badgeCls}`, dataset: { cycleBadge: c.id } }, badgeTxt),
               el('span', { className: 'pill pill-muted' }, mkt.name),
+              hasMultiBasket
+                ? el(
+                    'span',
+                    { className: 'pill pill-ice num' },
+                    tr
+                      ? `🔀 Sepet (${c.basketLeg1?.length || 1}→${c.basketLeg2?.length || 1})`
+                      : `🔀 Basket (${c.basketLeg1?.length || 1}→${c.basketLeg2?.length || 1})`
+                  )
+                : null,
               el('span', { className: 'txt-muted num', style: { fontSize: '11px' } }, `${tr ? 'Başlangıç' : 'Started'}: ${fmtShortDate(c.cycleStartedAt)}`)
             ),
             el(
@@ -233,7 +262,15 @@ export function initTrackerView(app) {
                 'div',
                 null,
                 el('h4', { style: { fontSize: '14px' } }, headline),
-                el('p', { className: 'txt-sec', style: { fontSize: '12px', marginTop: '2px' } }, subline)
+                el('p', { className: 'txt-sec', style: { fontSize: '12px', marginTop: '2px' } }, subline),
+                hasMultiBasket
+                  ? el(
+                      'div',
+                      { className: 'tracker-basket-box' },
+                      c.basketLeg1?.length ? renderBasketChips(c.basketLeg1, tr ? '1. ADIM ALIM' : 'STEP 1 BUY', 'txt-mint') : null,
+                      c.basketLeg2?.length ? renderBasketChips(c.basketLeg2, tr ? '2. ADIM ÇIKIŞ' : 'STEP 2 EXIT', 'txt-gold') : null
+                    )
+                  : null
               )
             )
           ),

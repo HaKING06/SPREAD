@@ -35,6 +35,39 @@ function safeWriteJson(key, value) {
   }
 }
 
+function validateBasketArray(arr, isLeg1) {
+  if (!Array.isArray(arr) || arr.length === 0) return [];
+  const out = [];
+  for (const row of arr.slice(0, 8)) {
+    if (!row || typeof row !== 'object') continue;
+    const name = cleanText(row.name || '', 120);
+    if (!name) continue;
+    const qty = Math.max(0, Math.floor(clampNumber(row.qty, 0, 10000, 1)));
+    const marketUsd = clampNumber(row.marketUsd, 0, 100000, 0);
+    const steamUsd = clampNumber(row.steamUsd, 0, 100000, 0);
+    if (isLeg1 && (marketUsd <= 0 || steamUsd <= 0)) continue;
+    if (!isLeg1 && (steamUsd <= 0 || marketUsd <= 0)) continue;
+    out.push({ name, qty, marketUsd, steamUsd });
+  }
+  return out;
+}
+
+function validateCycleBasketItems(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const out = [];
+  for (const row of arr.slice(0, 8)) {
+    if (!row || typeof row !== 'object') continue;
+    const name = cleanText(row.name || '', 120);
+    if (!name) continue;
+    out.push({
+      name,
+      qty: Math.max(0, Math.floor(clampNumber(row.qty, 0, 100000, 1))),
+      img: cleanText(row.img || '', 260)
+    });
+  }
+  return out.length > 0 ? out : null;
+}
+
 export function validateSettings(raw) {
   const s = raw && typeof raw === 'object' ? raw : {};
   const marketplace = s.marketplace === 'YOUPIN' ? 'YOUPIN' : 'CSFLOAT';
@@ -43,6 +76,15 @@ export function validateSettings(raw) {
     ? s.steamFeeMode
     : 'EXACT_VALVE';
   const compoundMode = s.compoundMode === 'PROPORTIONAL' ? 'PROPORTIONAL' : 'REALISTIC';
+
+  let activeBasket = null;
+  if (s.activeBasket && typeof s.activeBasket === 'object') {
+    const bL1 = validateBasketArray(s.activeBasket.leg1, true);
+    const bL2 = validateBasketArray(s.activeBasket.leg2, false);
+    if (bL1.length > 0 && bL2.length > 0) {
+      activeBasket = { leg1: bL1, leg2: bL2 };
+    }
+  }
 
   return {
     ...DEFAULT_SETTINGS,
@@ -57,6 +99,10 @@ export function validateSettings(raw) {
     conservativeSteamPrice: s.conservativeSteamPrice !== false,
     capitalUsd: clampNumber(s.capitalUsd, 1, 1000000, DEFAULT_SETTINGS.capitalUsd),
     compoundMode,
+    splitMode: Boolean(s.splitMode),
+    splitBuyCount: Math.floor(clampNumber(s.splitBuyCount, 0, 3, 0)),
+    splitSellCount: Math.floor(clampNumber(s.splitSellCount, 0, 4, 0)),
+    activeBasket,
     leg1: {
       name: cleanText(s.leg1?.name || DEFAULT_SETTINGS.leg1.name, 120),
       marketUsd: clampNumber(s.leg1?.marketUsd, 0, 100000, 0),
@@ -82,12 +128,14 @@ export function validateCycleRecord(raw) {
     id,
     marketplace: raw.marketplace === 'YOUPIN' ? 'YOUPIN' : 'CSFLOAT',
     capitalUsd: clampNumber(raw.capitalUsd, 0.01, 1000000, 100),
-    item1Name: cleanText(raw.item1Name || '1. Yön Eşyası', 120),
+    item1Name: cleanText(raw.item1Name || '1. Yön Eşyası', 260),
     item1Img: cleanText(raw.item1Img || '', 260),
     qty1: Math.floor(clampNumber(raw.qty1, 0, 100000, 0)),
-    item2Name: cleanText(raw.item2Name || '2. Yön Eşyası', 120),
+    item2Name: cleanText(raw.item2Name || '2. Yön Eşyası', 260),
     item2Img: cleanText(raw.item2Img || '', 260),
     qty2: Math.floor(clampNumber(raw.qty2, 0, 100000, 0)),
+    basketLeg1: validateCycleBasketItems(raw.basketLeg1),
+    basketLeg2: validateCycleBasketItems(raw.basketLeg2),
     expectedEndUsd: clampNumber(raw.expectedEndUsd, 0, 10000000, 0),
     expectedProfitUsd: clampNumber(raw.expectedProfitUsd, -1000000, 10000000, 0),
     expectedRoiPct: clampNumber(raw.expectedRoiPct, -100, 10000, 0),

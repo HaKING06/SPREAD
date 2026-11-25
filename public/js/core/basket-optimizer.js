@@ -13,6 +13,7 @@
 import { isTr } from './i18n.js';
 import {
   calcEffectiveBuyUsd,
+  calcExactValveSteamFee,
   calcNetSellUsd,
   calcNetSteamUsd,
   computeLoopMetrics,
@@ -907,5 +908,388 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
     vsSingle,
     agentBetterAlt,
     rationale
+  };
+}
+
+/**
+ * V6.1 Full Native Multi-Item Basket Trade Desk Calculator:
+ * Produces the exact same metrics shape as computeLoopMetrics() for Hero Strip,
+ * 14-Day Timeline, Leg 1/2 Breakdowns, 12-Cycle Compounding Chart/Table, and Heatmap!
+ */
+export function computeBasketLoopMetrics(params) {
+  const {
+    capitalUsd = 200,
+    leg1Lines = [],
+    leg2Lines = [],
+    buyFeePct = 0,
+    sellFeePct = 2.0,
+    withdrawFeePct = 0,
+    steamFeeMode = 'EXACT_VALVE',
+    steamCustomFeePct = 13.04
+  } = params;
+
+  const cap0 = Math.max(0, Number(capitalUsd) || 0);
+
+  const l1Eval = leg1Lines.map((line) => {
+    const qty = Math.max(0, Math.floor(Number(line.qty) || 0));
+    const marketUsd = Math.max(0, Number(line.marketUsd) || 0);
+    const steamUsd = Math.max(0, Number(line.steamUsd) || 0);
+    const effBuy = calcEffectiveBuyUsd(marketUsd, buyFeePct);
+    const netSteam = calcNetSteamUsd(steamUsd, steamFeeMode, steamCustomFeePct);
+    const exactFee = calcExactValveSteamFee(steamUsd);
+    const spentUsd = qty * effBuy;
+    const grossSteamUsd = qty * steamUsd;
+    const steamEarnedUsd = qty * netSteam;
+    const m1Line = effBuy > 0 ? netSteam / effBuy : 0;
+    return {
+      ...line,
+      qty,
+      marketUsd,
+      steamUsd,
+      effBuy,
+      netSteam,
+      exactFee,
+      spentUsd,
+      grossSteamUsd,
+      steamEarnedUsd,
+      m1: m1Line,
+      profitPct: m1Line > 0 ? (m1Line - 1) * 100 : -100
+    };
+  });
+
+  const l2Eval = leg2Lines.map((line) => {
+    const qty = Math.max(0, Math.floor(Number(line.qty) || 0));
+    const steamUsd = Math.max(0, Number(line.steamUsd) || 0);
+    const marketUsd = Math.max(0, Number(line.marketUsd) || 0);
+    const netSell = calcNetSellUsd(marketUsd, sellFeePct, withdrawFeePct);
+    const steamSpentUsd = qty * steamUsd;
+    const cashReturnUsd = qty * netSell;
+    const m2Line = steamUsd > 0 ? netSell / steamUsd : 0;
+    return {
+      ...line,
+      qty,
+      steamUsd,
+      marketUsd,
+      netSell,
+      steamSpentUsd,
+      cashReturnUsd,
+      m2: m2Line,
+      lossPct: m2Line > 0 ? (1 - m2Line) * 100 : 100
+    };
+  });
+
+  const totalQ1 = l1Eval.reduce((a, l) => a + l.qty, 0);
+  const totalSpent1 = l1Eval.reduce((a, l) => a + l.spentUsd, 0);
+  const totalGrossSteam1 = l1Eval.reduce((a, l) => a + l.grossSteamUsd, 0);
+  const totalSteamEarned1 = l1Eval.reduce((a, l) => a + l.steamEarnedUsd, 0);
+  const totalSteamFeeUsd = Math.max(0, totalGrossSteam1 - totalSteamEarned1);
+  const weightedSteamFeePct = totalGrossSteam1 > 0 ? (totalSteamFeeUsd / totalGrossSteam1) * 100 : 13.04;
+  const anyMinFeeTrap = l1Eval.some((l) => l.qty > 0 && l.exactFee.isMinFeeTrap);
+
+  const totalQ2 = l2Eval.reduce((a, l) => a + l.qty, 0);
+  const totalSteamSpent2 = l2Eval.reduce((a, l) => a + l.steamSpentUsd, 0);
+  const totalCashReturn2 = l2Eval.reduce((a, l) => a + l.cashReturnUsd, 0);
+
+  const m1 = totalSpent1 > 0 ? totalSteamEarned1 / totalSpent1 : 0;
+  const leg1ProfitPct = m1 > 0 ? (m1 - 1) * 100 : 0;
+  const m2 = totalSteamSpent2 > 0 ? totalCashReturn2 / totalSteamSpent2 : 0;
+  const conversionLossPct = m2 > 0 ? (1 - m2) * 100 : 100;
+
+  const mCycle = m1 * m2;
+  const netCycleRoiPct = (mCycle - 1) * 100;
+  const breakEvenLossLimitPct = m1 > 0 ? (1 - 1 / m1) * 100 : 0;
+  const marginOfSafetyPct = breakEvenLossLimitPct - conversionLossPct;
+
+  // Weighted representative unit prices for sensitivity heatmap compatibility
+  const pM1Usd = totalQ1 > 0 ? totalSpent1 / totalQ1 / (1 + buyFeePct / 100) : 0;
+  const pS1Usd = totalQ1 > 0 ? totalGrossSteam1 / totalQ1 : 0;
+  const pS2Usd = totalQ2 > 0 ? totalSteamSpent2 / totalQ2 : 0;
+  const sellFactor = (1 - sellFeePct / 100) * (1 - withdrawFeePct / 100);
+  const pM2Usd = totalQ2 > 0 && sellFactor > 0 ? totalCashReturn2 / totalQ2 / sellFactor : 0;
+
+  const overBudgetUsd = Math.max(0, totalSpent1 - cap0);
+  const overSteamUsd = Math.max(0, totalSteamSpent2 - totalSteamEarned1);
+
+  // Cycle 1 exact + Cycles 2..12 realistic proportional integer basket compounding
+  const realisticCycles = [];
+  let cashWallet = cap0;
+  let steamWallet = 0;
+
+  for (let k = 1; k <= 12; k++) {
+    let q1Cycle = 0;
+    let spentM1 = 0;
+    let steamEarned = 0;
+    let q2Cycle = 0;
+    let spentS2 = 0;
+    let cashReturnM2 = 0;
+
+    if (k === 1) {
+      q1Cycle = totalQ1;
+      spentM1 = totalSpent1;
+      steamEarned = totalSteamEarned1;
+      cashWallet -= spentM1;
+      const cashLeftAfterLeg1 = cashWallet;
+      steamWallet += steamEarned;
+      const steamAfterLeg1 = steamWallet;
+
+      q2Cycle = totalQ2;
+      spentS2 = totalSteamSpent2;
+      cashReturnM2 = totalCashReturn2;
+      steamWallet -= spentS2;
+      cashWallet += cashReturnM2;
+
+      const steamCashEquiv = steamWallet * (m2 > 0 ? m2 : 0);
+      const cashEquivPortfolio = cashWallet + steamCashEquiv;
+      const netProfit = cashEquivPortfolio - cap0;
+      const netRoiPct = cap0 > 0 ? (netProfit / cap0) * 100 : 0;
+      const theoMult = Math.pow(Math.max(0, mCycle), k);
+      const theoPortfolio = cap0 * theoMult;
+
+      realisticCycles.push({
+        cycle: k,
+        days: 14,
+        weeks: 2,
+        q1: q1Cycle,
+        spentM1,
+        cashLeftAfterLeg1,
+        steamAfterLeg1,
+        q2: q2Cycle,
+        spentS2,
+        cashReturnM2,
+        cashWallet,
+        steamWallet,
+        steamCashEquiv,
+        cashEquivPortfolio,
+        nominalPortfolio: cashWallet + steamWallet,
+        netProfit,
+        netRoiPct,
+        theoMult,
+        theoPortfolio,
+        theoProfit: theoPortfolio - cap0,
+        theoRoiPct: cap0 > 0 ? ((theoPortfolio - cap0) / cap0) * 100 : 0
+      });
+    } else {
+      const availCash = Math.max(0, cashWallet);
+      const l1Weights = l1Eval.map((l) => (totalSpent1 > 0 ? l.spentUsd / totalSpent1 : 1 / Math.max(1, l1Eval.length)));
+      let remC = availCash;
+      for (let i = 0; i < l1Eval.length; i++) {
+        const l = l1Eval[i];
+        if (l.effBuy <= 0) continue;
+        const target = Math.min(remC, availCash * l1Weights[i]);
+        const q = Math.floor(target / l.effBuy);
+        q1Cycle += q;
+        spentM1 += q * l.effBuy;
+        steamEarned += q * l.netSteam;
+        remC -= q * l.effBuy;
+      }
+      // Greedy pack leftover cash into cheapest affordable Leg 1 item
+      const l1Cheap = [...l1Eval].filter((l) => l.effBuy > 0).sort((a, b) => a.effBuy - b.effBuy);
+      for (const l of l1Cheap) {
+        const extra = Math.floor(remC / l.effBuy);
+        if (extra > 0) {
+          q1Cycle += extra;
+          spentM1 += extra * l.effBuy;
+          steamEarned += extra * l.netSteam;
+          remC -= extra * l.effBuy;
+        }
+      }
+      cashWallet -= spentM1;
+      const cashLeftAfterLeg1 = cashWallet;
+      steamWallet += steamEarned;
+      const steamAfterLeg1 = steamWallet;
+
+      const availSteam = Math.max(0, steamWallet);
+      const l2Weights = l2Eval.map((l) => (totalSteamSpent2 > 0 ? l.steamSpentUsd / totalSteamSpent2 : 1 / Math.max(1, l2Eval.length)));
+      let remS = availSteam;
+      for (let j = 0; j < l2Eval.length; j++) {
+        const l = l2Eval[j];
+        if (l.steamUsd <= 0) continue;
+        const target = Math.min(remS, availSteam * l2Weights[j]);
+        const q = Math.floor(target / l.steamUsd);
+        q2Cycle += q;
+        spentS2 += q * l.steamUsd;
+        cashReturnM2 += q * l.netSell;
+        remS -= q * l.steamUsd;
+      }
+      const l2Cheap = [...l2Eval].filter((l) => l.steamUsd > 0).sort((a, b) => a.steamUsd - b.steamUsd);
+      for (const l of l2Cheap) {
+        const extra = Math.floor(remS / l.steamUsd);
+        if (extra > 0) {
+          q2Cycle += extra;
+          spentS2 += extra * l.steamUsd;
+          cashReturnM2 += extra * l.netSell;
+          remS -= extra * l.steamUsd;
+        }
+      }
+      steamWallet -= spentS2;
+      cashWallet += cashReturnM2;
+
+      const steamCashEquiv = steamWallet * (m2 > 0 ? m2 : 0);
+      const cashEquivPortfolio = cashWallet + steamCashEquiv;
+      const netProfit = cashEquivPortfolio - cap0;
+      const netRoiPct = cap0 > 0 ? (netProfit / cap0) * 100 : 0;
+      const theoMult = Math.pow(Math.max(0, mCycle), k);
+      const theoPortfolio = cap0 * theoMult;
+
+      realisticCycles.push({
+        cycle: k,
+        days: k * 14,
+        weeks: k * 2,
+        q1: q1Cycle,
+        spentM1,
+        cashLeftAfterLeg1,
+        steamAfterLeg1,
+        q2: q2Cycle,
+        spentS2,
+        cashReturnM2,
+        cashWallet,
+        steamWallet,
+        steamCashEquiv,
+        cashEquivPortfolio,
+        nominalPortfolio: cashWallet + steamWallet,
+        netProfit,
+        netRoiPct,
+        theoMult,
+        theoPortfolio,
+        theoProfit: theoPortfolio - cap0,
+        theoRoiPct: cap0 > 0 ? ((theoPortfolio - cap0) / cap0) * 100 : 0
+      });
+    }
+  }
+
+  return {
+    isBasket: true,
+    capitalUsd: cap0,
+    pM1Usd,
+    effPM1: calcEffectiveBuyUsd(pM1Usd, buyFeePct),
+    pS1Usd,
+    netS1: totalQ1 > 0 ? totalSteamEarned1 / totalQ1 : 0,
+    exactSteamDetail: {
+      buyerUsd: pS1Usd,
+      netUsd: totalQ1 > 0 ? totalSteamEarned1 / totalQ1 : 0,
+      totalFeeUsd: totalSteamFeeUsd,
+      effectiveFeePct: weightedSteamFeePct,
+      isMinFeeTrap: anyMinFeeTrap
+    },
+    m1,
+    leg1ProfitPct,
+    pS2Usd,
+    pM2Usd,
+    netM2: totalQ2 > 0 ? totalCashReturn2 / totalQ2 : 0,
+    m2,
+    conversionLossPct,
+    mCycle,
+    netCycleRoiPct,
+    breakEvenLossLimitPct,
+    marginOfSafetyPct,
+    firstCycle: realisticCycles[0],
+    realisticCycles,
+    basketDetail: {
+      leg1: l1Eval,
+      leg2: l2Eval,
+      totalSpent1,
+      totalSteamEarned1,
+      totalSteamSpent2,
+      totalCashReturn2,
+      overBudgetUsd,
+      overSteamUsd
+    }
+  };
+}
+
+/**
+ * Parallel Execution Reality & Risk Profiler for an Active Multi-Item Desk Basket
+ */
+export function estimateBasketReality(basketMetrics, leg1ItemsMap, leg2ItemsMap, opts = {}) {
+  const bd = basketMetrics.basketDetail;
+  const reasons = [];
+  let maxExtraL1 = 0;
+  let maxExtraL2 = 0;
+  const l1RiskW = [];
+  const l2RiskW = [];
+
+  for (const line of bd.leg1) {
+    const it = leg1ItemsMap.get(line.name.toLowerCase()) || null;
+    const vel = computeVelocityProfile(it);
+    const fd = estimateLeg1FillDays(it, vel, line.qty);
+    if (fd > maxExtraL1) maxExtraL1 = fd;
+    if (it && (vel.tier === 'C' || vel.tier === 'D')) {
+      reasons.push(
+        bi(`Step 1 (${line.name}): ${vel.slowWarning || 'Moderate/slow demand.'}`, `1. Adım (${line.name}): ${vel.slowWarning || 'Satış hızı orta/yavaş.'}`)
+      );
+    }
+    l1RiskW.push({ weight: line.spentUsd, sigma: computeItemVolatility7d(it) });
+  }
+
+  for (const line of bd.leg2) {
+    const it = leg2ItemsMap.get(line.name.toLowerCase()) || null;
+    const vel = computeVelocityProfile(it);
+    const fd = estimateLeg2FillDays(it, vel, line.qty, opts.useBuyOrderForLeg2);
+    if (fd > maxExtraL2) maxExtraL2 = fd;
+    if (it && (vel.tier === 'C' || vel.tier === 'D')) {
+      reasons.push(
+        bi(`Step 2 (${line.name}): ${vel.slowWarning || 'Cashout may take extra days.'}`, `2. Adım (${line.name}): ${vel.slowWarning || 'Nakit dönüşü uzayabilir.'}`)
+      );
+    }
+    l2RiskW.push({ weight: line.steamSpentUsd, sigma: computeItemVolatility7d(it) });
+  }
+
+  if (bd.overBudgetUsd > 0.5) {
+    reasons.unshift(
+      bi(
+        `Basket buy cost exceeds budget by $${bd.overBudgetUsd.toFixed(2)} — raise budget or lower Step 1 qty.`,
+        `Sepet alış tutarı bütçeyi $${bd.overBudgetUsd.toFixed(2)} aşıyor — bütçeyi artırın veya 1. adım adedini azaltın.`
+      )
+    );
+  }
+  if (bd.overSteamUsd > 0.5) {
+    reasons.unshift(
+      bi(
+        `Step 2 exit basket costs $${bd.overSteamUsd.toFixed(2)} more than Step 1 Steam balance — reduce Step 2 qty.`,
+        `2. Adım sepeti Steam bakiyesini $${bd.overSteamUsd.toFixed(2)} aşıyor — 2. adım adedini azaltın.`
+      )
+    );
+  }
+
+  const totalExtra = maxExtraL1 + maxExtraL2;
+  const minDays = 14 + Math.floor(totalExtra * 0.5);
+  const maxDays = 14 + Math.max(totalExtra, 1);
+  const risk = computePortfolioRisk(l1RiskW, l2RiskW, basketMetrics.firstCycle.netRoiPct, basketMetrics.capitalUsd);
+
+  let level = 'smooth';
+  let pillCls = 'pill-mint';
+  const k2Count = bd.leg2.length;
+  let label = bi(
+    `Parallel (~${minDays}–${maxDays}d • ${k2Count} Exits)`,
+    `Paralel (~${minDays}–${maxDays}G • ${k2Count} Çıkış)`
+  );
+
+  if (bd.overBudgetUsd > 0.5 || bd.overSteamUsd > 0.5 || maxDays >= 28) {
+    level = 'impractical';
+    pillCls = 'pill-crimson';
+    label = bi(`Check Basket (~${minDays}–${maxDays}d)`, `Sepeti Kontrol Et (~${minDays}–${maxDays}G)`);
+  } else if (maxDays >= 20) {
+    level = 'slow';
+    pillCls = 'pill-amber';
+    label = bi(`Extended (~${minDays}–${maxDays}d)`, `Süre Uzar (~${minDays}–${maxDays}G)`);
+  } else if (totalExtra >= 2) {
+    level = 'moderate';
+    pillCls = 'pill-gold';
+  }
+
+  return {
+    level,
+    label,
+    pillCls,
+    minDays,
+    maxDays,
+    extraDays: totalExtra,
+    estFillDays1: maxExtraL1,
+    estFillDays2: maxExtraL2,
+    storageUnits: 0,
+    bookRatio1: 0,
+    risk,
+    reasons,
+    needsUpperTierSuggestion: level === 'impractical' || level === 'slow'
   };
 }
