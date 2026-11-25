@@ -1,0 +1,5 @@
+# Cloudflare Pages clean routes (keep /api/* routed to Functions)
+/calculator   /index.html   200
+/scanner      /index.html   200
+/tracker      /index.html   200
+/academy      /index.html   200

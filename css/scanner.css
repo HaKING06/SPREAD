@@ -1,0 +1,177 @@
+/* ==========================================================================
+   SPREAD — Live Market Scanner & Auto-Pair Finder Styles
+   ========================================================================== */
+
+/* Optimal Pair Recommendations Strip */
+.pair-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px 18px 18px;
+}
+
+.pair-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hair);
+  background: var(--bg-inset);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.pair-card:hover {
+  border-color: var(--gold-border);
+  transform: translateY(-2px);
+}
+
+.pair-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pair-items-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.pair-mini-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pair-mini-thumb {
+  width: 38px;
+  height: 28px;
+  flex: 0 0 38px;
+  border-radius: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hair);
+  border-left: 2px solid var(--rarity-color, #b0c3d9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+.pair-mini-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pair-mini-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pair-mini-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pair-mini-sub {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+/* Scanner Filter Bar */
+.scanner-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.scanner-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.scanner-filters-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.item-cell {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 240px;
+}
+
+.item-cell-info {
+  min-width: 0;
+}
+
+.item-cell-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.item-cell-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.sparkline-canvas {
+  width: 68px;
+  height: 24px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.scanner-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border-hair);
+  background: var(--bg-inset);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Custom Item / Import Drawer */
+.drawer-box {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-hair);
+  background: var(--bg-inset);
+}
+
+.drawer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+@media (max-width: 1120px) {
+  .pair-strip { grid-template-columns: 1fr; }
+  .scanner-filters-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .drawer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

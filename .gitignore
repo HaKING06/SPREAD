@@ -1,0 +1,14 @@
+# Dependencies & local tooling
+node_modules/
+.wrangler/
+.dev.vars
+
+# Legacy single-file prototype (kept locally, excluded from public repo)
+steam_arbitrage.html
+
+# OS & editor junk
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json

@@ -1,0 +1,143 @@
+/**
+ * Cloudflare Pages Function: GET /api/market
+ * Fetches live CSFloat price-list + Steam + Youpin898 + CSFloat Buy Orders
+ * and merges them against the requested/bundled catalog items with edge caching.
+ */
+
+const CACHE_TTL_SECONDS = 300; // 5 minutes at Cloudflare edge
+const UPSTREAM = {
+  csfloatLive: 'https://csfloat.com/api/v1/listings/price-list',
+  csfloatOrders: 'https://prices.csgotrader.app/latest/csfloat.json',
+  steam: 'https://prices.csgotrader.app/latest/steam.json',
+  youpin: 'https://prices.csgotrader.app/latest/youpin.json'
+};
+
+async function fetchJsonWithTimeout(url, ms = 12000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'SpreadTerminal-Edge/1.0 (+https://spread.haking.tr)' }
+    });
+    if (!res.ok) throw new Error(`Upstream ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+function round2(v) {
+  return Math.round(v * 100) / 100;
+}
+
+export async function onRequestGet(context) {
+  const { request } = context;
+  const url = new URL(request.url);
+  const cache = caches.default;
+  const cacheKey = new Request(url.origin + '/api/market?v=1', { method: 'GET' });
+
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    const headers = new Headers(cached.headers);
+    headers.set('X-Spread-Cache', 'HIT');
+    return new Response(cached.body, { status: cached.status, headers });
+  }
+
+  try {
+    // Load our own catalog.json asset to know exact target market_hash_names
+    const catalogReq = new Request(url.origin + '/data/catalog.json');
+    const [catalogRes, cfLiveRes, cfOrdRes, steamRes, ypRes] = await Promise.allSettled([
+      context.env.ASSETS ? context.env.ASSETS.fetch(catalogReq) : fetch(catalogReq),
+      fetchJsonWithTimeout(UPSTREAM.csfloatLive, 12000),
+      fetchJsonWithTimeout(UPSTREAM.csfloatOrders, 12000),
+      fetchJsonWithTimeout(UPSTREAM.steam, 12000),
+      fetchJsonWithTimeout(UPSTREAM.youpin, 12000)
+    ]);
+
+    if (catalogRes.status !== 'fulfilled' || !catalogRes.value.ok) {
+      return Response.json({ ok: false, error: 'Catalog asset unavailable' }, { status: 500 });
+    }
+    const catalog = await catalogRes.value.json();
+    const cfLiveArr = cfLiveRes.status === 'fulfilled' && Array.isArray(cfLiveRes.value) ? cfLiveRes.value : [];
+    const cfOrdObj = cfOrdRes.status === 'fulfilled' && cfOrdRes.value ? cfOrdRes.value : {};
+    const steamObj = steamRes.status === 'fulfilled' && steamRes.value ? steamRes.value : {};
+    const ypObj = ypRes.status === 'fulfilled' && ypRes.value ? ypRes.value : {};
+
+    const cfLiveMap = new Map();
+    for (const row of cfLiveArr) {
+      if (row && typeof row.market_hash_name === 'string' && Number.isFinite(row.min_price)) {
+        cfLiveMap.set(row.market_hash_name, {
+          minUsd: row.min_price / 100,
+          qty: Number(row.quantity) || 0
+        });
+      }
+    }
+
+    const prices = {};
+    let liveCount = 0;
+
+    for (const item of catalog.items || []) {
+      const mhn = item.n;
+      const st = steamObj[mhn];
+      const st24 = Number(st?.last_24h) || 0;
+      const st7 = Number(st?.last_7d) || 0;
+      const st30 = Number(st?.last_30d) || 0;
+      const st90 = Number(st?.last_90d) || 0;
+      const steamUsd = st24 > 0 ? st24 : st7 > 0 ? st7 : st30;
+
+      const cfLive = cfLiveMap.get(mhn);
+      const cfOrd = cfOrdObj[mhn];
+      const cfPrice = cfLive?.minUsd || Number(cfOrd?.starting_at?.price) || Number(cfOrd?.price) || 0;
+      const cfQty = cfLive?.qty || 0;
+      const cfBuyOrder = Number(cfOrd?.highest_order?.price) || 0;
+      const ypPrice = Number(ypObj[mhn]) || 0;
+
+      if (steamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
+        liveCount += 1;
+        prices[mhn] = {
+          s: round2(steamUsd),
+          s7: round2(st7 || steamUsd),
+          s30: round2(st30 || steamUsd),
+          s90: round2(st90 || steamUsd),
+          cf: cfPrice > 0 ? round2(cfPrice) : 0,
+          cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
+          q: cfQty,
+          yp: ypPrice > 0 ? round2(ypPrice) : 0
+        };
+      }
+    }
+
+    const payload = {
+      ok: true,
+      mode: 'live-edge',
+      updatedAt: new Date().toISOString(),
+      feeds: {
+        csfloatLive: cfLiveRes.status === 'fulfilled',
+        csfloatOrders: cfOrdRes.status === 'fulfilled',
+        steam: steamRes.status === 'fulfilled',
+        youpin: ypRes.status === 'fulfilled'
+      },
+      count: liveCount,
+      prices
+    };
+
+    const response = new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}, s-maxage=${CACHE_TTL_SECONDS}`,
+        'X-Spread-Cache': 'MISS',
+        'X-Content-Type-Options': 'nosniff'
+      }
+    });
+
+    context.waitUntil(cache.put(cacheKey, response.clone()));
+    return response;
+  } catch (err) {
+    return Response.json(
+      { ok: false, error: 'Upstream market sync failed', detail: String(err?.message || err) },
+      { status: 502 }
+    );
+  }
+}

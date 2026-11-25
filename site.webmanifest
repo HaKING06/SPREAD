@@ -1,0 +1,21 @@
+{
+  "name": "SPREAD — CS2 Arbitrage Terminal",
+  "short_name": "SPREAD",
+  "description": "CSFloat & Youpin898 <-> Steam Community Market canlı iki yönlü CS2 arbitraj terminali.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090A0C",
+  "theme_color": "#F0B90B",
+  "icons": [
+    {
+      "src": "/assets/brand/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/brand/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "spread-haking-tr",
+  "version": "1.0.0",
+  "description": "SPREAD (spread.haking.tr) — Live CS2 Two-Way Arbitrage Terminal for CSFloat & Youpin898 <-> Steam Community Market.",
+  "type": "module",
+  "homepage": "https://spread.haking.tr",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "sync": "node scripts/sync-catalog.mjs",
+    "verify": "node scripts/verify.mjs"
+  },
+  "keywords": [
+    "cs2",
+    "steam",
+    "csfloat",
+    "youpin898",
+    "arbitrage",
+    "trading-terminal",
+    "cloudflare-pages"
+  ]
+}
