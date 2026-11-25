@@ -998,6 +998,65 @@
   line-height: 1.45;
 }
 
+/* Compact 1-Click Pareto Leg 2 Exit Switcher inside Leg 2 Card */
+.smart-exits-bar {
+  margin-top: 9px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hair);
+  background: var(--bg-inset);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.smart-exits-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.smart-exits-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.smart-exit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-hair);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  max-width: 100%;
+}
+
+.smart-exit-chip:hover {
+  border-color: var(--gold-border);
+  color: var(--text-primary);
+}
+
+.smart-exit-chip.is-active {
+  border-color: var(--mint-border);
+  background: var(--mint-soft);
+  color: var(--text-primary);
+}
+
+.smart-exit-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 175px;
+  font-weight: 600;
+}
+
 .agent-cta-col {
   display: flex;
   flex-direction: column;

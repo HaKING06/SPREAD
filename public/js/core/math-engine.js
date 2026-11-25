@@ -94,6 +94,7 @@ export function computeVelocityProfile(item) {
       mktVol: 0,
       weeklyUsd: 0,
       estDailySales: 0.5,
+      turnover30Pct: 0,
       bidAskPct: 0,
       estWeeklyCap: 20,
       extraSellDays: 2,
@@ -119,14 +120,20 @@ export function computeVelocityProfile(item) {
   const sp7 = Math.max(v7, Math.round(v30 / 4.3));
   const weeklyUsd = Math.round(sp7 * priceRef);
 
-  // V5 Bayesian Winsorized Multi-Window True Daily Volume:
-  // Prevents a single noisy 24h spike from outweighing stronger 7d/30d + order-book depth.
+  // V5.1 True Executed Daily Sales & Order-Book Turnover Rate:
+  // Raw unsold listing count (q) is SUPPLY OVERHANG, never fake daily sales!
   const rate30 = v30 / 30;
   const rate7 = v7 / 7;
   const rate24Capped = Math.min(v24, Math.max(rate7, rate30, 0.5) * 1.65 + 1);
   const spDaily = rate30 * 0.45 + rate7 * 0.40 + rate24Capped * 0.15;
-  const depthDaily = q > 0 ? (q / 25) * (bidAskPct >= 92 ? 1.0 : bidAskPct >= 88 ? 0.65 : 0.25) : 0;
-  const estDailySales = Math.max(0.08, Math.round((spDaily * 1.9 + (mv / 14) * 0.45 + depthDaily * 0.3) * 100) / 100);
+  const mcsDaily = mv / 14;
+  // Monthly order-book sell-through rate (higher % = cleaner queue, less undercut competition)
+  const turnover30Pct = q > 0 ? Math.round(((v30 + mv * 0.35) / Math.max(20, q)) * 1000) / 10 : 0;
+  const bidAskBoost = bidAskPct >= 93 ? 1.15 : bidAskPct >= 90 ? 1.0 : bidAskPct > 0 && bidAskPct < 85 ? 0.72 : 0.9;
+  const estDailySales = Math.max(
+    0.08,
+    Math.round((spDaily * 2.35 + mcsDaily * 0.55) * bidAskBoost * 100) / 100
+  );
 
   const isKnifeOrGlove = item.c === 'Knives' || item.c === 'Gloves';
   const isCapsule = item.c === 'Capsule';
@@ -251,6 +258,7 @@ export function computeVelocityProfile(item) {
     mktVol: mv,
     weeklyUsd,
     estDailySales,
+    turnover30Pct,
     bidAskPct,
     estWeeklyCap,
     extraSellDays,
@@ -647,13 +655,20 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
   const vel1 = computeVelocityProfile(item1);
   const vel2 = computeVelocityProfile(item2);
 
-  // Quantity-relative fill-time model using V5 multi-window cross-market daily volume
+  // V5.1 Quantity-relative & Queue-Competition fill-time model:
+  // Selling large q2 into a congested book (low turnover30Pct + high listing overhang) faces undercut queue drag.
+  const queueEff2 =
+    vel2.turnover30Pct > 0 && vel2.turnover30Pct < 15 && (Number(item2?.q) || 0) >= 250
+      ? 0.6
+      : vel2.turnover30Pct > 0 && vel2.turnover30Pct < 22 && (Number(item2?.q) || 0) >= 250
+      ? 0.78
+      : 0.95;
   const estFillDays1 =
     q1 <= 0 ? 0 : Math.min(18, Math.max(0, Math.ceil(q1 / Math.max(0.25, vel1.estDailySales * 0.85)) - 1));
   const estFillDays2 =
     opts.useBuyOrderForLeg2 || q2 <= 0
       ? 0
-      : Math.min(14, Math.max(0, Math.ceil(q2 / Math.max(0.35, vel2.estDailySales * 0.95)) - 1));
+      : Math.min(14, Math.max(0, Math.ceil(q2 / Math.max(0.35, vel2.estDailySales * queueEff2)) - 1));
 
   let extraBuyDays = 0;
   let extraSellSteamDays = Math.max(vel1.extraSellDays, estFillDays1);
@@ -1005,13 +1020,29 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
         (l2.vel.isKnifeOrGlove && (l2.vel.tier !== 'B' || c1.q2 > 5)) ||
         reality.maxDays >= slowDayLimit;
       const confidenceScore = computePairConfidence(l1, l2, c1, reality);
+      const floorRoiPer14d = instantFloorRoi * (14 / Math.max(14, avgDays));
+      const blendedRoiPer14d = roiPer14d * 0.72 + Math.max(0, floorRoiPer14d) * 0.28;
       const buffBonus = l1.m.isBelowBuff ? 3.5 : l1.m.isOverBuff ? -4 : 0;
       const trendBonus = l1.m.trendStatus === 'FALLING' ? -6 : l1.m.trendStatus === 'STABLE' ? 1.5 : 0;
-      const floorBonus = instantFloorProfit > 0 ? Math.min(3.5, instantFloorRoi * 0.14) : -3;
-      const q2EffortPenalty = c1.q2 > 18 ? (c1.q2 - 18) * 0.08 : 0;
+      const floorPenalty = instantFloorProfit < 0 ? -3.5 : 0;
+      const l2SpeedBonus =
+        (l2.vel.tier === 'A' ? 2.4 : 0) +
+        (l2.vel.turnover30Pct >= 22
+          ? 1.0
+          : l2.vel.turnover30Pct > 0 && l2.vel.turnover30Pct < 14 && c1.q2 >= 12
+          ? -2.2
+          : 0);
+      const q2EffortPenalty = c1.q2 > 14 ? (c1.q2 - 14) * 0.12 : 0;
       const agentScore =
         Math.round(
-          (roiPer14d * 1.45 + confidenceScore * 0.25 + utilizedPct * 0.08 + buffBonus + trendBonus + floorBonus - q2EffortPenalty) *
+          (blendedRoiPer14d * 1.55 +
+            confidenceScore * 0.24 +
+            utilizedPct * 0.08 +
+            buffBonus +
+            trendBonus +
+            floorPenalty +
+            l2SpeedBonus -
+            q2EffortPenalty) *
             10
         ) / 10;
 
@@ -1323,6 +1354,122 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     agentBrief,
     bestBenchmark: agentBrief?.pair || finalStrategies[0]?.pair || null
   };
+}
+
+/**
+ * V5.1 Pareto-Optimal Leg 2 Exit Finder for ANY Currently Active Leg 1 Setup:
+ * Lets traders compare & 1-click swap among the top 3 mathematically optimal cashout skins
+ * (balancing speed, guaranteed buy-order floor, unit count, and net profit).
+ */
+export function findBestExitsForLeg1(items, leg1Ctx, opts, capitalUsd = 200, limit = 3) {
+  if (!Array.isArray(items) || items.length === 0 || !leg1Ctx || leg1Ctx.pM1Usd <= 0 || leg1Ctx.pS1Usd <= 0) {
+    return [];
+  }
+  const cap = Math.max(5, Number(capitalUsd) || 200);
+  const tier = getCapitalTierInfo(cap);
+  const isCSFloat = opts.marketplace !== 'YOUPIN';
+  const l1Item = leg1Ctx.item || null;
+  const l1NameLower = (leg1Ctx.name || l1Item?.n || '').toLowerCase();
+  const l1Vel = computeVelocityProfile(l1Item);
+  const l1Metrics = l1Item
+    ? evaluateItemMetrics(l1Item, opts)
+    : { stability30: 0.05, isBelowBuff: false, isOverBuff: false, trendStatus: 'STABLE', isAnomalySpread: false };
+  const l1Wrap = { item: l1Item || { n: leg1Ctx.name || 'Leg 1' }, m: l1Metrics, vel: l1Vel };
+
+  const minL2Price = Math.min(Math.max(tier.minL2Price, cap / 45), cap * 0.45);
+  const maxL2Price = Math.max(tier.maxL2Price, cap * 1.25, 1900);
+  const rawExits = [];
+
+  for (const item of items) {
+    if (item.n.toLowerCase() === l1NameLower) continue;
+    const qty = Number(item.q) || 0;
+    if (isCSFloat && qty < 12) continue;
+    if (item.st || item.sv) continue;
+    if (item.c === 'Capsule' && (item.v7 || 0) < 35) continue;
+
+    const m = evaluateItemMetrics(item, opts);
+    if (!m.hasValidMarket || m.isSpiky) continue;
+    const vel = m.velocity;
+    if (vel.tier !== 'A' && vel.tier !== 'B') continue;
+    if (vel.isKnifeOrGlove && !(cap >= 1500 && vel.sold7d >= 8 && qty >= 60)) continue;
+    if (isCSFloat && vel.bidAskPct > 0 && vel.bidAskPct < 83) continue;
+    if (m.leg2LossPct < 3.0 && !(vel.tier === 'A' && vel.mktVol >= 150 && m.leg2LossPct >= 0.5)) continue;
+    if (m.leg2LossPct > 15.5) continue;
+    if (m.steamUsd < minL2Price || m.steamUsd > maxL2Price) continue;
+
+    const sim = computeLoopMetrics({
+      capitalUsd: cap,
+      pM1Usd: leg1Ctx.pM1Usd,
+      pS1Usd: leg1Ctx.pS1Usd,
+      pS2Usd: m.steamUsd,
+      pM2Usd: m.marketSellUsd,
+      buyFeePct: opts.buyFeePct,
+      sellFeePct: opts.sellFeePct,
+      withdrawFeePct: opts.withdrawFeePct,
+      steamFeeMode: opts.steamFeeMode,
+      steamCustomFeePct: opts.steamCustomFeePct
+    });
+    const c1 = sim.firstCycle;
+    if (c1.q1 <= 0 || c1.q2 <= 0) continue;
+    if (c1.q2 > (cap >= 1500 ? 60 : 40)) continue;
+
+    const reality = estimateExecutionReality(sim, l1Item, item, opts);
+    const avgDays = (reality.minDays + reality.maxDays) / 2;
+    const slip2Pct = c1.q2 <= 1 || opts.useBuyOrderForLeg2 ? 0 : Math.min(4.5, 1.5 * Math.sqrt(c1.q2 / Math.max(15, qty || 30)));
+    const slipProfit = c1.netProfit - c1.cashReturnM2 * (slip2Pct / 100);
+    const slipRoi = cap > 0 ? (slipProfit / cap) * 100 : 0;
+
+    const instSell = isCSFloat && item.cfo > 0 ? item.cfo : m.marketSellUsd;
+    const instNetM2 = calcNetSellUsd(instSell, opts.sellFeePct, opts.withdrawFeePct);
+    const instM2 = m.steamUsd > 0 ? instNetM2 / m.steamUsd : 0;
+    const instantFloorProfit = Math.round((c1.cashLeftAfterLeg1 + c1.q2 * instNetM2 + c1.steamWallet * instM2 - cap) * 100) / 100;
+    const floorRoi = cap > 0 ? (instantFloorProfit / cap) * 100 : 0;
+
+    const roi14 = slipRoi * (14 / Math.max(14, avgDays));
+    const floor14 = floorRoi * (14 / Math.max(14, avgDays));
+    const blended14 = roi14 * 0.72 + Math.max(0, floor14) * 0.28;
+    const l2Wrap = { item, m, vel };
+    const conf = computePairConfidence(l1Wrap, l2Wrap, c1, reality);
+    const speedBonus =
+      (vel.tier === 'A' ? 2.4 : 0) +
+      (vel.turnover30Pct >= 22 ? 1.0 : vel.turnover30Pct > 0 && vel.turnover30Pct < 14 && c1.q2 >= 12 ? -2.2 : 0);
+    const effortPen = c1.q2 > 14 ? (c1.q2 - 14) * 0.12 : 0;
+    const score = Math.round((blended14 * 1.55 + conf * 0.24 + speedBonus - effortPen) * 10) / 10;
+
+    rawExits.push({
+      item,
+      m,
+      vel,
+      c1,
+      reality,
+      instantFloorProfit,
+      confidenceScore: conf,
+      score
+    });
+  }
+
+  // Strict Pareto frontier filter
+  const pareto = rawExits.filter((a, i) => {
+    for (let j = 0; j < rawExits.length; j++) {
+      if (i === j) continue;
+      const b = rawExits[j];
+      const geAll =
+        b.c1.netProfit >= a.c1.netProfit - 0.01 &&
+        b.reality.maxDays <= a.reality.maxDays &&
+        b.c1.q2 <= a.c1.q2 &&
+        b.vel.score >= a.vel.score - 2;
+      const gtOne =
+        b.c1.netProfit > a.c1.netProfit + 0.25 ||
+        b.reality.maxDays < a.reality.maxDays ||
+        b.c1.q2 < a.c1.q2 ||
+        b.vel.score > a.vel.score + 2;
+      if (geAll && gtOne) return false;
+    }
+    return true;
+  });
+
+  pareto.sort((a, b) => b.score - a.score);
+  return pareto.slice(0, limit);
 }
 
 export function diagnoseCurrentSetup(metrics, advisorResult, reality) {

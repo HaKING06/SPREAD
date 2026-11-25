@@ -11,7 +11,8 @@ import {
   analyzeCapitalStrategies,
   calcExactValveSteamFee,
   computeLoopMetrics,
-  estimateExecutionReality
+  estimateExecutionReality,
+  findBestExitsForLeg1
 } from '../public/js/core/math-engine.js';
 import { DICT, setLang, t } from '../public/js/core/i18n.js';
 import { parseSharedSetupFromUrl } from '../public/js/core/router-share.js';
@@ -233,13 +234,36 @@ async function main() {
         altSim.firstCycle.q2 <= top800.c1.q2
       );
     });
-  if (adv.strategies.length >= 2 && adv.tier.id === 'STARTER' && allHaveConfidence && noFalseFastOnSlow && noParetoSuboptimal800) {
+  const exits800 = top800
+    ? findBestExitsForLeg1(
+        mergedSample,
+        {
+          item: top800.leg1.item,
+          name: top800.leg1.item.n,
+          pM1Usd: top800.leg1.m.marketBuyUsd,
+          pS1Usd: top800.leg1.m.steamUsd
+        },
+        { marketplace: 'CSFLOAT', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true },
+        800,
+        3
+      )
+    : [];
+  const fastTurnoverExit800 = top800 && (top800.leg2.vel.tier === 'A' || top800.leg2.vel.sold7d >= 12);
+  if (
+    adv.strategies.length >= 2 &&
+    adv.tier.id === 'STARTER' &&
+    allHaveConfidence &&
+    noFalseFastOnSlow &&
+    noParetoSuboptimal800 &&
+    fastTurnoverExit800 &&
+    exits800.length >= 2
+  ) {
     pass(
-      `SPREAD Agent V5 Pareto Optimizer verified: $200 (${adv.strategies.length} strats) | $800 Top=${top800.leg1.item.n} -> ${top800.c1.q2}x ${top800.leg2.item.n} (+$${top800.c1.netProfit.toFixed(2)}) | Zero Pareto-suboptimal exits.`
+      `SPREAD Agent V5.1 True-Turnover Pareto Optimizer verified: $200 (${adv.strategies.length} strats) | $800 Top=${top800.leg1.item.n} -> ${top800.c1.q2}x ${top800.leg2.item.n} (+$${top800.c1.netProfit.toFixed(2)}, 7d:${top800.leg2.vel.sold7d}, floor:+$${top800.instantFloorProfit.toFixed(2)}) | ${exits800.length} Pareto exits.`
     );
   } else {
     fail(
-      `SPREAD Agent V5 check failed: count=${adv.strategies.length}, conf=${allHaveConfidence}, noFalseFast=${noFalseFastOnSlow}, paretoOk=${noParetoSuboptimal800}`
+      `SPREAD Agent V5.1 check failed: count=${adv.strategies.length}, conf=${allHaveConfidence}, noFalseFast=${noFalseFastOnSlow}, paretoOk=${noParetoSuboptimal800}, fastExit=${fastTurnoverExit800}, exits=${exits800.length}`
     );
   }
 

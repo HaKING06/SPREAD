@@ -10,7 +10,8 @@ import {
   computeSensitivityMatrix,
   computeVelocityProfile,
   diagnoseCurrentSetup,
-  estimateExecutionReality
+  estimateExecutionReality,
+  findBestExitsForLeg1
 } from '../core/math-engine.js';
 import { fmtMoneyFromUsd, fmtMult, fmtPct, fromUsd, getCurrencyMeta, toUsd } from '../core/formatters.js';
 import { isTr, t } from '../core/i18n.js';
@@ -317,6 +318,116 @@ export function initCalculatorView(app) {
       )
     );
     box.appendChild(links);
+  }
+
+  /**
+   * Renders the compact 1-click Pareto-Optimal Leg 2 Exit Switcher directly inside the Leg 2 panel
+   */
+  function renderLeg2SmartExits(item1Obj) {
+    const host = document.getElementById('leg2SmartExitsBar');
+    if (!host) return;
+    clearNode(host);
+
+    const s = app.settings;
+    if (!app.items || app.items.length === 0 || s.leg1.marketUsd <= 0 || s.leg1.steamUsd <= 0) {
+      host.classList.add('hidden');
+      return;
+    }
+
+    const exits = findBestExitsForLeg1(
+      app.items,
+      {
+        item: item1Obj,
+        name: s.leg1.name,
+        pM1Usd: s.leg1.marketUsd,
+        pS1Usd: s.leg1.steamUsd
+      },
+      {
+        marketplace: s.marketplace,
+        buyFeePct: s.buyFeePct,
+        sellFeePct: s.sellFeePct,
+        withdrawFeePct: s.withdrawFeePct,
+        steamFeeMode: s.steamFeeMode,
+        steamCustomFeePct: s.steamCustomFeePct,
+        useBuyOrderForLeg2: s.useBuyOrderForLeg2,
+        conservativeSteamPrice: s.conservativeSteamPrice
+      },
+      s.capitalUsd,
+      3
+    );
+
+    if (exits.length === 0) {
+      host.classList.add('hidden');
+      return;
+    }
+
+    host.classList.remove('hidden');
+    const tr = isTr();
+    const cur = s.currency;
+    const fx = app.market.fxRates;
+    const money = (u, sign = false) => fmtMoneyFromUsd(u, cur, fx, { withSign: sign, decimals: 0 });
+
+    host.appendChild(
+      el(
+        'div',
+        { className: 'smart-exits-label' },
+        tr
+          ? '⚡ Bu 1. Yön için En İyi 2. Yön Seçenekleri (Tek Tıkla Değiştir):'
+          : '⚡ Best Step 2 Cashout Exits for Current Step 1 (1-Click Swap):'
+      )
+    );
+
+    const row = el('div', { className: 'smart-exits-row' });
+    const curL2Lower = (s.leg2.name || '').toLowerCase();
+
+    for (const ex of exits) {
+      const isAct = ex.item.n.toLowerCase() === curL2Lower;
+      const shortName = ex.item.n
+        .replace(' (Factory New)', ' (FN)')
+        .replace(' (Minimal Wear)', ' (MW)')
+        .replace(' (Field-Tested)', ' (FT)')
+        .replace(' (Well-Worn)', ' (WW)')
+        .replace(' (Battle-Scarred)', ' (BS)');
+
+      row.appendChild(
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `smart-exit-chip ${isAct ? 'is-active' : ''}`,
+            title: tr
+              ? `${ex.item.n} • ${ex.vel.shortLabel} (7g: ${ex.vel.sold7d} satış) • ~${ex.reality.minDays}–${ex.reality.maxDays}G • Anında Taban: ${money(ex.instantFloorProfit, true)}`
+              : `${ex.item.n} • ${ex.vel.shortLabel} (7d: ${ex.vel.sold7d} sold) • ~${ex.reality.minDays}–${ex.reality.maxDays}D • Instant Floor: ${money(ex.instantFloorProfit, true)}`,
+            onClick: () => {
+              app.settings.leg2.name = ex.item.n;
+              app.settings.leg2.steamUsd = ex.m.steamUsd;
+              app.settings.leg2.marketUsd = ex.m.marketSellUsd;
+              app.saveSettings();
+              syncInputsFromSettings();
+              renderMetricsOnly(true);
+              app.toast(
+                isTr()
+                  ? `2. Yön güncellendi: ${ex.c1.q2}x ${ex.item.n} (${fmtMoneyFromUsd(ex.c1.netProfit, cur, fx, { withSign: true })})`
+                  : `Step 2 swapped: ${ex.c1.q2}x ${ex.item.n} (${fmtMoneyFromUsd(ex.c1.netProfit, cur, fx, { withSign: true })})`
+              );
+            }
+          },
+          el('span', { className: `vel-dot is-${ex.vel.tier}` }),
+          el('span', { className: 'smart-exit-name' }, `${ex.c1.q2}x ${shortName}`),
+          el(
+            'span',
+            { className: `num ${ex.c1.netProfit >= 0 ? 'txt-mint' : 'txt-crimson'}`, style: { fontWeight: '700' } },
+            money(ex.c1.netProfit, true)
+          ),
+          el(
+            'span',
+            { className: 'txt-muted num', style: { fontSize: '10px' } },
+            tr ? `7g:${ex.vel.sold7d}` : `7d:${ex.vel.sold7d}`
+          )
+        )
+      );
+    }
+    host.appendChild(row);
   }
 
   /**
@@ -689,9 +800,10 @@ export function initCalculatorView(app) {
       }
     }
 
-    // Preview wells + async live Steam 24h sold volume verification
+    // Preview wells + Pareto Leg 2 quick switcher + async live Steam 24h sold volume verification
     renderSkinPreview('leg1PreviewWell', s.leg1.name, 1);
     renderSkinPreview('leg2PreviewWell', s.leg2.name, 2);
+    renderLeg2SmartExits(item1Obj);
 
     const verifyKey = `${s.leg1.name}|${s.leg2.name}`;
     if (verifyKey !== lastSteamVerifyKey && app.items.length > 0) {
