@@ -1,23 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://spread.haking.tr/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://spread.haking.tr/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://spread.haking.tr/?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://spread.haking.tr/"/>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://spread.haking.tr/tarayici</loc>
+    <loc>https://spread.haking.tr/scanner</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://spread.haking.tr/scanner"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://spread.haking.tr/tarayici"/>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://spread.haking.tr/takip</loc>
+    <loc>https://spread.haking.tr/tarayici</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://spread.haking.tr/academy</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://spread.haking.tr/academy"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://spread.haking.tr/akademi"/>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://spread.haking.tr/akademi</loc>
     <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://spread.haking.tr/about</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://spread.haking.tr/about"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://spread.haking.tr/hakkinda"/>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://spread.haking.tr/hakkinda</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://spread.haking.tr/tracker</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://spread.haking.tr/tracker"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://spread.haking.tr/takip"/>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

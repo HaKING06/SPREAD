@@ -11,6 +11,7 @@
 import { MARKETPLACES, SEVEN_DAYS_MS, buildImageUrl } from '../core/config.js';
 import { cleanText, clearNode, el } from '../core/security.js';
 import { fmtCountdown, fmtMoneyFromUsd, fmtPct, fmtShortDate, fromUsd, toUsd } from '../core/formatters.js';
+import { isTr, t } from '../core/i18n.js';
 
 export function initTrackerView(app) {
   let statusFilter = 'ALL'; // 'ALL' | 'ACTIVE' | 'DONE'
@@ -28,7 +29,10 @@ export function initTrackerView(app) {
     const fx = app.market.fxRates;
     actualEndInput.value = fromUsd(cycle.expectedEndUsd, cur, fx).toFixed(2);
     actualNoteInput.value = cycle.note || '';
-    completeSummaryEl.textContent = `${cycle.item1Name} → ${cycle.item2Name} | Beklenen dönüş: ${fmtMoneyFromUsd(cycle.expectedEndUsd, cur, fx)}`;
+    const tr = isTr();
+    completeSummaryEl.textContent = tr
+      ? `${cycle.item1Name} → ${cycle.item2Name} | Beklenen dönüş: ${fmtMoneyFromUsd(cycle.expectedEndUsd, cur, fx)}`
+      : `${cycle.item1Name} → ${cycle.item2Name} | Expected return: ${fmtMoneyFromUsd(cycle.expectedEndUsd, cur, fx)}`;
     completeModal.classList.remove('hidden');
     setTimeout(() => actualEndInput.focus(), 20);
   }
@@ -64,7 +68,7 @@ export function initTrackerView(app) {
     app.saveCycles();
     closeCompleteModal();
     render();
-    app.toast('Döngü tamamlandı ve gerçekleşen kâr deftere işlendi.');
+    app.toast(isTr() ? 'Döngü tamamlandı ve gerçekleşen kâr deftere işlendi.' : 'Cycle completed and realized profit recorded to ledger.');
   });
 
   document.querySelectorAll('[data-tracker-filter]').forEach((btn) => {
@@ -111,7 +115,10 @@ export function initTrackerView(app) {
       }
     }
 
-    document.getElementById('trActiveCount').textContent = `${activeCount} aktif / ${app.cycles.length} toplam`;
+    const tr = isTr();
+    document.getElementById('trActiveCount').textContent = tr
+      ? `${activeCount} aktif / ${app.cycles.length} toplam`
+      : `${activeCount} active / ${app.cycles.length} total`;
     document.getElementById('trActiveCapital').textContent = money(activeCapitalUsd);
 
     const expEl = document.getElementById('trExpectedProfit');
@@ -123,7 +130,9 @@ export function initTrackerView(app) {
     realEl.className = `kpi-card-value ${realizedProfitUsd >= 0 ? 'txt-gold' : 'txt-crimson'}`;
 
     document.getElementById('trReadySub').textContent =
-      readyCount > 0 ? `${readyCount} döngü faz geçişine hazır` : 'Tüm aktif döngüler takas kilidinde';
+      readyCount > 0
+        ? tr ? `${readyCount} döngü faz geçişine hazır` : `${readyCount} cycle(s) ready to advance`
+        : tr ? 'Tüm aktif döngüler takas kilidinde' : 'All active cycles currently in trade hold';
 
     clearNode(listEl);
 
@@ -138,7 +147,7 @@ export function initTrackerView(app) {
         el(
           'div',
           { className: 'panel panel-pad ta-center txt-muted', style: { padding: '38px 20px', fontSize: '13px' } },
-          'Henüz bu filtrede döngü kaydı yok. Hesaplayıcı sekmesinden "+ Bu Döngüyü Takibe Al" ile 14 günlük yeni bir döngü başlatabilirsiniz.'
+          t('tr.empty')
         )
       );
       return;
@@ -152,23 +161,33 @@ export function initTrackerView(app) {
       const phaseReady = c.phase === 3 || remainingMs <= 0;
 
       let badgeCls = 'pill-amber';
-      let badgeTxt = 'Faz 1 • 7G Hold';
-      let headline = `Faz 1 (Gün 0–7): ${mkt.name} Alındı → Steam Satışı Bekleniyor`;
-      let subline = `${c.qty1}x ${c.item1Name} için 7 günlük Valve Trade Protection kilidi`;
+      let badgeTxt = tr ? 'Faz 1 • 7G Hold' : 'Phase 1 • 7D Hold';
+      let headline = tr
+        ? `Faz 1 (Gün 0–7): ${mkt.name} Alındı → Steam Satışı Bekleniyor`
+        : `Phase 1 (Day 0–7): Bought on ${mkt.name} → Awaiting Steam Sell`;
+      let subline = tr
+        ? `${c.qty1}x ${c.item1Name} için 7 günlük Valve Trade Protection kilidi`
+        : `7-day Valve Trade Protection lock for ${c.qty1}x ${c.item1Name}`;
 
       if (c.phase === 1 && phaseReady) {
         badgeCls = 'pill-mint';
-        badgeTxt = "Faz 1 Hazır • Steam'de Satın";
+        badgeTxt = tr ? "Faz 1 Hazır • Steam'de Satın" : 'Phase 1 Ready • Sell on Steam';
       } else if (c.phase === 2) {
-        headline = `Faz 2 (Gün 7–14): Steam Dönüş Eşyası Alındı → ${mkt.name} Nakit Dönüş Bekleniyor`;
-        subline = `${c.qty2}x ${c.item2Name} için 7 günlük takas kilidi`;
+        headline = tr
+          ? `Faz 2 (Gün 7–14): Steam Dönüş Eşyası Alındı → ${mkt.name} Nakit Dönüş Bekleniyor`
+          : `Phase 2 (Day 7–14): Exit Skin Bought on Steam → Awaiting ${mkt.name} Cashout`;
+        subline = tr
+          ? `${c.qty2}x ${c.item2Name} için 7 günlük takas kilidi`
+          : `7-day trade lock for ${c.qty2}x ${c.item2Name}`;
         badgeCls = phaseReady ? 'pill-mint' : 'pill-ice';
-        badgeTxt = phaseReady ? `Faz 2 Hazır • ${mkt.name}'te Satın` : 'Faz 2 • 7G Hold';
+        badgeTxt = phaseReady
+          ? tr ? `Faz 2 Hazır • ${mkt.name}'te Satın` : `Phase 2 Ready • Sell on ${mkt.name}`
+          : tr ? 'Faz 2 • 7G Hold' : 'Phase 2 • 7D Hold';
       } else if (c.phase === 3) {
-        headline = 'Tamamlandı • Döngü Deftere İşlendi';
-        subline = `${c.qty1}x ${c.item1Name} → ${c.qty2}x ${c.item2Name}${c.note ? ` • Not: ${c.note}` : ''}`;
+        headline = tr ? 'Tamamlandı • Döngü Deftere İşlendi' : 'Completed • Recorded to Ledger';
+        subline = `${c.qty1}x ${c.item1Name} → ${c.qty2}x ${c.item2Name}${c.note ? ` • ${tr ? 'Not' : 'Note'}: ${c.note}` : ''}`;
         badgeCls = 'pill-gold';
-        badgeTxt = 'Tamamlandı';
+        badgeTxt = tr ? 'Tamamlandı' : 'Completed';
       }
 
       const displayProfit = c.phase === 3 && c.actualProfitUsd !== null ? c.actualProfitUsd : c.expectedProfitUsd;
@@ -190,7 +209,7 @@ export function initTrackerView(app) {
               { style: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' } },
               el('span', { className: `pill ${badgeCls}`, dataset: { cycleBadge: c.id } }, badgeTxt),
               el('span', { className: 'pill pill-muted' }, mkt.name),
-              el('span', { className: 'txt-muted num', style: { fontSize: '11px' } }, `Başlangıç: ${fmtShortDate(c.cycleStartedAt)}`)
+              el('span', { className: 'txt-muted num', style: { fontSize: '11px' } }, `${tr ? 'Başlangıç' : 'Started'}: ${fmtShortDate(c.cycleStartedAt)}`)
             ),
             el(
               'div',
@@ -224,19 +243,19 @@ export function initTrackerView(app) {
             el(
               'div',
               { className: 'cycle-stat' },
-              el('div', { className: 'cycle-stat-lbl' }, 'Başlangıç'),
+              el('div', { className: 'cycle-stat-lbl' }, tr ? 'Başlangıç' : 'Capital'),
               el('div', { className: 'cycle-stat-val' }, money(c.capitalUsd))
             ),
             el(
               'div',
               { className: 'cycle-stat' },
-              el('div', { className: 'cycle-stat-lbl' }, c.phase === 3 ? 'Gerçekleşen Son' : 'Hedef Dönüş'),
+              el('div', { className: 'cycle-stat-lbl' }, c.phase === 3 ? (tr ? 'Gerçekleşen Son' : 'Actual End') : (tr ? 'Hedef Dönüş' : 'Target End')),
               el('div', { className: 'cycle-stat-val' }, money(displayEnd))
             ),
             el(
               'div',
               { className: 'cycle-stat' },
-              el('div', { className: 'cycle-stat-lbl' }, c.phase === 3 ? 'Gerçekleşen Kâr' : 'Beklenen Kâr'),
+              el('div', { className: 'cycle-stat-lbl' }, c.phase === 3 ? (tr ? 'Gerçekleşen Kâr' : 'Realized Profit') : (tr ? 'Beklenen Kâr' : 'Expected Profit')),
               el(
                 'div',
                 { className: `cycle-stat-val ${displayProfit >= 0 ? 'txt-mint' : 'txt-crimson'}` },
@@ -256,15 +275,19 @@ export function initTrackerView(app) {
               'span',
               { className: 'txt-sec', dataset: { countdownText: c.id } },
               c.phase === 3
-                ? `14 Günlük Döngü Tamamlandı (${fmtShortDate(c.completedAt || c.phaseStartedAt)})`
+                ? tr
+                  ? `14 Günlük Döngü Tamamlandı (${fmtShortDate(c.completedAt || c.phaseStartedAt)})`
+                  : `14-Day Cycle Completed (${fmtShortDate(c.completedAt || c.phaseStartedAt)})`
                 : phaseReady
-                ? '7G Kilidi Açıldı — Sonraki Faza Geçebilirsiniz'
-                : `Kalan Süre: ${fmtCountdown(remainingMs)}`
+                ? tr ? '7G Kilidi Açıldı — Sonraki Faza Geçebilirsiniz' : '7D Hold Cleared — Ready for Next Phase'
+                : `${tr ? 'Kalan Süre' : 'Remaining'}: ${fmtCountdown(remainingMs)}`
             ),
             el(
               'span',
               { className: 'txt-gold', dataset: { countdownPct: c.id } },
-              c.phase === 3 ? '%100' : `Faz ${c.phase}/2 • %${pct.toFixed(0)}`
+              c.phase === 3
+                ? (tr ? '%100' : '100%')
+                : tr ? `Faz ${c.phase}/2 • %${pct.toFixed(0)}` : `Phase ${c.phase}/2 • ${pct.toFixed(0)}%`
             )
           ),
           el(
@@ -313,10 +336,10 @@ export function initTrackerView(app) {
                       c.phaseStartedAt = new Date().toISOString();
                       app.saveCycles();
                       render();
-                      app.toast('Faz 2 başlatıldı (7 günlük dönüş takas kilidi aktif).');
+                      app.toast(isTr() ? 'Faz 2 başlatıldı (7 günlük dönüş takas kilidi aktif).' : 'Phase 2 started (7-day return trade hold active).');
                     }
                   },
-                  'Faz 2’ye Geç →'
+                  tr ? 'Faz 2’ye Geç →' : 'Advance to Phase 2 →'
                 )
               : null,
             c.phase === 2
@@ -327,7 +350,7 @@ export function initTrackerView(app) {
                     className: 'btn btn-mint btn-sm',
                     onClick: () => openCompleteModal(c)
                   },
-                  '✓ Döngüyü Tamamla (Kâr İşle)'
+                  tr ? '✓ Döngüyü Tamamla (Kâr İşle)' : '✓ Complete Cycle (Log P&L)'
                 )
               : null,
             el(
@@ -345,10 +368,10 @@ export function initTrackerView(app) {
                   c.completedAt = null;
                   app.saveCycles();
                   render();
-                  app.toast('Döngü Faz 1 başlangıcına sıfırlandı.');
+                  app.toast(isTr() ? 'Döngü Faz 1 başlangıcına sıfırlandı.' : 'Cycle reset back to Phase 1.');
                 }
               },
-              'Sıfırla'
+              tr ? 'Sıfırla' : 'Reset'
             ),
             el(
               'button',
@@ -359,10 +382,10 @@ export function initTrackerView(app) {
                   app.cycles = app.cycles.filter((x) => x.id !== c.id);
                   app.saveCycles();
                   render();
-                  app.toast('Döngü kaydı silindi.');
+                  app.toast(isTr() ? 'Döngü kaydı silindi.' : 'Cycle deleted.');
                 }
               },
-              'Sil'
+              tr ? 'Sil' : 'Delete'
             )
           )
         )
@@ -378,6 +401,7 @@ export function initTrackerView(app) {
   function tickCountdowns() {
     if (app.activeTab !== 'tracker') return;
     const now = Date.now();
+    const tr = isTr();
     for (const c of app.cycles) {
       if (c.phase >= 3) continue;
       const startMs = new Date(c.phaseStartedAt).getTime();
@@ -391,10 +415,12 @@ export function initTrackerView(app) {
 
       if (txtNode) {
         txtNode.textContent =
-          rem <= 0 ? '7G Kilidi Açıldı — Sonraki Faza Geçebilirsiniz' : `Kalan Süre: ${fmtCountdown(rem)}`;
+          rem <= 0
+            ? tr ? '7G Kilidi Açıldı — Sonraki Faza Geçebilirsiniz' : '7D Hold Cleared — Ready for Next Phase'
+            : `${tr ? 'Kalan Süre' : 'Remaining'}: ${fmtCountdown(rem)}`;
       }
       if (pctNode) {
-        pctNode.textContent = `Faz ${c.phase}/2 • %${pct.toFixed(0)}`;
+        pctNode.textContent = tr ? `Faz ${c.phase}/2 • %${pct.toFixed(0)}` : `Phase ${c.phase}/2 • ${pct.toFixed(0)}%`;
       }
       if (b1 && c.phase === 1) b1.style.width = `${pct}%`;
       if (b2 && c.phase === 2) b2.style.width = `${pct}%`;

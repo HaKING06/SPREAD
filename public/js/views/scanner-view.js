@@ -6,6 +6,7 @@ import { MARKETPLACES, buildImageUrl, steamMarketUrl } from '../core/config.js';
 import { clampNumber, cleanText, clearNode, el } from '../core/security.js';
 import { evaluateItemMetrics, findOptimalPairs } from '../core/math-engine.js';
 import { fmtMoneyFromUsd, fmtMult, fmtPct, toUsd } from '../core/formatters.js';
+import { isTr, t } from '../core/i18n.js';
 import { drawSparkline } from '../charts/canvas-charts.js';
 
 const PAGE_SIZE = 35;
@@ -74,6 +75,7 @@ export function initScannerView(app) {
       return;
     }
 
+    const tr = isTr();
     pairs.forEach((p, idx) => {
       const card = el(
         'div',
@@ -81,7 +83,7 @@ export function initScannerView(app) {
         el(
           'div',
           { className: 'pair-card-top' },
-          el('span', { className: 'pill pill-gold' }, `#${idx + 1} EN İYİ ÇİFT`),
+          el('span', { className: 'pill pill-gold' }, `#${idx + 1} ${tr ? 'EN İYİ ÇİFT' : 'TOP PAIR'}`),
           el('span', { className: 'pill pill-mint' }, `${fmtPct(p.roiPct, true)} • ${fmtMult(p.mCycle)}`)
         ),
         el(
@@ -98,7 +100,7 @@ export function initScannerView(app) {
             el(
               'div',
               { className: 'pair-mini-info' },
-              el('div', { className: 'pair-mini-name', title: p.leg1.item.n }, `1. Yön: ${p.leg1.item.n}`),
+              el('div', { className: 'pair-mini-name', title: p.leg1.item.n }, `${tr ? '1. Yön' : 'Leg 1'}: ${p.leg1.item.n}`),
               el(
                 'div',
                 { className: 'pair-mini-sub' },
@@ -118,12 +120,12 @@ export function initScannerView(app) {
             el(
               'div',
               { className: 'pair-mini-info' },
-              el('div', { className: 'pair-mini-name', title: p.leg2.item.n }, `2. Yön: ${p.leg2.item.n}`),
+              el('div', { className: 'pair-mini-name', title: p.leg2.item.n }, `${tr ? '2. Yön' : 'Leg 2'}: ${p.leg2.item.n}`),
               el(
                 'div',
                 { className: 'pair-mini-sub' },
                 `${money(p.leg2.m.steamUsd)} → ${money(p.leg2.m.marketSellUsd)} `,
-                el('span', { className: 'txt-gold' }, `(${fmtPct(p.leg2.m.leg2LossPct, false)} kayıp)`)
+                el('span', { className: 'txt-gold' }, `(${fmtPct(p.leg2.m.leg2LossPct, false)} ${t('leg.lossWord').toLowerCase()})`)
               )
             )
           )
@@ -136,7 +138,7 @@ export function initScannerView(app) {
             style: { width: '100%' },
             onClick: () => app.applyPair(p.leg1.item, p.leg2.item, p.leg1.m, p.leg2.m)
           },
-          'Çifti Hesaplayıcıya Aktar →'
+          tr ? 'Çifti Hesaplayıcıya Aktar →' : 'Load Pair to Desk →'
         )
       );
       pairGrid.appendChild(card);
@@ -203,11 +205,12 @@ export function initScannerView(app) {
     const start = (filterState.page - 1) * PAGE_SIZE;
     const slice = evaluated.slice(start, start + PAGE_SIZE);
 
+    const tr = isTr();
     if (countEl) {
-      countEl.textContent = `${total.toLocaleString('tr-TR')} eşya eşleşti (${mkt.name} ↔ Steam)`;
+      countEl.textContent = `${total.toLocaleString(tr ? 'tr-TR' : 'en-US')} ${t('hdr.items')}`;
     }
     if (pageInfoEl) {
-      pageInfoEl.textContent = `Sayfa ${filterState.page} / ${totalPages}`;
+      pageInfoEl.textContent = `${tr ? 'Sayfa' : 'Page'} ${filterState.page} / ${totalPages}`;
     }
     if (prevBtn) prevBtn.disabled = filterState.page <= 1;
     if (nextBtn) nextBtn.disabled = filterState.page >= totalPages;
@@ -360,7 +363,7 @@ export function initScannerView(app) {
                 className: 'btn btn-sm',
                 onClick: () => app.applyItemToLeg(item, 1)
               },
-              '1. Yön'
+              tr ? '1. Yön' : 'Leg 1'
             ),
             el(
               'button',
@@ -369,7 +372,7 @@ export function initScannerView(app) {
                 className: 'btn btn-sm',
                 onClick: () => app.applyItemToLeg(item, 2)
               },
-              '2. Yön'
+              tr ? '2. Yön' : 'Leg 2'
             ),
             item.isCustom
               ? el(

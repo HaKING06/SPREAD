@@ -13,6 +13,7 @@ import {
   estimateExecutionReality
 } from '../core/math-engine.js';
 import { fmtMoneyFromUsd, fmtMult, fmtPct, fromUsd, getCurrencyMeta, toUsd } from '../core/formatters.js';
+import { isTr, t } from '../core/i18n.js';
 import { renderCompoundChart, renderSensitivityHeatmap } from '../charts/canvas-charts.js';
 
 const CAPITAL_PRESETS_USD = [50, 150, 500, 1500, 5000];
@@ -183,15 +184,16 @@ export function initCalculatorView(app) {
       el('img', { src: imgUrl, alt: itemName })
     );
 
+    const tr = isTr();
     const steamVolChip = liveSteam?.live
       ? el(
           'span',
           {
             className: `pill ${liveSteam.volume24h >= 50 ? 'pill-mint' : liveSteam.volume24h >= 10 ? 'pill-ice' : 'pill-amber'}`,
             style: { fontSize: '10px', padding: '1px 6px' },
-            title: `Canlı Steam 24 saatlik satış adedi & medyan fiyat`
+            title: tr ? 'Canlı Steam 24 saatlik satış adedi & medyan fiyat' : 'Live Steam 24h sold count & median price'
           },
-          `Steam 24s: ${liveSteam.volume24h.toLocaleString('tr-TR')} satış${liveSteam.medianUsd > 0 ? ` • Med ${fmtMoneyFromUsd(liveSteam.medianUsd, app.settings.currency, app.market.fxRates)}` : ''}`
+          `Steam 24h: ${liveSteam.volume24h.toLocaleString(tr ? 'tr-TR' : 'en-US')} ${tr ? 'satış' : 'sold'}${liveSteam.medianUsd > 0 ? ` • Med ${fmtMoneyFromUsd(liveSteam.medianUsd, app.settings.currency, app.market.fxRates)}` : ''}`
         )
       : found
       ? el(
@@ -199,7 +201,7 @@ export function initCalculatorView(app) {
           {
             className: `pill ${vel.pillCls}`,
             style: { fontSize: '10px', padding: '1px 6px' },
-            title: 'Son 7 günlük / 30 günlük gerçek satış temposu'
+            title: tr ? 'Son 7 günlük / 30 günlük gerçek satış temposu' : 'Real 7d / 30d sales velocity'
           },
           `${vel.shortLabel} • ${vel.volText}`
         )
@@ -210,7 +212,7 @@ export function initCalculatorView(app) {
       { className: 'leg-preview-tags' },
       found?.w ? el('span', { className: `wear-tag wear-${found.w}` }, found.w) : null,
       steamVolChip,
-      found?.q ? el('span', { className: 'num' }, `${found.q} ilan`) : null,
+      found?.q ? el('span', { className: 'num' }, `${found.q} ${tr ? 'ilan' : 'listed'}`) : null,
       found?.cfo && legNum === 2 && app.settings.marketplace === 'CSFLOAT'
         ? el(
             'button',
@@ -242,7 +244,7 @@ export function initCalculatorView(app) {
           className: 'btn btn-sm',
           onClick: () => app.openCommandPalette(legNum)
         },
-        'Değiştir'
+        t('leg.change')
       ),
       el(
         'a',
@@ -322,7 +324,7 @@ export function initCalculatorView(app) {
 
     const matchMeta = document.getElementById('advisorFilterStatus');
     if (matchMeta) {
-      matchMeta.textContent = `${advisor.strategies.length} strateji • Maks ${advisor.effectiveMaxQ1} adet`;
+      matchMeta.textContent = `${advisor.strategies.length} ${t('adv.stratsCount')} • ${t('adv.maxLabel')} ${advisor.effectiveMaxQ1}`;
     }
 
     // Live Diagnostics on current selection
@@ -349,15 +351,17 @@ export function initCalculatorView(app) {
         el(
           'div',
           { className: 'txt-muted', style: { gridColumn: '1 / -1', fontSize: '12.5px', padding: '12px 4px' } },
-          'Seçili adet/hız filtrelerinde kârlı eşleşme bulunamadı. "Maks. Adet" veya "Satış Hızı" filtresini genişletmeyi deneyin.'
+          t('adv.empty')
         )
       );
     } else {
+      const tr = isTr();
       for (const st of advisor.strategies) {
         const p = st.pair;
         const isCurrent =
           s.leg1.name.toLowerCase() === p.leg1.item.n.toLowerCase() &&
           s.leg2.name.toLowerCase() === p.leg2.item.n.toLowerCase();
+        const confCls = p.confidenceScore >= 85 ? 'txt-mint' : p.confidenceScore >= 70 ? 'txt-gold' : 'txt-amber';
 
         const card = el(
           'div',
@@ -421,7 +425,7 @@ export function initCalculatorView(app) {
                 el(
                   'div',
                   { className: 'pair-mini-sub' },
-                  `${money(p.leg2.m.steamUsd)} → ${money(p.leg2.m.marketSellUsd)} (${fmtPct(p.leg2.m.leg2LossPct, false)} kayıp)`
+                  `${money(p.leg2.m.steamUsd)} → ${money(p.leg2.m.marketSellUsd)} (${fmtPct(p.leg2.m.leg2LossPct, false)} ${t('leg.lossWord').toLowerCase()})`
                 ),
                 el(
                   'div',
@@ -438,9 +442,9 @@ export function initCalculatorView(app) {
           el(
             'div',
             { className: 'strategy-meta-strip num' },
-            el('span', null, `~${p.reality.minDays}–${p.reality.maxDays}G`),
-            el('span', null, `Verim %${p.utilizedPct.toFixed(0)}`),
-            el('span', null, `Hız ${p.speedScore}/100`)
+            el('span', null, `~${p.reality.minDays}–${p.reality.maxDays}${tr ? 'G' : 'D'}`),
+            el('span', null, `${t('adv.eff')} ${tr ? '%' : ''}${p.utilizedPct.toFixed(0)}${tr ? '' : '%'}`),
+            el('span', { className: confCls }, `${t('adv.conf')} ${tr ? '%' : ''}${p.confidenceScore}${tr ? '' : '%'}`)
           ),
           el(
             'button',
@@ -452,7 +456,7 @@ export function initCalculatorView(app) {
                 app.applyPair(p.leg1.item, p.leg2.item, p.leg1.m, p.leg2.m);
               }
             },
-            isCurrent ? '✓ Masada Aktif' : 'Stratejiyi Uygula →'
+            isCurrent ? t('adv.active') : t('adv.apply')
           )
         );
         strategiesGrid.appendChild(card);
@@ -561,24 +565,25 @@ export function initCalculatorView(app) {
     }
 
     // Top Hero Strip
+    const tr = isTr();
     document.getElementById('heroMultVal').textContent = fmtMult(d.mCycle);
     const heroRoiPill = document.getElementById('heroRoiPill');
-    heroRoiPill.textContent = `${fmtPct(d.netCycleRoiPct, true)} Teorik`;
+    heroRoiPill.textContent = `${fmtPct(d.netCycleRoiPct, true)} ${t('calc.theo')}`;
     heroRoiPill.className = `pill ${d.netCycleRoiPct >= 0 ? 'pill-mint' : 'pill-crimson'}`;
 
     const heroNetProfit = document.getElementById('heroRealProfit');
     heroNetProfit.textContent = money(c1.netProfit, true);
     heroNetProfit.className = `metric-cell-val ${c1.netProfit >= 0 ? 'txt-mint' : 'txt-crimson'}`;
     document.getElementById('heroRealSub').textContent =
-      `Nakit Eşdeğeri: ${money(c1.cashEquivPortfolio)} (${fmtPct(c1.netRoiPct, true)})`;
+      `${t('calc.cashEquiv')}: ${money(c1.cashEquivPortfolio)} (${fmtPct(c1.netRoiPct, true)})`;
 
     document.getElementById('heroBreakEven').textContent = fmtPct(d.breakEvenLossLimitPct, false);
     const beSub = document.getElementById('heroBreakEvenSub');
     if (d.marginOfSafetyPct >= 0 && d.m1 > 1) {
-      beSub.textContent = `Güvenlik Marjı: +${d.marginOfSafetyPct.toFixed(2)} puan`;
+      beSub.textContent = `${t('calc.safetyMargin')}: +${d.marginOfSafetyPct.toFixed(2)} ${t('calc.pts')}`;
       beSub.className = 'metric-cell-sub txt-mint';
     } else {
-      beSub.textContent = `Başabaş Aşıldı (${d.marginOfSafetyPct.toFixed(2)} puan)`;
+      beSub.textContent = `${t('calc.limitExceeded')} (${d.marginOfSafetyPct.toFixed(2)} ${t('calc.pts')})`;
       beSub.className = 'metric-cell-sub txt-crimson';
     }
 
@@ -588,26 +593,26 @@ export function initCalculatorView(app) {
     heroMonthly.className = `metric-cell-val ${monthlyRoi >= 0 ? 'txt-gold' : 'txt-crimson'}`;
 
     // Timeline Strip
-    document.getElementById('tlDay0Main').textContent = `${money(c1.spentM1)} (${c1.q1} adet)`;
-    document.getElementById('tlDay0Sub').textContent = `Cüzdan kalanı: ${money(c1.cashLeftAfterLeg1)}`;
+    document.getElementById('tlDay0Main').textContent = `${money(c1.spentM1)} (${c1.q1} ${t('leg.units')})`;
+    document.getElementById('tlDay0Sub').textContent = `${t('tl.leftover')}: ${money(c1.cashLeftAfterLeg1)}`;
     document.getElementById('tlDay7Main').textContent = `${money(c1.steamAfterLeg1)} Steam Net`;
-    document.getElementById('tlDay7Sub').textContent = `${c1.q2} adet dönüş eşyası • Kalan: ${money(c1.steamWallet)}`;
+    document.getElementById('tlDay7Sub').textContent = `${c1.q2} ${t('tl.exitItems')} • ${t('leg.left')}: ${money(c1.steamWallet)}`;
     const tl14 = document.getElementById('tlDay14Main');
     tl14.textContent = `${money(c1.cashEquivPortfolio)} (${money(c1.netProfit, true)})`;
     tl14.className = `tl-node-main ${c1.netProfit >= 0 ? 'txt-mint' : 'txt-crimson'}`;
-    document.getElementById('tlDay14Sub').textContent = `Nakit: ${money(c1.cashWallet)} + Steam(M₂): ${money(c1.steamCashEquiv)}`;
+    document.getElementById('tlDay14Sub').textContent = `${t('tl.cash')}: ${money(c1.cashWallet)} + Steam(M₂): ${money(c1.steamCashEquiv)}`;
 
     // Leg 1 Breakdown
     document.getElementById('leg1MultBadge').textContent = `M₁ = ${fmtMult(d.m1)}`;
     document.getElementById('outNetS1').textContent = money(d.netS1, false, 4);
     document.getElementById('outSteamFeeInfo').textContent =
       s.steamFeeMode === 'EXACT_VALVE'
-        ? `%${d.exactSteamDetail.effectiveFeePct.toFixed(2)} (${money(d.exactSteamDetail.totalFeeUsd)})`
+        ? `${fmtPct(d.exactSteamDetail.effectiveFeePct, false)} (${money(d.exactSteamDetail.totalFeeUsd)})`
         : s.steamFeeMode === 'DIV_115'
-        ? '%13.04 (÷1.15)'
-        : `%${s.steamCustomFeePct.toFixed(2)} (Özel)`;
+        ? `${fmtPct(13.04, false)} (÷1.15)`
+        : `${fmtPct(s.steamCustomFeePct, false)} (${tr ? 'Özel' : 'Custom'})`;
 
-    document.getElementById('outQ1').textContent = `${c1.q1} adet (Kalan: ${money(c1.cashLeftAfterLeg1)})`;
+    document.getElementById('outQ1').textContent = `${c1.q1} ${t('leg.units')} (${t('leg.left')}: ${money(c1.cashLeftAfterLeg1)})`;
     document.getElementById('outSteamBal1').textContent = money(c1.steamAfterLeg1);
     const l1Pill = document.getElementById('outLeg1Pct');
     l1Pill.textContent = fmtPct(d.leg1ProfitPct, true);
@@ -617,8 +622,9 @@ export function initCalculatorView(app) {
     const feeTrapBanner = document.getElementById('steamMinFeeBanner');
     if (s.steamFeeMode === 'EXACT_VALVE' && d.pS1Usd > 0 && d.exactSteamDetail.isMinFeeTrap) {
       feeTrapBanner.classList.remove('hidden');
-      document.getElementById('steamMinFeeDetail').textContent =
-        `Bu fiyat seviyesinde Steam'in minimum $0.01+$0.01 kesinti kuralı efektif komisyonu %${d.exactSteamDetail.effectiveFeePct.toFixed(2)} seviyesine çıkarıyor!`;
+      document.getElementById('steamMinFeeDetail').textContent = tr
+        ? `Bu fiyat seviyesinde Steam'in minimum $0.01+$0.01 kesinti kuralı efektif komisyonu %${d.exactSteamDetail.effectiveFeePct.toFixed(2)} seviyesine çıkarıyor!`
+        : `At this price tier, Valve's $0.01+$0.01 minimum fee floor raises your real Steam fee to ${d.exactSteamDetail.effectiveFeePct.toFixed(2)}%!`;
     } else {
       feeTrapBanner.classList.add('hidden');
     }
@@ -626,15 +632,15 @@ export function initCalculatorView(app) {
     // Leg 2 Breakdown
     document.getElementById('leg2MultBadge').textContent = `M₂ = ${fmtMult(d.m2)}`;
     document.getElementById('outNetM2').textContent = money(d.netM2, false, 4);
-    document.getElementById('outQ2').textContent = `${c1.q2} adet (Steam Kalan: ${money(c1.steamWallet)})`;
+    document.getElementById('outQ2').textContent = `${c1.q2} ${t('leg.units')} (Steam ${t('leg.left')}: ${money(c1.steamWallet)})`;
     document.getElementById('outCashReturn2').textContent = money(c1.cashReturnM2);
 
     const lossEl = document.getElementById('outConvLoss');
     if (d.conversionLossPct <= 0) {
-      lossEl.textContent = `${fmtPct(Math.abs(d.conversionLossPct), true)} Ek Kâr`;
+      lossEl.textContent = `${fmtPct(Math.abs(d.conversionLossPct), true)} ${t('leg.extraGain')}`;
       lossEl.className = 'pill pill-mint';
     } else {
-      lossEl.textContent = `${fmtPct(d.conversionLossPct, false)} Kayıp`;
+      lossEl.textContent = `${fmtPct(d.conversionLossPct, false)} ${t('leg.lossWord')}`;
       lossEl.className =
         d.conversionLossPct <= 10
           ? 'pill pill-mint'
@@ -647,8 +653,9 @@ export function initCalculatorView(app) {
     const insuffEl = document.getElementById('insuffCapitalBanner');
     if (d.effPM1 > 0 && c1.q1 === 0) {
       insuffEl.classList.remove('hidden');
-      document.getElementById('insuffCapitalMsg').textContent =
-        `Başlangıç sermayesi (${money(d.capitalUsd)}) 1 adet 1. Yön eşyasını (${money(d.effPM1)}) almaya yetmiyor.`;
+      document.getElementById('insuffCapitalMsg').textContent = tr
+        ? `Başlangıç sermayesi (${money(d.capitalUsd)}) 1 adet 1. Yön eşyasını (${money(d.effPM1)}) almaya yetmiyor.`
+        : `Starting capital (${money(d.capitalUsd)}) is below 1 unit of Leg 1 (${money(d.effPM1)}).`;
     } else {
       insuffEl.classList.add('hidden');
     }
@@ -686,25 +693,27 @@ export function initCalculatorView(app) {
     const thead = document.getElementById('compTableHead');
     const tbody = document.getElementById('compTableBody');
     const desc = document.getElementById('compTableDesc');
+    const tr = isTr();
     clearNode(thead);
     clearNode(tbody);
 
     if (app.settings.compoundMode === 'REALISTIC') {
-      desc.textContent =
-        'Tam sayı eşya alımı (Q₁, Q₂), kalan bakiye devri ve Steam bakiyesinin M₂ nakit eşdeğeriyle gerçekçi 12 döngü (168 gün) projeksiyonu.';
+      desc.textContent = tr
+        ? 'Tam sayı eşya alımı (Q₁, Q₂), kalan bakiye devri ve Steam bakiyesinin M₂ nakit eşdeğeriyle gerçekçi 12 döngü (168 gün) projeksiyonu.'
+        : 'Realistic 12-cycle (168-day) integer unit projection with leftover wallet carry-over & M₂ Steam cash-equivalent valuation.';
 
       thead.appendChild(
         el(
           'tr',
           null,
-          el('th', null, 'Döngü'),
-          el('th', null, 'Süre'),
-          el('th', { className: 'ta-right' }, '1. Yön (Q₁)'),
-          el('th', { className: 'ta-right' }, '2. Yön (Q₂)'),
-          el('th', { className: 'ta-right' }, 'Pazar Nakit'),
-          el('th', { className: 'ta-right' }, 'Steam Kalan'),
-          el('th', { className: 'ta-right' }, 'Nakit Eşdeğeri'),
-          el('th', { className: 'ta-right' }, 'Net Kâr & ROI')
+          el('th', null, t('table.colCycle')),
+          el('th', null, t('table.colTime')),
+          el('th', { className: 'ta-right' }, 'Q₁'),
+          el('th', { className: 'ta-right' }, 'Q₂'),
+          el('th', { className: 'ta-right' }, t('table.colCash')),
+          el('th', { className: 'ta-right' }, t('table.colSteamLeft')),
+          el('th', { className: 'ta-right' }, t('table.colCashEq')),
+          el('th', { className: 'ta-right' }, t('table.colProfit'))
         )
       );
 
@@ -714,10 +723,10 @@ export function initCalculatorView(app) {
           el(
             'tr',
             null,
-            el('td', { style: { fontWeight: '600' } }, `${r.cycle}. Döngü`),
-            el('td', { className: 'txt-sec num' }, `${r.days}g (${r.weeks}hf)`),
-            el('td', { className: 'ta-right num' }, `${r.q1} ad`),
-            el('td', { className: 'ta-right num' }, `${r.q2} ad`),
+            el('td', { style: { fontWeight: '600' } }, tr ? `${r.cycle}. Döngü` : `Cycle ${r.cycle}`),
+            el('td', { className: 'txt-sec num' }, tr ? `${r.days}g (${r.weeks}hf)` : `${r.days}d (${r.weeks}w)`),
+            el('td', { className: 'ta-right num' }, `${r.q1}`),
+            el('td', { className: 'ta-right num' }, `${r.q2}`),
             el('td', { className: 'ta-right num' }, money(r.cashWallet)),
             el('td', { className: 'ta-right num txt-ice' }, money(r.steamWallet)),
             el('td', { className: 'ta-right num', style: { fontWeight: '700' } }, money(r.cashEquivPortfolio)),
@@ -730,19 +739,20 @@ export function initCalculatorView(app) {
         );
       }
     } else {
-      desc.textContent =
-        'Kesintisiz oransal bileşik getiri: Capitalₙ = Capital₀ × (M₁ × M₂)ⁿ teorik üst sınırı.';
+      desc.textContent = tr
+        ? 'Kesintisiz oransal bileşik getiri: Capitalₙ = Capital₀ × (M₁ × M₂)ⁿ teorik üst sınırı.'
+        : 'Continuous proportional compounding upper bound: Capitalₙ = Capital₀ × (M₁ × M₂)ⁿ.';
 
       thead.appendChild(
         el(
           'tr',
           null,
-          el('th', null, 'Döngü'),
-          el('th', null, 'Süre'),
-          el('th', { className: 'ta-right' }, 'Bileşik Çarpan (Mⁿ)'),
-          el('th', { className: 'ta-right' }, 'Teorik Sermaye'),
-          el('th', { className: 'ta-right' }, 'Teorik Net Kâr'),
-          el('th', { className: 'ta-right' }, 'Toplam Büyüme %')
+          el('th', null, t('table.colCycle')),
+          el('th', null, t('table.colTime')),
+          el('th', { className: 'ta-right' }, t('table.colMult')),
+          el('th', { className: 'ta-right' }, t('table.colTheoCap')),
+          el('th', { className: 'ta-right' }, t('table.colTheoProfit')),
+          el('th', { className: 'ta-right' }, t('table.colGrowth'))
         )
       );
 
@@ -752,8 +762,8 @@ export function initCalculatorView(app) {
           el(
             'tr',
             null,
-            el('td', { style: { fontWeight: '600' } }, `${r.cycle}. Döngü`),
-            el('td', { className: 'txt-sec num' }, `${r.days}g (${r.weeks}hf)`),
+            el('td', { style: { fontWeight: '600' } }, tr ? `${r.cycle}. Döngü` : `Cycle ${r.cycle}`),
+            el('td', { className: 'txt-sec num' }, tr ? `${r.days}g (${r.weeks}hf)` : `${r.days}d (${r.weeks}w)`),
             el('td', { className: 'ta-right num txt-sec' }, fmtMult(r.theoMult)),
             el('td', { className: 'ta-right num', style: { fontWeight: '700' } }, money(r.theoPortfolio)),
             el('td', { className: `ta-right num ${cls}`, style: { fontWeight: '700' } }, money(r.theoProfit, true)),

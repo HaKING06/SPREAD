@@ -13,6 +13,7 @@ import {
   computeLoopMetrics,
   estimateExecutionReality
 } from '../public/js/core/math-engine.js';
+import { DICT, setLang, t } from '../public/js/core/i18n.js';
 import { parseSharedSetupFromUrl } from '../public/js/core/router-share.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -81,11 +82,32 @@ async function main() {
   }
 
   const indexHtml = await fs.readFile(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
-  const inlineScriptRegex = /<script(?![^>]*\bsrc=)[^>]*>/i;
+  // Allow non-executable JSON-LD structured data, forbid any executable inline <script>
+  const inlineScriptRegex = /<script(?![^>]*\bsrc=)(?![^>]*type=["']application\/ld\+json["'])[^>]*>/i;
   if (inlineScriptRegex.test(indexHtml)) {
-    fail('Inline <script> tag found in public/index.html (violates strict CSP script-src self)');
+    fail('Inline executable <script> tag found in public/index.html (violates strict CSP script-src self)');
   } else {
-    pass('Strict CSP audit: zero inline <script> tags in public/index.html.');
+    pass('Strict CSP audit: zero inline executable <script> tags in public/index.html (JSON-LD SEO verified).');
+  }
+
+  // 2a. Global SEO & i18n Dictionary Integrity Check
+  const enKeys = Object.keys(DICT.en);
+  const trKeys = Object.keys(DICT.tr);
+  const missingTrKeys = enKeys.filter((k) => !DICT.tr[k]);
+  if (
+    indexHtml.includes('<html lang="en"') &&
+    indexHtml.includes('application/ld+json') &&
+    indexHtml.includes('hreflang="tr"') &&
+    missingTrKeys.length === 0
+  ) {
+    setLang('en', false);
+    const enSample = t('nav.about');
+    setLang('tr', false);
+    const trSample = t('nav.about');
+    setLang('en', false);
+    pass(`Global SEO & Bilingual i18n verified: EN default + hreflang + JSON-LD | ${enKeys.length}/${trKeys.length} keys (${enSample} / ${trSample}).`);
+  } else {
+    fail(`SEO/i18n check failed: missingTrKeys=${missingTrKeys.join(', ')}`);
   }
 
   // 2b. DOM ID Integrity Check
@@ -181,10 +203,16 @@ async function main() {
     { marketplace: 'CSFLOAT', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true },
     200
   );
-  if (adv.strategies.length >= 2 && adv.tier.id === 'STARTER') {
-    pass(`Capital Strategy Advisor verified: ${adv.strategies.length} tailored strategies generated for $200 (${adv.tier.badge}).`);
+  const allHaveConfidence = adv.strategies.every(
+    (s) => Number.isFinite(s.pair?.confidenceScore) && s.pair.confidenceScore >= 35 && s.pair.confidenceScore <= 99
+  );
+  const noFalseFastOnSlow = adv.strategies.every((s) => !(s.pair?.hasSlowLeg && /FAST|HIZLI/i.test(s.tag)));
+  if (adv.strategies.length >= 2 && adv.tier.id === 'STARTER' && allHaveConfidence && noFalseFastOnSlow) {
+    pass(
+      `Capital Strategy Advisor V2 verified: ${adv.strategies.length} strategies for $200 (${adv.tier.badge}) | Trust scores [${adv.strategies.map((s) => s.pair.confidenceScore).join(', ')}] | Zero false-fast labels.`
+    );
   } else {
-    fail(`Capital Strategy Advisor returned insufficient strategies: ${adv.strategies.length}`);
+    fail(`Capital Strategy Advisor V2 check failed: count=${adv.strategies.length}, conf=${allHaveConfidence}, noFalseFast=${noFalseFastOnSlow}`);
   }
 
   // Verify high-budget ($5000) realistic quantity cap & impracticality detector
@@ -244,9 +272,14 @@ async function main() {
 
       const endpoints = [
         ['/', 200],
+        ['/scanner', 200],
         ['/tarayici', 200],
+        ['/tracker', 200],
         ['/takip', 200],
+        ['/academy', 200],
         ['/akademi', 200],
+        ['/about', 200],
+        ['/hakkinda', 200],
         ['/css/advisor.css', 200],
         ['/js/main.js', 200],
         ['/assets/brand/logo-192.png', 200],

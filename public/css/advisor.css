@@ -590,12 +590,287 @@
   font-size: 11.5px;
 }
 
+/* ==========================================================================
+   V2 Global Upgrade: Filter Guide Pill, Architecture Pipeline, About & FAQ
+   ========================================================================== */
+
+.lang-pill .seg-btn {
+  padding: 5px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.btn-guide-pill {
+  border-color: var(--ice-border);
+  background: var(--ice-soft);
+  color: var(--ice);
+}
+
+.btn-guide-pill:hover {
+  background: var(--ice);
+  color: var(--text-inverse);
+}
+
+/* Visual Pipeline / Arbitrage Flow Schematic */
+.arch-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.arch-pipeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.arch-node {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 13px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-hair);
+  background: var(--bg-inset);
+}
+
+.arch-node.is-gold {
+  border-color: var(--gold-border);
+  background: linear-gradient(180deg, rgba(240, 185, 11, 0.08), transparent 65%), var(--bg-inset);
+}
+
+.arch-node.is-mint {
+  border-color: var(--mint-border);
+  background: linear-gradient(180deg, rgba(16, 217, 129, 0.08), transparent 65%), var(--bg-inset);
+}
+
+.arch-node.is-ice {
+  border-color: var(--ice-border);
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.08), transparent 65%), var(--bg-inset);
+}
+
+.arch-tag {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.arch-node strong {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.arch-arrow {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.arch-arrow small {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* About & Trust Hero + Pillars */
+.about-hero {
+  padding: 22px 24px;
+  background:
+    radial-gradient(circle at 95% 15%, rgba(16, 217, 129, 0.11), transparent 48%),
+    radial-gradient(circle at 10% 90%, rgba(240, 185, 11, 0.08), transparent 45%),
+    var(--bg-surface);
+}
+
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.trust-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trust-card h3 {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.trust-card p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.trust-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border: 1px solid var(--border-hair);
+}
+
+.trust-icon.is-mint { background: var(--mint-soft); border-color: var(--mint-border); color: var(--mint); }
+.trust-icon.is-gold { background: var(--gold-soft); border-color: var(--gold-border); color: var(--gold); }
+.trust-icon.is-ice { background: var(--ice-soft); border-color: var(--ice-border); color: var(--ice); }
+
+/* Live Telemetry Grid */
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.telemetry-node {
+  padding: 11px 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hair);
+  background: var(--bg-inset);
+}
+
+.telemetry-node-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+/* Quant Engine Highlights Grid */
+.quant-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.quant-card {
+  padding: 13px 15px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hair);
+  background: var(--bg-inset);
+}
+
+.quant-card strong {
+  display: block;
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+}
+
+.quant-card p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+/* SEO FAQ Accordion */
+.faq-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faq-item {
+  border: 1px solid var(--border-hair);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset);
+  padding: 11px 14px;
+}
+
+.faq-item summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.faq-item summary::after {
+  content: '+';
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.faq-item[open] summary::after {
+  content: '−';
+}
+
+.faq-item p {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-hair);
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Filter Guide Popup Rows */
+.filter-guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.fguide-row {
+  display: grid;
+  grid-template-columns: 145px 1fr;
+  align-items: start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hair);
+  background: var(--bg-inset);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.fguide-row strong {
+  color: var(--text-primary);
+}
+
+/* Responsive Breakpoints (Kept Last to Override Desktop Rules Cleanly) */
 @media (max-width: 1080px) {
   .strategies-grid { grid-template-columns: 1fr; }
   .onboarding-steps { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr; }
+  .trust-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .telemetry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .quant-cards-grid { grid-template-columns: 1fr; }
+  .arch-pipeline { flex-direction: column; align-items: stretch; }
+  .arch-arrow { transform: rotate(90deg); align-self: center; }
 }
 
 @media (max-width: 640px) {
   .support-cards-grid { grid-template-columns: 1fr; }
+  .trust-grid { grid-template-columns: 1fr; }
+  .telemetry-grid { grid-template-columns: 1fr; }
+  .fguide-row { grid-template-columns: 1fr; gap: 6px; }
 }

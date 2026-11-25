@@ -7,6 +7,8 @@
  *  3. Inline 90d -> 30d -> 7d -> 24h Sparklines for the Live Scanner
  */
 
+import { isTr } from '../core/i18n.js';
+
 function getChartColors() {
   const styles = getComputedStyle(document.documentElement);
   const v = (name, fb) => styles.getPropertyValue(name).trim() || fb;
@@ -84,12 +86,13 @@ export function renderCompoundChart(canvas, tooltipEl, cycles, capitalUsd, fmtMo
     }
 
     // X axis labels
+    const tr = isTr();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     for (const k of [0, 2, 4, 6, 8, 10, 12]) {
       const x = xAt(k);
       ctx.fillStyle = c.text;
-      ctx.fillText(k === 0 ? 'G0' : `D${k}`, x, height - pad.bottom + 9);
+      ctx.fillText(k === 0 ? (tr ? 'G0' : 'D0') : `${tr ? 'D' : 'C'}${k}`, x, height - pad.bottom + 9);
     }
 
     // Baseline Capital0 dashed line
@@ -195,10 +198,13 @@ export function renderCompoundChart(canvas, tooltipEl, cycles, capitalUsd, fmtMo
       const days = idx * 14;
       tooltipEl.classList.remove('hidden');
       tooltipEl.textContent = '';
+      const tr = isTr();
       const lines = [
-        idx === 0 ? 'Başlangıç (Gün 0)' : `${idx}. Döngü • ${days} Gün`,
-        `Gerçekçi: ${fmtMoneyFn(realVal)}`,
-        `Teorik:   ${fmtMoneyFn(theoVal)}`
+        idx === 0
+          ? tr ? 'Başlangıç (Gün 0)' : 'Start (Day 0)'
+          : tr ? `${idx}. Döngü • ${days} Gün` : `Cycle ${idx} • ${days} Days`,
+        `${tr ? 'Gerçekçi' : 'Realistic'}: ${fmtMoneyFn(realVal)}`,
+        `${tr ? 'Teorik' : 'Theoretic'}: ${fmtMoneyFn(theoVal)}`
       ];
       lines.forEach((line, li) => {
         const div = document.createElement('div');
@@ -250,10 +256,15 @@ export function renderSensitivityHeatmap(canvas, tooltipEl, matrix) {
     ctx.clearRect(0, 0, width, height);
 
     // Axis titles
+    const tr = isTr();
     ctx.font = '10px "JetBrains Mono", monospace';
     ctx.fillStyle = c.text;
     ctx.textAlign = 'center';
-    ctx.fillText('2. Yön Satış Fiyat Değişimi (%)', pad.left + (cellW * n) / 2, 11);
+    ctx.fillText(
+      tr ? '2. Yön Satış Fiyat Değişimi (%)' : 'Leg 2 Cashout Price Shift (%)',
+      pad.left + (cellW * n) / 2,
+      11
+    );
 
     // Column headers
     shifts.forEach((sh, ci) => {
@@ -297,7 +308,11 @@ export function renderSensitivityHeatmap(canvas, tooltipEl, matrix) {
     ctx.textAlign = 'center';
     ctx.font = '9.5px "JetBrains Mono", monospace';
     ctx.fillStyle = c.text;
-    ctx.fillText('Altın çerçeve = Mevcut fiyat senaryosu (0% / 0%)', pad.left + (cellW * n) / 2, height - 10);
+    ctx.fillText(
+      tr ? 'Altın çerçeve = Mevcut fiyat senaryosu (0% / 0%)' : 'Gold border = Current price baseline (0% / 0%)',
+      pad.left + (cellW * n) / 2,
+      height - 10
+    );
   }
 
   draw(null);
@@ -314,11 +329,12 @@ export function renderSensitivityHeatmap(canvas, tooltipEl, matrix) {
       if (tooltipEl) {
         tooltipEl.classList.remove('hidden');
         tooltipEl.textContent = '';
+        const tr = isTr();
         const l1 = document.createElement('div');
-        l1.textContent = `Steam (S1): ${cell.s1Shift >= 0 ? '+' : ''}${cell.s1Shift}% | Nakit (M2): ${cell.m2Shift >= 0 ? '+' : ''}${cell.m2Shift}%`;
+        l1.textContent = `Steam (S1): ${cell.s1Shift >= 0 ? '+' : ''}${cell.s1Shift}% | ${tr ? 'Nakit' : 'Cash'} (M2): ${cell.m2Shift >= 0 ? '+' : ''}${cell.m2Shift}%`;
         l1.style.color = c.text;
         const l2 = document.createElement('div');
-        l2.textContent = `Net Döngü ROI: ${cell.roiPct >= 0 ? '+' : ''}%${cell.roiPct.toFixed(2)}`;
+        l2.textContent = `${tr ? 'Net Döngü ROI' : 'Net Cycle ROI'}: ${cell.roiPct >= 0 ? '+' : ''}${tr ? '%' : ''}${cell.roiPct.toFixed(2)}${tr ? '' : '%'}`;
         l2.style.color = cell.roiPct >= 0 ? c.mint : c.crimson;
         l2.style.fontWeight = '700';
         tooltipEl.appendChild(l1);

@@ -5,6 +5,7 @@
 import { BRAND, MARKETPLACES } from '../core/config.js';
 import { buildShareSummaryText, buildShareUrl } from '../core/router-share.js';
 import { fmtMoneyFromUsd, fmtPct } from '../core/formatters.js';
+import { isTr } from '../core/i18n.js';
 
 async function copyTextSafe(text) {
   if (navigator.clipboard?.writeText) {
@@ -50,13 +51,17 @@ export function initShareAndSupportModals(app) {
 
     if (shareUrlInput) shareUrlInput.value = lastShareUrl;
     if (sharePreviewCard) {
-      sharePreviewCard.textContent = `${mkt} ↔ Steam • ${s.leg1.name} → ${s.leg2.name} | Sermaye: ${money(metrics.capitalUsd)} | 1. Döngü: ${money(metrics.firstCycle.netProfit, true)} (${fmtPct(metrics.firstCycle.netRoiPct, true)})`;
+      sharePreviewCard.textContent = isTr()
+        ? `${mkt} ↔ Steam • ${s.leg1.name} → ${s.leg2.name} | Sermaye: ${money(metrics.capitalUsd)} | 1. Döngü: ${money(metrics.firstCycle.netProfit, true)} (${fmtPct(metrics.firstCycle.netRoiPct, true)})`
+        : `${mkt} ↔ Steam • ${s.leg1.name} → ${s.leg2.name} | Capital: ${money(metrics.capitalUsd)} | Cycle 1: ${money(metrics.firstCycle.netProfit, true)} (${fmtPct(metrics.firstCycle.netRoiPct, true)})`;
     }
 
     const encodedSummary = encodeURIComponent(lastShareSummary);
     const encodedUrl = encodeURIComponent(lastShareUrl);
     const shortTweet = encodeURIComponent(
-      `SPREAD CS2 Arbitraj kurulumum: ${s.leg1.name} → ${s.leg2.name} | 14 Günlük Tahmini ROI: ${fmtPct(metrics.firstCycle.netRoiPct, true)}`
+      isTr()
+        ? `SPREAD CS2 Arbitraj kurulumum: ${s.leg1.name} → ${s.leg2.name} | 14 Günlük Tahmini ROI: ${fmtPct(metrics.firstCycle.netRoiPct, true)}`
+        : `My SPREAD CS2 Arbitrage loop: ${s.leg1.name} → ${s.leg2.name} | Est. 14-Day ROI: ${fmtPct(metrics.firstCycle.netRoiPct, true)}`
     );
 
     if (waLink) waLink.setAttribute('href', `https://api.whatsapp.com/send?text=${encodedSummary}`);
@@ -79,18 +84,18 @@ export function initShareAndSupportModals(app) {
   copyLinkBtn?.addEventListener('click', async () => {
     try {
       await copyTextSafe(lastShareUrl);
-      app.toast('Paylaşım linki panoya kopyalandı!');
+      app.toast(isTr() ? 'Paylaşım linki panoya kopyalandı!' : 'Share link copied to clipboard!');
     } catch {
-      app.toast('Kopyalama başarısız — linki kutudan manuel seçebilirsiniz.', 'warn');
+      app.toast(isTr() ? 'Kopyalama başarısız — linki kutudan manuel seçebilirsiniz.' : 'Copy failed — select link manually.', 'warn');
     }
   });
 
   copySummaryBtn?.addEventListener('click', async () => {
     try {
       await copyTextSafe(lastShareSummary);
-      app.toast('Discord / sohbet özet kartı panoya kopyalandı!');
+      app.toast(isTr() ? 'Discord / sohbet özet kartı panoya kopyalandı!' : 'Discord / chat summary copied!');
     } catch {
-      app.toast('Özet kopyalanamadı.', 'warn');
+      app.toast(isTr() ? 'Özet kopyalanamadı.' : 'Failed to copy summary.', 'warn');
     }
   });
 
@@ -115,11 +120,25 @@ export function initShareAndSupportModals(app) {
   document.getElementById('copySupportEmailBtn')?.addEventListener('click', async () => {
     try {
       await copyTextSafe(BRAND.supportEmail);
-      app.toast(`${BRAND.supportEmail} panoya kopyalandı!`);
+      app.toast(isTr() ? `${BRAND.supportEmail} panoya kopyalandı!` : `${BRAND.supportEmail} copied to clipboard!`);
     } catch {
       app.toast(BRAND.supportEmail);
     }
   });
 
-  return { openShare, closeShare, openSupport, closeSupport };
+  // ---------------- FILTER GUIDE POPUP MODAL ----------------
+  const filterGuideModal = document.getElementById('filterGuideModal');
+  function openFilterGuide() {
+    filterGuideModal?.classList.remove('hidden');
+  }
+  function closeFilterGuide() {
+    filterGuideModal?.classList.add('hidden');
+  }
+  document.getElementById('openFilterGuideBtn')?.addEventListener('click', openFilterGuide);
+  document.getElementById('closeFilterGuideBtn')?.addEventListener('click', closeFilterGuide);
+  filterGuideModal?.addEventListener('click', (e) => {
+    if (e.target === filterGuideModal) closeFilterGuide();
+  });
+
+  return { openShare, closeShare, openSupport, closeSupport, openFilterGuide, closeFilterGuide };
 }

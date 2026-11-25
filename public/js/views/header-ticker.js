@@ -13,6 +13,7 @@ import { buildImageUrl } from '../core/config.js';
 import { clearNode, el } from '../core/security.js';
 import { evaluateItemMetrics } from '../core/math-engine.js';
 import { fmtMoneyFromUsd, fmtPct, fmtRelativeTime, fromUsd, toUsd } from '../core/formatters.js';
+import { isTr, t } from '../core/i18n.js';
 
 export function renderLiveTicker(app) {
   const track = document.getElementById('tickerTrack');
@@ -22,10 +23,11 @@ export function renderLiveTicker(app) {
   if (!track) return;
 
   const isLive = app.market.sourceMode === 'live-edge' || app.market.sourceMode === 'live-local';
+  const loc = isTr() ? 'tr-TR' : 'en-US';
   if (dot) dot.className = `live-dot${isLive ? '' : ' is-snapshot'}`;
   if (statusText) {
-    const modeLabel = isLive ? 'CANLI' : 'ÖNBELLEK';
-    statusText.textContent = `${modeLabel} • ${app.items.length.toLocaleString('tr-TR')} eşya • ${fmtRelativeTime(app.market.updatedAt)}`;
+    const modeLabel = isLive ? t('hdr.live') : t('hdr.cache');
+    statusText.textContent = `${modeLabel} • ${app.items.length.toLocaleString(loc)} ${t('hdr.items')} • ${fmtRelativeTime(app.market.updatedAt)}`;
   }
   if (fxSummary) {
     const fx = app.market.fxRates;
@@ -73,14 +75,15 @@ export function renderLiveTicker(app) {
 
   const buildChips = () =>
     combined.map(({ item, m, leg }) => {
-      const metricText = leg === 1 ? fmtPct(m.leg1ProfitPct, true) : `${fmtPct(m.leg2LossPct, false)} kayıp`;
+      const metricText =
+        leg === 1 ? fmtPct(m.leg1ProfitPct, true) : `${fmtPct(m.leg2LossPct, false)} ${t('leg.lossWord').toLowerCase()}`;
       const metricCls = leg === 1 ? 'txt-mint num' : 'txt-gold num';
       return el(
         'button',
         {
           type: 'button',
           className: 'ticker-item',
-          title: `${item.n} — ${leg}. Yöne aktar`,
+          title: isTr() ? `${item.n} — ${leg}. Yöne aktar` : `${item.n} — Load to Leg ${leg}`,
           onClick: () => app.applyItemToLeg(item, leg)
         },
         el('span', { className: 'ticker-item-leg' }, leg === 1 ? 'L1' : 'L2'),
@@ -169,8 +172,9 @@ export function initCommandPalette(app) {
       return b.m.leg1ProfitPct - a.m.leg1ProfitPct;
     });
 
+    const tr = isTr();
     if (metaCountEl) {
-      metaCountEl.textContent = `${matches.length.toLocaleString('tr-TR')} sonuç`;
+      metaCountEl.textContent = `${matches.length.toLocaleString(tr ? 'tr-TR' : 'en-US')} ${tr ? 'sonuç' : 'results'}`;
     }
 
     const slice = matches.slice(0, 40);
@@ -179,7 +183,9 @@ export function initCommandPalette(app) {
         el(
           'div',
           { className: 'panel-pad ta-center txt-muted', style: { fontSize: '12.5px' } },
-          'Bu fiyat aralığında veya aramada eşya bulunamadı. Min/Max aralığını genişletin.'
+          tr
+            ? 'Bu fiyat aralığında veya aramada eşya bulunamadı. Min/Maks aralığını genişletin.'
+            : 'No CS2 items match this search or price range. Try widening Min/Max.'
         )
       );
       return;
@@ -212,15 +218,16 @@ export function initCommandPalette(app) {
               el('span', null, `${mktShort}: ${fmtMoneyFromUsd(m.marketBuyUsd, cur, fx)}`),
               el('span', null, '→'),
               el('span', null, `Steam: ${fmtMoneyFromUsd(m.steamUsd, cur, fx)}`),
-              item.q > 0 ? el('span', { className: 'txt-muted' }, `• ${item.q} ilan`) : null
+              item.q > 0 ? el('span', { className: 'txt-muted' }, `• ${item.q} ${tr ? 'ilan' : 'listed'}`) : null,
+              el('span', { className: 'txt-muted' }, `• ${m.velocity.shortLabel}`)
             )
           )
         ),
         el(
           'div',
           { className: 'cmd-metrics-col num' },
-          el('span', { className: l1Cls, title: '1. Yön Bakiye Kârı' }, `L1 ${fmtPct(m.leg1ProfitPct, true)}`),
-          el('span', { className: l2Cls, title: '2. Yön Nakit Kaybı' }, `L2 ${fmtPct(m.leg2LossPct, false)}`)
+          el('span', { className: l1Cls, title: tr ? '1. Yön Bakiye Kârı' : 'Leg 1 Steam Boost' }, `L1 ${fmtPct(m.leg1ProfitPct, true)}`),
+          el('span', { className: l2Cls, title: tr ? '2. Yön Nakit Kaybı' : 'Leg 2 Cashout Loss' }, `L2 ${fmtPct(m.leg2LossPct, false)}`)
         ),
         el(
           'div',
@@ -235,7 +242,7 @@ export function initCommandPalette(app) {
                 close();
               }
             },
-            '1. Yön'
+            tr ? '1. Yön' : 'Leg 1'
           ),
           el(
             'button',
@@ -247,7 +254,7 @@ export function initCommandPalette(app) {
                 close();
               }
             },
-            '2. Yön'
+            tr ? '2. Yön' : 'Leg 2'
           )
         )
       );

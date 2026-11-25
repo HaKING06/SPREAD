@@ -5,6 +5,7 @@
 import { BRAND, MARKETPLACES, PATH_TO_TAB, ROUTES } from './config.js';
 import { clampNumber, cleanText } from './security.js';
 import { fmtMoneyFromUsd, fmtPct } from './formatters.js';
+import { getLang, isTr, t } from './i18n.js';
 
 export function resolveTabFromPathname(pathname) {
   const clean = String(pathname || '')
@@ -15,22 +16,24 @@ export function resolveTabFromPathname(pathname) {
 
 export function syncUrlForTab(tabName, replace = false) {
   const route = ROUTES[tabName] || ROUTES.calculator;
-  document.title = route.title;
+  const targetPath = isTr() ? route.trPath : route.path;
+  document.title = t(`route.${tabName}.title`, 'SPREAD — CS2 Arbitrage Terminal');
 
   try {
     const currentPath = window.location.pathname;
-    if (currentPath !== route.path || (tabName !== 'calculator' && window.location.search)) {
-      const nextUrl = tabName === 'calculator' && window.location.search && replace
-        ? `${route.path}${window.location.search}`
-        : route.path;
+    if (currentPath !== targetPath || (tabName !== 'calculator' && window.location.search)) {
+      const nextUrl =
+        tabName === 'calculator' && window.location.search && replace
+          ? `${targetPath}${window.location.search}`
+          : targetPath;
       if (replace) {
         window.history.replaceState({ tab: tabName }, '', nextUrl);
       } else {
-        window.history.pushState({ tab: tabName }, '', route.path);
+        window.history.pushState({ tab: tabName }, '', targetPath);
       }
     }
   } catch {
-    // Ignore history API errors in restricted contexts
+    // Ignore
   }
 }
 
@@ -60,6 +63,7 @@ export function buildShareUrl(settings) {
   const defaultSell = settings.marketplace === 'YOUPIN' ? 1 : 2;
   if (settings.sellFeePct !== defaultSell) params.set('sf', String(settings.sellFeePct));
   if (settings.steamFeeMode !== 'EXACT_VALVE') params.set('sm', settings.steamFeeMode);
+  params.set('lang', getLang());
 
   return `${origin}/?${params.toString()}`;
 }
@@ -117,12 +121,23 @@ export function buildShareSummaryText(settings, metrics, fxRates, shareUrl) {
   const money = (u, sign = false) => fmtMoneyFromUsd(u, cur, fxRates, { withSign: sign });
   const c1 = metrics.firstCycle;
 
+  if (isTr()) {
+    return [
+      `SPREAD — CS2 Arbitraj Döngüsü (${mkt} ↔ Steam)`,
+      `Sermaye: ${money(metrics.capitalUsd)}`,
+      `1. Yön: ${c1.q1}x ${settings.leg1.name} (${fmtPct(metrics.leg1ProfitPct, true)})`,
+      `2. Yön: ${c1.q2}x ${settings.leg2.name} (${fmtPct(metrics.conversionLossPct, false)} kayıp)`,
+      `14 Günlük Tahmini Net Kâr: ${money(c1.netProfit, true)} (${fmtPct(c1.netRoiPct, true)} ROI)`,
+      `Canlı incele: ${shareUrl}`
+    ].join('\n');
+  }
+
   return [
-    `SPREAD — CS2 Arbitraj Döngüsü (${mkt} ↔ Steam)`,
-    `Sermaye: ${money(metrics.capitalUsd)}`,
-    `1. Yön: ${c1.q1}x ${settings.leg1.name} (${fmtPct(metrics.leg1ProfitPct, true)})`,
-    `2. Yön: ${c1.q2}x ${settings.leg2.name} (${fmtPct(metrics.conversionLossPct, false)} kayıp)`,
-    `14 Günlük Tahmini Net Kâr: ${money(c1.netProfit, true)} (${fmtPct(c1.netRoiPct, true)} ROI)`,
-    `Canlı incele: ${shareUrl}`
+    `SPREAD — CS2 Arbitrage Loop (${mkt} ↔ Steam)`,
+    `Capital: ${money(metrics.capitalUsd)}`,
+    `Leg 1: ${c1.q1}x ${settings.leg1.name} (${fmtPct(metrics.leg1ProfitPct, true)})`,
+    `Leg 2: ${c1.q2}x ${settings.leg2.name} (${fmtPct(metrics.conversionLossPct, false)} loss)`,
+    `Est. 14-Day Net Profit: ${money(c1.netProfit, true)} (${fmtPct(c1.netRoiPct, true)} ROI)`,
+    `Inspect live: ${shareUrl}`
   ].join('\n');
 }

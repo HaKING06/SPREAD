@@ -1,8 +1,9 @@
 /**
- * SPREAD (spread.haking.tr) — Currency, Numeric & Time Formatters
+ * SPREAD (spread.haking.tr) — Bilingual (EN/TR) Currency, Numeric & Time Formatters
  */
 
 import { CURRENCIES } from './config.js';
+import { isTr } from './i18n.js';
 
 export function getCurrencyMeta(code) {
   return CURRENCIES[code] || CURRENCIES.USD;
@@ -29,7 +30,8 @@ export function fmtRawMoney(amount, currencyCode = 'USD', opts = {}) {
   const meta = getCurrencyMeta(currencyCode);
   const val = Number.isFinite(amount) ? amount : 0;
   const sign = val < 0 ? '-' : withSign && val > 0 ? '+' : '';
-  const formatted = Math.abs(val).toLocaleString('tr-TR', {
+  const loc = isTr() ? 'tr-TR' : 'en-US';
+  const formatted = Math.abs(val).toLocaleString(loc, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
   });
@@ -39,10 +41,12 @@ export function fmtRawMoney(amount, currencyCode = 'USD', opts = {}) {
 export function fmtPct(pct, withSign = false, decimals = 2) {
   const val = Number.isFinite(pct) ? pct : 0;
   const sign = val < 0 ? '-' : withSign && val > 0 ? '+' : '';
-  return `${sign}%${Math.abs(val).toLocaleString('tr-TR', {
+  const tr = isTr();
+  const formatted = Math.abs(val).toLocaleString(tr ? 'tr-TR' : 'en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
-  })}`;
+  });
+  return tr ? `${sign}%${formatted}` : `${sign}${formatted}%`;
 }
 
 export function fmtMult(mult) {
@@ -51,31 +55,35 @@ export function fmtMult(mult) {
 }
 
 export function fmtCountdown(ms) {
-  if (!Number.isFinite(ms) || ms <= 0) return '00g 00s 00d 00sn';
+  const tr = isTr();
+  if (!Number.isFinite(ms) || ms <= 0) return tr ? '00g 00s 00d 00sn' : '00d 00h 00m 00s';
   const totalSec = Math.floor(ms / 1000);
   const days = Math.floor(totalSec / 86400);
   const hours = Math.floor((totalSec % 86400) / 3600);
   const mins = Math.floor((totalSec % 3600) / 60);
   const secs = totalSec % 60;
   const pad = (n) => String(n).padStart(2, '0');
-  return `${days}g ${pad(hours)}s ${pad(mins)}d ${pad(secs)}sn`;
+  return tr
+    ? `${days}g ${pad(hours)}s ${pad(mins)}d ${pad(secs)}sn`
+    : `${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s`;
 }
 
 export function fmtRelativeTime(isoStr) {
-  if (!isoStr) return 'Bilinmiyor';
+  const tr = isTr();
+  if (!isoStr) return tr ? 'Bilinmiyor' : 'Unknown';
   const ts = new Date(isoStr).getTime();
-  if (!Number.isFinite(ts)) return 'Bilinmiyor';
+  if (!Number.isFinite(ts)) return tr ? 'Bilinmiyor' : 'Unknown';
   const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-  if (diffSec < 45) return 'Az önce';
-  if (diffSec < 3600) return `${Math.floor(diffSec / 60)} dk önce`;
-  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} sa önce`;
-  return `${Math.floor(diffSec / 86400)} gün önce`;
+  if (diffSec < 45) return tr ? 'Az önce' : 'Just now';
+  if (diffSec < 3600) return tr ? `${Math.floor(diffSec / 60)} dk önce` : `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return tr ? `${Math.floor(diffSec / 3600)} sa önce` : `${Math.floor(diffSec / 3600)}h ago`;
+  return tr ? `${Math.floor(diffSec / 86400)} gün önce` : `${Math.floor(diffSec / 86400)}d ago`;
 }
 
 export function fmtShortDate(isoStr) {
   const d = new Date(isoStr);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString('tr-TR', {
+  return d.toLocaleString(isTr() ? 'tr-TR' : 'en-US', {
     day: '2-digit',
     month: '2-digit',
     hour: '2-digit',

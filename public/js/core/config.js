@@ -14,10 +14,11 @@ export const BRAND = {
 };
 
 export const ROUTES = {
-  calculator: { path: '/', title: 'SPREAD — CS2 Arbitraj Döngü Masası | spread.haking.tr' },
-  scanner: { path: '/tarayici', title: 'Canlı CS2 Skin Tarayıcısı (4.500+ Eşya) — SPREAD' },
-  tracker: { path: '/takip', title: '14 Günlük Aktif Döngü Takibi — SPREAD' },
-  academy: { path: '/akademi', title: 'CS2 Arbitraj Akademisi & Rehber — SPREAD' }
+  calculator: { path: '/', trPath: '/' },
+  scanner: { path: '/scanner', trPath: '/tarayici' },
+  tracker: { path: '/tracker', trPath: '/takip' },
+  academy: { path: '/academy', trPath: '/akademi' },
+  about: { path: '/about', trPath: '/hakkinda' }
 };
 
 export const PATH_TO_TAB = {
@@ -30,7 +31,9 @@ export const PATH_TO_TAB = {
   'takip': 'tracker',
   'tracker': 'tracker',
   'akademi': 'academy',
-  'academy': 'academy'
+  'academy': 'academy',
+  'hakkinda': 'about',
+  'about': 'about'
 };
 
 export const STEAM_IMG_PREFIX = 'https://community.akamai.steamstatic.com/economy/image/';

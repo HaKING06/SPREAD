@@ -5,6 +5,7 @@
 import { Vault } from '../services/vault-storage.js';
 import { clearNode, el } from '../core/security.js';
 import { fmtShortDate } from '../core/formatters.js';
+import { isTr } from '../core/i18n.js';
 
 export function initVaultModal(app) {
   const modal = document.getElementById('vaultModal');
@@ -23,11 +24,12 @@ export function initVaultModal(app) {
   function renderStats() {
     clearNode(statsBox);
     const usage = Vault.getUsageStats();
+    const tr = isTr();
     const cards = [
-      { lbl: 'Takip Edilen Döngüler', val: String(app.cycles.length) },
-      { lbl: 'Özel Eşyalar', val: String(app.customItems.length) },
-      { lbl: 'İzleme Listesi', val: String(app.watchlist.length) },
-      { lbl: 'Yerel Disk Kullanımı', val: `${usage.kb} KB` }
+      { lbl: tr ? 'Takip Edilen Döngüler' : 'Tracked Cycles', val: String(app.cycles.length) },
+      { lbl: tr ? 'Özel Eşyalar' : 'Custom Items', val: String(app.customItems.length) },
+      { lbl: tr ? 'İzleme Listesi' : 'Watchlist', val: String(app.watchlist.length) },
+      { lbl: tr ? 'Yerel Disk Kullanımı' : 'Local Storage', val: `${usage.kb} KB` }
     ];
 
     for (const item of cards) {
@@ -51,6 +53,7 @@ export function initVaultModal(app) {
 
     previewBox.classList.remove('hidden');
     const b = pendingBackup;
+    const tr = isTr();
     previewBox.appendChild(
       el(
         'div',
@@ -58,17 +61,21 @@ export function initVaultModal(app) {
         el(
           'div',
           { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' } },
-          el('strong', { style: { fontSize: '13px' } }, `Yedek Önizlemesi (${b.app})`),
+          el('strong', { style: { fontSize: '13px' } }, tr ? `Yedek Önizlemesi (${b.app})` : `Backup Preview (${b.app})`),
           el(
             'span',
             { className: `pill ${b.checksumValid ? 'pill-mint' : 'pill-amber'}` },
-            b.checksumValid ? '✓ SHA-256 Bütünlüğü Doğrulandı' : '⚠ Dosya Manuel Düzenlenmiş'
+            b.checksumValid
+              ? tr ? '✓ SHA-256 Bütünlüğü Doğrulandı' : '✓ SHA-256 Integrity Verified'
+              : tr ? '⚠ Dosya Manuel Düzenlenmiş' : '⚠ File Modified Manually'
           )
         ),
         el(
           'div',
           { className: 'txt-sec num', style: { fontSize: '12px' } },
-          `Tarih: ${fmtShortDate(b.exportedAt)} • ${b.data.cycles.length} döngü • ${b.data.customItems.length} özel eşya • ${b.data.watchlist.length} favori`
+          tr
+            ? `Tarih: ${fmtShortDate(b.exportedAt)} • ${b.data.cycles.length} döngü • ${b.data.customItems.length} özel eşya • ${b.data.watchlist.length} favori`
+            : `Date: ${fmtShortDate(b.exportedAt)} • ${b.data.cycles.length} cycles • ${b.data.customItems.length} custom items • ${b.data.watchlist.length} watchlist`
         ),
         el(
           'div',
@@ -83,10 +90,10 @@ export function initVaultModal(app) {
                 pendingBackup = null;
                 app.reloadFromVault();
                 close();
-                app.toast('JSON yedeği mevcut verilerle birleştirildi.');
+                app.toast(isTr() ? 'JSON yedeği mevcut verilerle birleştirildi.' : 'JSON backup merged with local vault.');
               }
             },
-            'Mevcut Verilerle Birleştir'
+            tr ? 'Mevcut Verilerle Birleştir' : 'Merge with Existing'
           ),
           el(
             'button',
@@ -98,10 +105,10 @@ export function initVaultModal(app) {
                 pendingBackup = null;
                 app.reloadFromVault();
                 close();
-                app.toast('JSON yedeği başarıyla geri yüklendi.');
+                app.toast(isTr() ? 'JSON yedeği başarıyla geri yüklendi.' : 'JSON backup restored cleanly.');
               }
             },
-            'Tamamen Üzerine Yaz'
+            tr ? 'Tamamen Üzerine Yaz' : 'Replace Entire Vault'
           ),
           el(
             'button',
@@ -113,7 +120,7 @@ export function initVaultModal(app) {
                 renderPreview();
               }
             },
-            'İptal'
+            tr ? 'İptal' : 'Cancel'
           )
         )
       )
@@ -122,7 +129,7 @@ export function initVaultModal(app) {
 
   function open() {
     resetArmed = false;
-    if (resetBtn) resetBtn.textContent = 'Tüm Yerel Verileri Temizle';
+    if (resetBtn) resetBtn.textContent = isTr() ? 'Tüm Yerel Verileri Temizle' : 'Clear All Local Data';
     pendingBackup = null;
     renderStats();
     renderPreview();
@@ -151,7 +158,7 @@ export function initVaultModal(app) {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    app.toast('SHA-256 doğrulamalı JSON yedeği indirildi.');
+    app.toast(isTr() ? 'SHA-256 doğrulamalı JSON yedeği indirildi.' : 'SHA-256 verified JSON backup downloaded.');
   });
 
   exportCsvBtn?.addEventListener('click', () => {
@@ -168,7 +175,7 @@ export function initVaultModal(app) {
     } catch (err) {
       pendingBackup = null;
       renderPreview();
-      app.toast(err.message || 'Yedek dosyası okunamadı.', 'err');
+      app.toast(err.message || (isTr() ? 'Yedek dosyası okunamadı.' : 'Failed to read backup file.'), 'err');
     } finally {
       fileInput.value = '';
     }
@@ -177,14 +184,14 @@ export function initVaultModal(app) {
   resetBtn?.addEventListener('click', () => {
     if (!resetArmed) {
       resetArmed = true;
-      resetBtn.textContent = 'Emin misin? Tekrar Tıkla (Sıfırla)';
+      resetBtn.textContent = isTr() ? 'Emin misin? Tekrar Tıkla (Sıfırla)' : 'Are you sure? Click Again to Wipe';
       return;
     }
     Vault.clearAll();
     resetArmed = false;
     app.reloadFromVault();
     close();
-    app.toast('Tüm yerel kasa verileri sıfırlandı.', 'warn');
+    app.toast(isTr() ? 'Tüm yerel kasa verileri sıfırlandı.' : 'All local vault data cleared.', 'warn');
   });
 
   return { open, close };

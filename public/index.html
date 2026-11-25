@@ -1,30 +1,44 @@
 <!DOCTYPE html>
-<html lang="tr" data-theme="dark">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SPREAD — CS2 Arbitraj Döngü Masası | spread.haking.tr</title>
+  <title>SPREAD — CS2 Arbitrage Calculator &amp; Live Spread Terminal | spread.haking.tr</title>
   <meta
     name="description"
-    content="CSFloat & Youpin898 ↔ Steam Topluluk Pazarı canlı iki yönlü CS2 arbitraj terminali. Bütçeye özel akıllı strateji danışmanı, gerçek Valve cent komisyonu, 4.500+ canlı skin verisi ve yerel JSON kasa."
+    content="Free, zero-login CS2 Steam arbitrage calculator &amp; live spread scanner for CSFloat, Youpin898, and Steam Community Market. Exact Valve cent fees, 4,500+ skins with 24h/7d sales velocity, Smart Capital Strategy Advisor, and 14-day trade-hold cycle tracker."
   />
+  <meta
+    name="keywords"
+    content="CS2 arbitrage, CS2 arbitrage calculator, Steam arbitrage, CSFloat to Steam arbitrage, Youpin898 Steam arbitrage, CS2 spread scanner, Steam market fee calculator, what is CS2 arbitrage, CS2 skin trading profit, Valve 7 day trade protection"
+  />
+  <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#08090c" />
-  <link rel="canonical" href="https://spread.haking.tr/" />
 
-  <!-- OpenGraph / Twitter Card (Gemini Banana Banner) -->
+  <!-- Canonical & Multilingual Hreflang SEO -->
+  <link rel="canonical" href="https://spread.haking.tr/" />
+  <link rel="alternate" hreflang="en" href="https://spread.haking.tr/?lang=en" />
+  <link rel="alternate" hreflang="tr" href="https://spread.haking.tr/?lang=tr" />
+  <link rel="alternate" hreflang="x-default" href="https://spread.haking.tr/" />
+
+  <!-- OpenGraph / Twitter Card (Gemini Banana English 16:9 Banner) -->
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SPREAD" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="tr_TR" />
   <meta property="og:url" content="https://spread.haking.tr/" />
-  <meta property="og:title" content="SPREAD — CS2 Arbitrage Terminal | spread.haking.tr" />
+  <meta property="og:title" content="SPREAD — CS2 Arbitrage Calculator &amp; Live Spread Terminal" />
   <meta
     property="og:description"
-    content="Bütçene özel canlı CSFloat & Youpin898 ↔ Steam CS2 arbitraj stratejileri, 4.500+ gerçek skin tarayıcısı ve 14 günlük döngü takip terminali."
+    content="Zero-login CSFloat &amp; Youpin898 ↔ Steam CS2 arbitrage desk. Real 24h/7d sales velocity, Confidence Scores, exact Valve cent math, and local JSON vault."
   />
   <meta property="og:image" content="https://spread.haking.tr/assets/brand/banner.jpg" />
+  <meta property="og:image:alt" content="SPREAD — CS2 Arbitrage Terminal Live Spread Engine" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="SPREAD — CS2 Arbitrage Terminal" />
+  <meta name="twitter:title" content="SPREAD — CS2 Arbitrage Calculator &amp; Live Spread Terminal" />
   <meta
     name="twitter:description"
-    content="CSFloat & Youpin898 ↔ Steam canlı spread tarayıcısı, bütçeye özel strateji motoru ve yerel JSON veri kasası."
+    content="Live CSFloat &amp; Youpin898 ↔ Steam spread scanner, budget-fit strategy engine, real sales velocity &amp; 14-day trade-hold tracker."
   />
   <meta name="twitter:image" content="https://spread.haking.tr/assets/brand/banner.jpg" />
 
@@ -32,6 +46,100 @@
   <link rel="icon" type="image/png" href="/assets/brand/favicon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/logo-192.png" />
   <link rel="manifest" href="/site.webmanifest" />
+
+  <!-- Structured Data (JSON-LD: WebApplication, HowTo, FAQPage for Rich Search Results) -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "SPREAD — CS2 Arbitrage Calculator & Live Spread Terminal",
+          "url": "https://spread.haking.tr/",
+          "applicationCategory": "FinanceApplication",
+          "operatingSystem": "Any",
+          "inLanguage": ["en", "tr"],
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "description": "Zero-login, open-source CS2 two-way arbitrage calculator and live spread scanner comparing CSFloat and Youpin898 against the Steam Community Market with real 24h/7d sales velocity and exact Valve cent fee math.",
+          "featureList": [
+            "Live CSFloat, Youpin898 and Steam spread scanner across 4,500+ CS2 skins & cases",
+            "Smart Capital Strategy Advisor with Confidence Scores and real 24h/7d sales velocity",
+            "Exact Valve $0.01 + $0.01 minimum Steam fee solver",
+            "14-day two-phase trade-hold cycle tracker with local SHA-256 JSON backup vault",
+            "Zero Steam login, zero API keys, strict CSP client-side security"
+          ]
+        },
+        {
+          "@type": "HowTo",
+          "name": "How CS2 Steam Arbitrage Works (CSFloat to Steam 14-Day Loop)",
+          "description": "Step-by-step guide to capturing structural CS2 price spreads between real-cash marketplaces (CSFloat / Youpin898) and the Steam Community Market.",
+          "step": [
+            {
+              "@type": "HowToStep",
+              "name": "Buy Undervalued Liquid Items (Leg 1)",
+              "text": "Buy liquid CS2 cases or play skins on CSFloat (0% buy fee) or Youpin898 where Steam prices trade 20% to 45% higher."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Wait Out the 7-Day Valve Trade Protection Hold",
+              "text": "Hold the traded items for 7 days until Steam Trade Protection unlocks market listing."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Sell on Steam & Buy a Low-Loss Exit Skin",
+              "text": "Sell Leg 1 items on Steam Community Market to multiply wallet balance (M1), then buy a high-liquidity cashout skin with minimal Steam-to-CSFloat discount."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Cash Out on CSFloat / Youpin898 & Compound (Leg 2)",
+              "text": "After the second 7-day trade hold clears, sell back into real cash (M2). When M1 * M2 > 1.00, net cash profit compounds into the next 14-day cycle."
+            }
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is CS2 Steam arbitrage?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "CS2 Steam arbitrage is a two-way trading loop that profits from the structural price gap between real-cash marketplaces (CSFloat, Youpin898) and the Steam Community Market. Because Steam Wallet funds cannot be withdrawn directly to a bank, skins trade 20%–45% higher on Steam. Traders buy high-spread liquid items for cash, sell on Steam to expand wallet balance (M1), then convert back to cash via low-loss liquid skins (M2). Whenever M1 × M2 exceeds 1.00, the cycle yields net real-cash profit."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Why does Steam Market charge up to 66.7% on cheap CS2 items?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Although Steam's headline fee is ~13.04% (5% Steam + 10% CS2), Valve enforces a strict minimum fee of $0.01 Steam fee plus $0.01 CS2 fee per item. On a $0.03 item, $0.02 is deducted—an effective 66.67% fee. SPREAD uses an exact Valve cent solver instead of naive division by 1.15."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is SPREAD safe? Do I need to sign in with Steam?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "SPREAD never asks for Steam login, Steam Guard codes, trade URLs, API keys, or browser extensions. All calculations run locally in your browser with strict Content-Security-Policy, zero innerHTML sinks, and open-source MIT code. Your tracked cycles stay strictly in your own browser's localStorage with SHA-256 verified JSON backups."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How long does a full CS2 arbitrage cycle take?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Because of Valve's 7-day Trade Protection hold on each traded leg, one full two-way arbitrage cycle takes a minimum of 14 days (7 days for Leg 1 + 7 days for Leg 2), plus actual order-book fill time based on each item's 24h/7d sales velocity."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  </script>
 
   <!-- Fonts: Space Grotesk, IBM Plex Sans & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -58,27 +166,27 @@
 <body>
 
   <!-- =================================================================== -->
-  <!-- CANLI SPREAD ŞERİDİ (LIVE TICKER TAPE)                              -->
+  <!-- LIVE SPREAD TICKER TAPE                                             -->
   <!-- =================================================================== -->
-  <div class="ticker-bar" role="region" aria-label="Canlı CS2 Arbitraj Fırsatları">
+  <div class="ticker-bar" role="region" aria-label="Live CS2 Arbitrage Spreads">
     <div class="ticker-label">
       <span id="liveStatusDot" class="live-dot"></span>
-      <span id="liveStatusText">Yükleniyor...</span>
+      <span id="liveStatusText">Loading...</span>
     </div>
     <div class="ticker-viewport">
       <div id="tickerTrack" class="ticker-track"></div>
     </div>
     <div id="tickerFxSummary" class="ticker-status-right">
-      1 USD = ₺50.67 | ¥6.68 | €0.91
+      1 USD = ₺35.00 | ¥7.25 | €0.92
     </div>
   </div>
 
   <!-- =================================================================== -->
-  <!-- SABİT KOMUT BAŞLIĞI (STICKY COMMAND HEADER)                         -->
+  <!-- STICKY COMMAND HEADER                                               -->
   <!-- =================================================================== -->
   <header class="app-header">
     <div class="header-inner">
-      <!-- Üst Satır: Marka, Pazar Seçici, Para Birimi, Arama, Kasa, Destek, Tema -->
+      <!-- Top Row: Brand, Marketplace, Currency, Language, Search, Sync, Vault, Support, Theme -->
       <div class="header-row-top">
         <a id="brandHomeLink" href="/" class="brand-lockup" style="text-decoration: none;">
           <img
@@ -93,13 +201,13 @@
               <h1 class="brand-name">SPREAD</h1>
               <span class="brand-domain">spread.haking.tr</span>
             </div>
-            <span class="brand-sub">CS2 Canlı Arbitraj Terminali</span>
+            <span class="brand-sub" data-i18n="brand.sub">Live CS2 Arbitrage Terminal</span>
           </div>
         </a>
 
         <div class="header-controls">
-          <!-- Pazar Seçici (CSFloat Varsayılan / Youpin898 Opsiyonel) -->
-          <div class="seg-group" role="group" aria-label="Pazar Seçimi">
+          <!-- Marketplace Selector (CSFloat Primary / Youpin898 Optional) -->
+          <div class="seg-group" role="group" aria-label="Marketplace">
             <button type="button" class="seg-btn is-active" data-marketplace="CSFLOAT">
               CSFloat
             </button>
@@ -108,89 +216,98 @@
             </button>
           </div>
 
-          <!-- Para Birimi Seçici -->
-          <div class="seg-group" role="group" aria-label="Para Birimi">
+          <!-- Currency Selector -->
+          <div class="seg-group" role="group" aria-label="Currency">
             <button type="button" class="seg-btn is-active" data-currency="USD">$ USD</button>
             <button type="button" class="seg-btn" data-currency="TRY">₺ TRY</button>
             <button type="button" class="seg-btn" data-currency="CNY">¥ CNY</button>
             <button type="button" class="seg-btn" data-currency="EUR">€ EUR</button>
           </div>
 
-          <!-- Hızlı Komut Arama -->
-          <button id="openCmdSearchBtn" type="button" class="cmd-search-btn" title="Tüm CS2 Skinlerinde Ara (Ctrl+K)">
+          <!-- Language Switcher (EN Default / Auto TR Detect + Persisted) -->
+          <div class="seg-group lang-pill" role="group" aria-label="Language">
+            <button type="button" class="seg-btn is-active" data-lang-btn="en" title="English (Global Default)">EN</button>
+            <button type="button" class="seg-btn" data-lang-btn="tr" title="Türkçe">TR</button>
+          </div>
+
+          <!-- Quick Command Search -->
+          <button id="openCmdSearchBtn" type="button" class="cmd-search-btn" title="Search 4,500+ CS2 Skins & Price Ranges (Ctrl+K)">
             <span>⌕</span>
-            <span class="cmd-search-text">Skin Ara...</span>
+            <span class="cmd-search-text" data-i18n="hdr.search">Search skins...</span>
             <kbd>Ctrl+K</kbd>
           </button>
 
-          <!-- Canlı Yenile -->
-          <button id="syncLiveBtn" type="button" class="btn btn-sm" title="CSFloat, Steam, Youpin898 ve Döviz Kurlarını Yenile">
-            ↻ Canlı Yenile
+          <!-- Live Sync -->
+          <button id="syncLiveBtn" type="button" class="btn btn-sm" data-i18n="hdr.refresh" title="Refresh CSFloat, Steam, Youpin898 & FX Rates">
+            ↻ Refresh Live
           </button>
 
-          <!-- Yerel Veri Kasası (JSON Yedekleme) -->
-          <button id="openVaultBtn" type="button" class="btn btn-sm" title="Yerel JSON Yedekleme ve Geri Yükleme">
-            ⛁ Kasa / JSON
+          <!-- Local JSON Vault -->
+          <button id="openVaultBtn" type="button" class="btn btn-sm" data-i18n="hdr.vault" title="Local JSON Backup & Restore">
+            ⛁ Vault / JSON
           </button>
 
-          <!-- Geliştiriciyi Destekle & İletişim -->
-          <button id="openSupportBtn" type="button" class="btn btn-sm" style="border-color: var(--gold-border); color: var(--gold);" title="Geliştiriciyi Destekle & İletişim">
-            ☕ Destek
+          <!-- Support & Contact -->
+          <button id="openSupportBtn" type="button" class="btn btn-sm" style="border-color: var(--gold-border); color: var(--gold);" data-i18n="hdr.support" title="Support SPREAD & Contact">
+            ☕ Support
           </button>
 
-          <!-- Hızlı Rehber -->
-          <button id="showGuideQuickBtn" type="button" class="btn btn-icon" aria-label="Nasıl Kullanılır" title="30 Saniyelik Hızlı Kullanım Rehberini Göster">
+          <!-- Quick Guide Toggle -->
+          <button id="showGuideQuickBtn" type="button" class="btn btn-icon" aria-label="Quick Start Guide" title="Toggle Quick Start Bar">
             ?
           </button>
 
-          <!-- Tema Değiştirici -->
-          <button id="themeToggleBtn" type="button" class="btn btn-icon" aria-label="Tema Değiştir" title="Karanlık / Açık Tema">
+          <!-- Theme Toggle -->
+          <button id="themeToggleBtn" type="button" class="btn btn-icon" aria-label="Toggle Theme" title="Dark / Light Theme">
             ◐
           </button>
         </div>
       </div>
 
-      <!-- Alt Satır: Temiz URL Sekme Navigasyonu & Canlı Komisyon Parametreleri -->
+      <!-- Sub Row: Clean URL Nav Tabs & Live Fee Controls -->
       <div class="header-row-sub">
-        <nav class="main-nav" aria-label="Ana Bölümler">
+        <nav class="main-nav" aria-label="Primary Navigation">
           <a href="/" class="nav-tab is-active" data-tab="calculator" style="text-decoration: none;">
-            <span>Döngü Masası</span>
+            <span data-i18n="nav.calculator">Trade Desk</span>
             <kbd>1</kbd>
           </a>
-          <a href="/tarayici" class="nav-tab" data-tab="scanner" style="text-decoration: none;">
-            <span>Canlı Tarayıcı</span>
-            <span class="nav-badge">4.500+</span>
+          <a href="/scanner" class="nav-tab" data-tab="scanner" style="text-decoration: none;">
+            <span data-i18n="nav.scanner">Live Scanner</span>
+            <span class="nav-badge">4,500+</span>
           </a>
-          <a href="/takip" class="nav-tab" data-tab="tracker" style="text-decoration: none;">
-            <span>Aktif Döngüler</span>
+          <a href="/tracker" class="nav-tab" data-tab="tracker" style="text-decoration: none;">
+            <span data-i18n="nav.tracker">Cycle Tracker</span>
             <span id="trackerNavBadge" class="nav-badge">0</span>
           </a>
-          <a href="/akademi" class="nav-tab" data-tab="academy" style="text-decoration: none;">
-            <span>Arbitraj Akademisi</span>
+          <a href="/academy" class="nav-tab" data-tab="academy" style="text-decoration: none;">
+            <span data-i18n="nav.academy">Arbitrage Guide</span>
+          </a>
+          <a href="/about" class="nav-tab" data-tab="about" style="text-decoration: none;">
+            <span data-i18n="nav.about">About &amp; Trust</span>
           </a>
         </nav>
 
-        <div class="fee-strip" aria-label="Komisyon Parametreleri">
-          <label class="fee-chip" title="Harici Pazar Alış Komisyonu (CSFloat/Youpin varsayılan %0)">
-            <span>Alış:</span>
+        <div class="fee-strip" aria-label="Fee Parameters">
+          <label class="fee-chip" title="External Marketplace Buy Fee (CSFloat/Youpin default 0%)">
+            <span data-i18n="hdr.buyFee">Buy:</span>
             <input id="buyFeeInput" type="number" step="0.1" min="0" max="50" value="0" />
             <span>%</span>
           </label>
-          <label class="fee-chip" title="Harici Pazar Satış Komisyonu (CSFloat %2 / Youpin %1)">
-            <span>Satış:</span>
+          <label class="fee-chip" title="External Marketplace Sell Fee (CSFloat 2% / Youpin 1%)">
+            <span data-i18n="hdr.sellFee">Sell:</span>
             <input id="sellFeeInput" type="number" step="0.1" min="0" max="50" value="2" />
             <span>%</span>
           </label>
-          <label class="fee-chip" title="Opsiyonel Nakit Çekim / Banka / Kripto Kesintisi (CSFloat %0.5–2.5)">
-            <span>Çekim:</span>
+          <label class="fee-chip" title="Optional Cashout / Bank / Crypto Withdrawal Fee (CSFloat 0.5%–2.5%)">
+            <span data-i18n="hdr.withdrawFee">Payout:</span>
             <input id="withdrawFeeInput" type="number" step="0.1" min="0" max="30" value="0" />
             <span>%</span>
           </label>
-          <div class="fee-chip" title="Steam Topluluk Pazarı Komisyon Modeli">
-            <span>Steam:</span>
+          <div class="fee-chip" title="Steam Community Market Fee Model">
+            <span data-i18n="hdr.steamFee">Steam:</span>
             <input id="steamFeeCustomInput" type="number" step="0.01" min="0" max="50" value="13.04" />
             <span>%</span>
-            <button id="steamFeeModeBtn" type="button" class="fee-mode-pill" title="Valve Cent / ÷1.15 / Özel % arası geçiş">
+            <button id="steamFeeModeBtn" type="button" class="fee-mode-pill" title="Toggle Valve Cent / ÷1.15 / Custom %">
               Valve Cent
             </button>
           </div>
@@ -200,46 +317,46 @@
   </header>
 
   <!-- =================================================================== -->
-  <!-- ANA ÇALIŞMA ALANI                                                   -->
+  <!-- MAIN WORKSPACE                                                      -->
   <!-- =================================================================== -->
   <main class="app-main">
 
-    <!-- Paylaşılan Linkle Gelindiğinde Gösterilen Bilgi Şeridi -->
+    <!-- Shared Deep-Link Loaded Banner -->
     <div id="sharedLoadedBanner" class="alert-banner hidden" style="margin-bottom: 14px; border-color: var(--mint-border); background: var(--mint-soft);">
-      <span><strong>↗ Paylaşılan Arbitraj Kurulumu Yüklendi:</strong> Arkadaşınızın gönderdiği döngü senaryosu masaya aktarıldı. Dilerseniz kendi bütçenize göre değiştirebilirsiniz.</span>
-      <button id="dismissSharedBannerBtn" type="button" class="btn btn-sm">URL'yi Temizle</button>
+      <span data-i18n="shared.banner">Shared Arbitrage Setup Loaded: Your friend’s exact loop configuration is now active on the desk.</span>
+      <button id="dismissSharedBannerBtn" type="button" class="btn btn-sm" data-i18n="shared.clear">Clear URL</button>
     </div>
 
     <!-- ================================================================= -->
-    <!-- SEKME 1: DÖNGÜ MASASI (2-LEG TRADE DESK + AKILLI BÜTÇE DANIŞMANI) -->
+    <!-- VIEW 1: TRADE DESK (2-LEG CALCULATOR + SMART STRATEGY ADVISOR)    -->
     <!-- ================================================================= -->
     <section id="view-calculator" class="view-panel">
 
-      <!-- Tek Satırlık Hızlı Başlangıç Şeridi (Kapatılabilir) -->
+      <!-- 1-Line Quick Start Strip (Dismissible) -->
       <div id="onboardingGuideCard" class="panel onboarding-card">
         <div class="onboarding-bar">
           <div class="onboarding-pills">
-            <span class="pill pill-gold">BAŞLANGIÇ</span>
-            <span class="onboard-pill"><span class="onboard-num">1</span> Bütçeni gir</span>
+            <span class="pill pill-gold" data-i18n="onboard.badge">QUICK START</span>
+            <span class="onboard-pill"><span class="onboard-num">1</span> <span data-i18n="onboard.s1">Enter your budget</span></span>
             <span class="txt-muted">→</span>
-            <span class="onboard-pill"><span class="onboard-num">2</span> Bütçene özel stratejiyi seç</span>
+            <span class="onboard-pill"><span class="onboard-num">2</span> <span data-i18n="onboard.s2">Pick a budget-fit strategy</span></span>
             <span class="txt-muted">→</span>
-            <span class="onboard-pill"><span class="onboard-num">3</span> Takibe al veya paylaş</span>
+            <span class="onboard-pill"><span class="onboard-num">3</span> <span data-i18n="onboard.s3">Track 14d cycle or share</span></span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px;">
-            <a href="/akademi" class="btn btn-sm btn-ghost" data-tab="academy" style="text-decoration: none;">Rehber →</a>
-            <button id="dismissOnboardingBtn" type="button" class="btn btn-sm btn-ghost" title="Gizle">✕</button>
+            <a href="/academy" class="btn btn-sm btn-ghost" data-tab="academy" data-i18n="onboard.guide" style="text-decoration: none;">Guide →</a>
+            <button id="dismissOnboardingBtn" type="button" class="btn btn-sm btn-ghost" title="Dismiss">✕</button>
           </div>
         </div>
       </div>
 
-      <!-- Komut Özeti Şeridi -->
+      <!-- Command Summary Hero Strip -->
       <div class="panel panel-corner calc-hero-strip">
         <div class="capital-box">
           <label for="calcCapitalInput" class="field-label">
             <span>
-              Başlangıç Sermayesi (Capital₀)
-              <span class="tip-badge" tabindex="0" data-tip="CSFloat veya Youpin898 hesabınızda 1. yön alımı için ayırdığınız nakit sermaye.">?</span>
+              <span data-i18n="calc.capital">Starting Capital (Capital₀)</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.capital.tip" data-tip="Cash budget available on CSFloat or Youpin898 for Leg 1 purchases.">?</span>
             </span>
           </label>
           <div class="input-prefix-wrap">
@@ -252,110 +369,115 @@
         <div class="hero-metrics-grid">
           <div>
             <div class="metric-cell-label">
-              Tam Döngü Çarpanı
-              <span class="tip-badge" tabindex="0" data-tip="M₁ (Steam bakiye büyümesi) × M₂ (nakit dönüş oranı). 1.0000x üstü net kâr demektir.">?</span>
+              <span data-i18n="calc.mult">Full Cycle Multiplier</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.mult.tip" data-tip="Strict multiplicative return: M₁ (Steam boost) × M₂ (cashout rate). Above 1.0000x = net profit.">?</span>
             </div>
             <div class="metric-cell-val">
               <span id="heroMultVal">1.0000x</span>
-              <span id="heroRoiPill" class="pill pill-mint">+%0.00</span>
+              <span id="heroRoiPill" class="pill pill-mint">+0.00%</span>
             </div>
-            <div class="metric-cell-sub">Çarpımsal: M₁ × M₂</div>
+            <div class="metric-cell-sub" data-i18n="calc.mult.sub">Multiplicative: M₁ × M₂</div>
           </div>
 
           <div>
             <div class="metric-cell-label">
-              1. Döngü Gerçekçi Net Kâr
-              <span class="tip-badge" tabindex="0" data-tip="Tam sayı adetlerle elde edilen gerçekçi net nakit kârı. Steam'de artan küsurat M₂ ile iskonto edilerek eklenir.">?</span>
+              <span data-i18n="calc.realProfit">Cycle 1 Net Profit</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.realProfit.tip" data-tip="Realistic integer-unit cash profit. Leftover Steam wallet balance is discounted by M₂ to true cash value.">?</span>
             </div>
             <div id="heroRealProfit" class="metric-cell-val txt-mint">+$0.00</div>
-            <div id="heroRealSub" class="metric-cell-sub">Nakit Eşdeğeri (Steam × M₂)</div>
+            <div id="heroRealSub" class="metric-cell-sub" data-i18n="calc.realProfit.sub">Cash-Equivalent (Steam × M₂)</div>
           </div>
 
           <div>
             <div class="metric-cell-label">
-              Başabaş Kayıp Limiti
-              <span class="tip-badge" tabindex="0" data-tip="2. yönde nakde dönerken zarar etmeden katlanabileceğin maksimum kayıp yüzdesi: 1 − (1 / M₁).">?</span>
+              <span data-i18n="calc.breakEven">Break-Even Loss Limit</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.breakEven.tip" data-tip="Maximum Leg 2 cashout loss tolerated without losing money: 1 − (1 / M₁).">?</span>
             </div>
-            <div id="heroBreakEven" class="metric-cell-val">%0.00</div>
-            <div id="heroBreakEvenSub" class="metric-cell-sub">Max 2. yön dönüşüm kaybı</div>
+            <div id="heroBreakEven" class="metric-cell-val">0.00%</div>
+            <div id="heroBreakEvenSub" class="metric-cell-sub" data-i18n="calc.breakEven.sub">Max Leg 2 cashout loss</div>
           </div>
 
           <div>
             <div class="metric-cell-label">
-              Aylık Bileşik (2 Döngü)
-              <span class="tip-badge" tabindex="0" data-tip="14 günde 1 tam döngüyle 28 gün (2 döngü) sonunda bileşik teorik büyüme oranı.">?</span>
+              <span data-i18n="calc.monthly">Monthly Compound (2x)</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.monthly.tip" data-tip="Theoretical 28-day compounded return across 2 full 14-day trade-hold cycles.">?</span>
             </div>
-            <div id="heroMonthlyRoi" class="metric-cell-val txt-gold">+%0.00</div>
-            <div class="metric-cell-sub">28 Gün • 2 × (7+7G Hold)</div>
+            <div id="heroMonthlyRoi" class="metric-cell-val txt-gold">+0.00%</div>
+            <div class="metric-cell-sub" data-i18n="calc.monthly.sub">28 Days • 2 × (7+7D Hold)</div>
           </div>
         </div>
 
         <div class="hero-actions">
-          <button id="trackCycleBtn" type="button" class="btn btn-primary">
-            + Bu Döngüyü Takibe Al
+          <button id="trackCycleBtn" type="button" class="btn btn-primary" data-i18n="calc.trackBtn">
+            + Track This Cycle
           </button>
           <div style="display: flex; gap: 6px;">
-            <button id="autoBestPairBtn" type="button" class="btn btn-sm" style="flex: 1;" title="Mevcut bütçene göre en yüksek kârlı stratejiyi otomatik uygula">
-              ⚡ En İyi Strateji
+            <button id="autoBestPairBtn" type="button" class="btn btn-sm" style="flex: 1;" data-i18n="calc.bestBtn" title="Automatically apply the highest-ranked strategy for your budget">
+              ⚡ Best Strategy
             </button>
-            <button id="openShareModalBtn" type="button" class="btn btn-sm" title="Bu döngü kurulumunu link olarak arkadaşınla paylaş">
-              ↗ Paylaş
+            <button id="openShareModalBtn" type="button" class="btn btn-sm" data-i18n="calc.shareBtn" title="Share this arbitrage configuration via URL">
+              ↗ Share
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Bütçeye Özel Akıllı Strateji Danışmanı -->
+      <!-- Smart Capital Strategy Advisor -->
       <div class="panel panel-corner advisor-panel">
         <div class="panel-head">
           <div>
             <h3 class="panel-title">
-              <span>⚡ Bütçene Özel Strateji Danışmanı</span>
-              <span id="advisorTierBadge" class="pill pill-gold">Büyüme Bütçesi</span>
-              <span id="advisorFilterStatus" class="pill pill-muted">6 strateji</span>
+              <span data-i18n="adv.title">⚡ Smart Capital Strategy Advisor</span>
+              <span id="advisorTierBadge" class="pill pill-gold">Growth Budget</span>
+              <span id="advisorFilterStatus" class="pill pill-muted">6 strategies</span>
             </h3>
             <p id="advisorTierAdvice" class="advisor-advice-text" style="margin-top: 4px;"></p>
           </div>
-          <a href="/tarayici" class="btn btn-sm" data-tab="scanner" style="text-decoration: none;">
-            Tüm Eşyalar →
-          </a>
+          <div style="display: flex; align-items: center; gap: 7px; flex-wrap: wrap;">
+            <button id="openFilterGuideBtn" type="button" class="btn btn-sm btn-guide-pill" data-i18n="adv.howFilters">
+              ⓘ Filter Guide
+            </button>
+            <a href="/scanner" class="btn btn-sm" data-tab="scanner" data-i18n="adv.allItems" style="text-decoration: none;">
+              All 4,500+ Items →
+            </a>
+          </div>
         </div>
 
-        <!-- Akıllı Strateji Filtreleme Çubuğu -->
+        <!-- Strategy Filter Toolbar -->
         <div class="advisor-toolbar">
-          <div class="seg-group" role="group" aria-label="Strateji Stili">
-            <button type="button" class="seg-btn is-active" data-adv-style="ALL">Tümü</button>
-            <button type="button" class="seg-btn" data-adv-style="LOW_QTY">Az Eşya (≤10)</button>
-            <button type="button" class="seg-btn" data-adv-style="FAST">Süper Hızlı</button>
-            <button type="button" class="seg-btn" data-adv-style="CASES">Likit Kasa</button>
-            <button type="button" class="seg-btn" data-adv-style="PATIENT">Sabırlı / Bıçak</button>
+          <div class="seg-group" role="group" aria-label="Strategy Mode">
+            <button type="button" class="seg-btn is-active" data-adv-style="ALL" data-i18n="adv.style.ALL">Balanced Mix</button>
+            <button type="button" class="seg-btn" data-adv-style="LOW_QTY" data-i18n="adv.style.LOW_QTY">Low-Count (≤10)</button>
+            <button type="button" class="seg-btn" data-adv-style="FAST" data-i18n="adv.style.FAST">Fastest Cash</button>
+            <button type="button" class="seg-btn" data-adv-style="CASES" data-i18n="adv.style.CASES">Case Engine</button>
+            <button type="button" class="seg-btn" data-adv-style="PATIENT" data-i18n="adv.style.PATIENT">High Margin / Knives</button>
           </div>
 
           <div class="advisor-controls-right">
-            <label class="fee-chip" title="1. yönde en fazla kaç adet eşya alınsın?">
-              <span>Maks Adet:</span>
+            <label class="fee-chip" title="Maximum units to purchase in Leg 1">
+              <span data-i18n="adv.maxQty">Max Items:</span>
               <select id="advisorMaxQtySelect" class="advisor-mini-sel num">
-                <option value="0">Otomatik</option>
-                <option value="5">≤ 5 adet</option>
-                <option value="10">≤ 10 adet</option>
-                <option value="25">≤ 25 adet</option>
-                <option value="50">≤ 50 adet</option>
-                <option value="150">≤ 150 adet</option>
+                <option value="0" data-i18n="adv.auto">Auto</option>
+                <option value="5">≤ 5</option>
+                <option value="10">≤ 10</option>
+                <option value="25">≤ 25</option>
+                <option value="50">≤ 50</option>
+                <option value="150">≤ 150</option>
               </select>
             </label>
 
-            <label class="fee-chip" title="Önerilen eşyaların minimum satış hızı">
-              <span>Hız:</span>
+            <label class="fee-chip" title="Minimum real-world sales speed tier">
+              <span data-i18n="adv.speed">Speed:</span>
               <select id="advisorSpeedSelect" class="advisor-mini-sel">
-                <option value="ULTRA">Çok Hızlı</option>
-                <option value="FAST" selected>Hızlı+</option>
-                <option value="MODERATE">Orta Dahil</option>
+                <option value="ULTRA" data-i18n="adv.speed.ULTRA">Ultra Fast (A)</option>
+                <option value="FAST" selected data-i18n="adv.speed.FAST">Fast+ (A+B)</option>
+                <option value="MODERATE" data-i18n="adv.speed.MODERATE">All (Incl. Patient)</option>
               </select>
             </label>
 
-            <label class="fee-chip" style="cursor: pointer;" title="Zor satılan StatTrak, Hatıra ve eski koleksiyon kapsüllerini otomatik ele">
+            <label class="fee-chip" style="cursor: pointer;" data-i18n-title="adv.cleanPool.tip" title="Automatically hides hard-to-sell StatTrak™, Souvenir &amp; dead collector capsules">
               <input id="advisorCleanToggle" type="checkbox" checked style="width: auto;" />
-              <span>Temiz Likit</span>
+              <span data-i18n="adv.cleanPool">Clean Liquid Pool</span>
             </label>
           </div>
         </div>
@@ -364,94 +486,94 @@
           <div id="advisorDiagnosticsHost" class="diagnostics-stack"></div>
           <div id="advisorStrategiesGrid" class="strategies-grid"></div>
           <div class="split-plan-box">
-            <strong style="font-size: 12px; color: var(--text-secondary);">Önerilen Bütçe Dağılımı</strong>
+            <strong style="font-size: 12px; color: var(--text-secondary);" data-i18n="adv.splitTitle">Recommended Capital Allocation Plan</strong>
             <div id="advisorSplitPlan"></div>
           </div>
         </div>
       </div>
 
-      <!-- 14 Günlük Zaman Çizelgesi + Gerçekçi Süre Göstergesi -->
+      <!-- 14-Day Cycle Timeline + Reality Badge -->
       <div class="panel timeline-shell">
         <div class="timeline-top-meta">
-          <span>Tahmini Gerçekçi Döngü Süresi (7+7G Trade Hold + Alım/Satım Likiditesi)</span>
-          <span id="tlRealityBadge" class="pill pill-mint">Akıcı (~14–15 Gün)</span>
+          <span data-i18n="tl.meta">Estimated Realistic Cycle Duration (7+7D Trade Hold + Buy/Sell Velocity)</span>
+          <span id="tlRealityBadge" class="pill pill-mint">Smooth (~14–15 Days)</span>
         </div>
         <div class="timeline-bar" style="padding: 0;">
           <div class="tl-node">
-            <div class="tl-node-tag">Gün 0 • <span class="mkt-name">CSFloat</span> Alım</div>
-            <div id="tlDay0Main" class="tl-node-main">$0.00 (0 adet)</div>
-            <div id="tlDay0Sub" class="tl-node-sub">Cüzdan kalanı: $0.00</div>
+            <div class="tl-node-tag"><span data-i18n="tl.d0">Day 0 • Buy on</span> <span class="mkt-name">CSFloat</span></div>
+            <div id="tlDay0Main" class="tl-node-main">$0.00 (0 units)</div>
+            <div id="tlDay0Sub" class="tl-node-sub">Wallet leftover: $0.00</div>
           </div>
           <div class="tl-bridge">
             <span>───→</span>
-            <span class="tl-hold-pill">7G Hold</span>
+            <span class="tl-hold-pill" data-i18n="tl.hold">7D Hold</span>
           </div>
           <div class="tl-node">
-            <div class="tl-node-tag">Gün 7 • Steam Net &amp; Dönüş</div>
+            <div class="tl-node-tag" data-i18n="tl.d7">Day 7 • Steam Net &amp; Exit Skin</div>
             <div id="tlDay7Main" class="tl-node-main txt-ice">$0.00 Steam Net</div>
-            <div id="tlDay7Sub" class="tl-node-sub">0 adet dönüş eşyası</div>
+            <div id="tlDay7Sub" class="tl-node-sub">0 exit skins</div>
           </div>
           <div class="tl-bridge">
             <span>───→</span>
-            <span class="tl-hold-pill">7G Hold</span>
+            <span class="tl-hold-pill" data-i18n="tl.hold">7D Hold</span>
           </div>
           <div class="tl-node">
-            <div class="tl-node-tag">Gün 14+ • Nakit Eşdeğeri</div>
+            <div class="tl-node-tag" data-i18n="tl.d14">Day 14+ • Cash-Equivalent</div>
             <div id="tlDay14Main" class="tl-node-main txt-mint">$0.00 (+$0.00)</div>
-            <div id="tlDay14Sub" class="tl-node-sub">Nakit + Steam(M₂)</div>
+            <div id="tlDay14Sub" class="tl-node-sub">Cash + Steam(M₂)</div>
           </div>
         </div>
       </div>
 
-      <!-- Gerçekçi Uygulama / Aşırı Adet / Süre Uzaması Uyarı Bandı -->
+      <!-- Execution Reality Alert Banner -->
       <div id="executionRealityBanner" class="alert-banner is-danger hidden">
-        <span id="executionRealityMsg">Yüksek adet nedeniyle döngü süresi uzayabilir.</span>
+        <span id="executionRealityMsg">High item quantity may extend cycle duration.</span>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-          <button id="fixRealityBestBtn" type="button" class="btn btn-primary btn-sm">Gerçekçi Strateji Uygula</button>
-          <button id="fixRealitySearchBtn" type="button" class="btn btn-sm">Üst Fiyatlı Skin Ara</button>
+          <button id="fixRealityBestBtn" type="button" class="btn btn-primary btn-sm" data-i18n="tl.fixBest">Apply Realistic Strategy</button>
+          <button id="fixRealitySearchBtn" type="button" class="btn btn-sm" data-i18n="tl.fixSearch">Search Higher-Tier Skins</button>
         </div>
       </div>
 
-      <!-- Uyarı Bantları -->
+      <!-- Math / Fee Warning Banners -->
       <div id="insuffCapitalBanner" class="alert-banner hidden">
-        <span id="insuffCapitalMsg">Başlangıç sermayesi 1 adet alış için yetersiz.</span>
-        <button id="setMinCapBtn" type="button" class="btn btn-primary btn-sm">1 Adet Fiyatına Eşitle</button>
+        <span id="insuffCapitalMsg">Starting capital is below 1 unit purchase price.</span>
+        <button id="setMinCapBtn" type="button" class="btn btn-primary btn-sm" data-i18n="tl.setMinCap">Match 1 Unit Cost</button>
       </div>
       <div id="steamMinFeeBanner" class="alert-banner is-danger hidden">
-        <span id="steamMinFeeDetail">Minimum Steam komisyon tuzağı tespit edildi.</span>
+        <span id="steamMinFeeDetail">Minimum Steam fee trap detected.</span>
       </div>
 
-      <!-- Yan Yana 1. Yön & 2. Yön İşlem Kartları -->
+      <!-- Side-by-Side Leg 1 & Leg 2 Trade Cards -->
       <div class="legs-grid">
-        <!-- 1. YÖN -->
+        <!-- LEG 1 -->
         <div class="panel leg-card">
           <div>
             <div class="leg-head">
               <div>
-                <div class="leg-step-badge txt-mint">1. YÖN • BAKİYE BÜYÜTME</div>
-                <h2><span class="mkt-name">CSFloat</span> Alış → Steam Satış</h2>
+                <div class="leg-step-badge txt-mint" data-i18n="leg1.badge">LEG 1 • BALANCE BOOST</div>
+                <h2><span class="mkt-name">CSFloat</span> <span data-i18n="leg1.title">Buy → Steam Sell</span></h2>
               </div>
-              <span id="leg1MultBadge" class="pill pill-mint" title="1. Yön Bakiye Çarpanı">M₁ = 1.0000x</span>
+              <span id="leg1MultBadge" class="pill pill-mint" title="Leg 1 Steam Balance Multiplier">M₁ = 1.0000x</span>
             </div>
 
             <div id="leg1PreviewWell" class="leg-preview-row" style="margin-top: 14px;"></div>
 
             <div style="margin-top: 13px; display: flex; flex-direction: column; gap: 11px;">
               <div>
-                <label for="calcLeg1Name" class="field-label">1. Yön Eşya Adı</label>
-                <input id="calcLeg1Name" type="text" class="input" placeholder="Örn: Revolution Case" />
+                <label for="calcLeg1Name" class="field-label" data-i18n="leg1.name">Leg 1 Item Name</label>
+                <input id="calcLeg1Name" type="text" class="input" placeholder="e.g. Revolution Case" />
               </div>
 
               <div class="leg-inputs-2col">
                 <div>
                   <label for="calcPM1Input" class="field-label">
-                    <span><span class="mkt-name">CSFloat</span> Alış (<span class="cur-sym">$</span>)</span>
+                    <span><span class="mkt-name">CSFloat</span> <span data-i18n="leg1.buy">Buy Price</span> (<span class="cur-sym">$</span>)</span>
                   </label>
                   <input id="calcPM1Input" type="number" step="0.01" min="0.01" class="input num" />
                 </div>
                 <div>
                   <label for="calcPS1Input" class="field-label">
-                    <span>Steam Satış (<span class="cur-sym">$</span>)</span>
+                    <span><span data-i18n="leg1.sell">Steam Sell</span> (<span class="cur-sym">$</span>)</span>
                   </label>
                   <input id="calcPS1Input" type="number" step="0.01" min="0.03" class="input num" />
                 </div>
@@ -461,57 +583,57 @@
 
           <div class="leg-breakdown">
             <div class="breakdown-row">
-              <span class="breakdown-label">Birim Steam Net Ele Geçen (Net_S1)</span>
+              <span class="breakdown-label" data-i18n="leg1.net">Net Steam Proceeds / Unit (Net_S1)</span>
               <span id="outNetS1" class="breakdown-val">$0.0000</span>
             </div>
             <div class="breakdown-row">
-              <span class="breakdown-label">Efektif Steam Kesintisi</span>
-              <span id="outSteamFeeInfo" class="breakdown-val txt-sec">%13.04</span>
+              <span class="breakdown-label" data-i18n="leg1.fee">Effective Steam Fee</span>
+              <span id="outSteamFeeInfo" class="breakdown-val txt-sec">13.04%</span>
             </div>
             <div class="breakdown-row">
-              <span class="breakdown-label">Alınabilen Adet (Q₁) &amp; Kalan Nakit</span>
-              <span id="outQ1" class="breakdown-val">0 adet</span>
+              <span class="breakdown-label" data-i18n="leg1.qty">Units Bought (Q₁) &amp; Cash Leftover</span>
+              <span id="outQ1" class="breakdown-val">0 units</span>
             </div>
             <div class="breakdown-row">
-              <span class="breakdown-label">1. Yön Sonu Net Steam Bakiyesi</span>
+              <span class="breakdown-label" data-i18n="leg1.bal">Leg 1 Net Steam Balance</span>
               <span id="outSteamBal1" class="breakdown-val txt-ice">$0.00</span>
             </div>
             <div class="breakdown-row">
-              <span class="breakdown-label">1. Yön Bakiye Artış Oranı</span>
-              <span id="outLeg1Pct" class="pill pill-mint">+%0.00</span>
+              <span class="breakdown-label" data-i18n="leg1.pct">Leg 1 Balance Boost</span>
+              <span id="outLeg1Pct" class="pill pill-mint">+0.00%</span>
             </div>
           </div>
         </div>
 
-        <!-- 2. YÖN -->
+        <!-- LEG 2 -->
         <div class="panel leg-card">
           <div>
             <div class="leg-head">
               <div>
-                <div class="leg-step-badge txt-gold">2. YÖN • NAKİT DÖNÜŞ</div>
-                <h2>Steam Alış → <span class="mkt-name">CSFloat</span> Satış</h2>
+                <div class="leg-step-badge txt-gold" data-i18n="leg2.badge">LEG 2 • LIQUID CASHOUT</div>
+                <h2><span data-i18n="leg2.title">Steam Buy → Sell</span> (<span class="mkt-name">CSFloat</span>)</h2>
               </div>
-              <span id="leg2MultBadge" class="pill pill-gold" title="2. Yön Nakit Dönüş Çarpanı">M₂ = 0.0000x</span>
+              <span id="leg2MultBadge" class="pill pill-gold" title="Leg 2 Cashout Multiplier">M₂ = 0.0000x</span>
             </div>
 
             <div id="leg2PreviewWell" class="leg-preview-row" style="margin-top: 14px;"></div>
 
             <div style="margin-top: 13px; display: flex; flex-direction: column; gap: 11px;">
               <div>
-                <label for="calcLeg2Name" class="field-label">2. Yön Dönüş Eşyası Adı</label>
-                <input id="calcLeg2Name" type="text" class="input" placeholder="Örn: AK-47 | Redline (Field-Tested)" />
+                <label for="calcLeg2Name" class="field-label" data-i18n="leg2.name">Leg 2 Cashout Item Name</label>
+                <input id="calcLeg2Name" type="text" class="input" placeholder="e.g. AK-47 | Redline (Field-Tested)" />
               </div>
 
               <div class="leg-inputs-2col">
                 <div>
                   <label for="calcPS2Input" class="field-label">
-                    <span>Steam Alış (<span class="cur-sym">$</span>)</span>
+                    <span><span data-i18n="leg2.buy">Steam Buy</span> (<span class="cur-sym">$</span>)</span>
                   </label>
                   <input id="calcPS2Input" type="number" step="0.01" min="0.01" class="input num" />
                 </div>
                 <div>
                   <label for="calcPM2Input" class="field-label">
-                    <span><span class="mkt-name">CSFloat</span> Satış (<span class="cur-sym">$</span>)</span>
+                    <span><span class="mkt-name">CSFloat</span> <span data-i18n="leg2.sell">Sell Price</span> (<span class="cur-sym">$</span>)</span>
                   </label>
                   <input id="calcPM2Input" type="number" step="0.01" min="0.01" class="input num" />
                 </div>
@@ -521,29 +643,29 @@
 
           <div class="leg-breakdown">
             <div class="breakdown-row">
-              <span class="breakdown-label">Birim <span class="mkt-name">CSFloat</span> Net Ele Geçen (Net_M2)</span>
+              <span class="breakdown-label"><span class="mkt-name">CSFloat</span> <span data-i18n="leg2.net">Net Cash Proceeds / Unit (Net_M2)</span></span>
               <span id="outNetM2" class="breakdown-val">$0.0000</span>
             </div>
             <div class="breakdown-row">
-              <span class="breakdown-label">Alınabilen Adet (Q₂) &amp; Steam Kalan</span>
-              <span id="outQ2" class="breakdown-val">0 adet</span>
+              <span class="breakdown-label" data-i18n="leg2.qty">Exit Units (Q₂) &amp; Steam Leftover</span>
+              <span id="outQ2" class="breakdown-val">0 units</span>
             </div>
             <div class="breakdown-row">
-              <span class="breakdown-label">1. Döngü Nakit Dönüşü</span>
+              <span class="breakdown-label" data-i18n="leg2.ret">Cycle 1 Cash Returned</span>
               <span id="outCashReturn2" class="breakdown-val txt-gold">$0.00</span>
             </div>
             <div class="breakdown-row">
-              <span class="breakdown-label">Nakit Dönüşüm Kaybı (1 − M₂)</span>
-              <span id="outConvLoss" class="pill pill-mint">%0.00 Kayıp</span>
+              <span class="breakdown-label" data-i18n="leg2.loss">Cashout Conversion Loss (1 − M₂)</span>
+              <span id="outConvLoss" class="pill pill-mint">0.00% Loss</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Satır İçi Canlı 4 Para Birimli Kur Çevirici -->
+      <!-- Inline Live 4-Currency FX Converter -->
       <div class="panel fx-bar">
         <div class="fx-inline-group">
-          <span class="pill pill-gold">CANLI KUR ÇEVİRİCİ</span>
+          <span class="pill pill-gold" data-i18n="fx.badge">LIVE FX CONVERTER</span>
           <select id="fxQuickFrom" class="select num" style="width: 82px; padding: 5px 8px;">
             <option value="TRY">₺ TRY</option>
             <option value="CNY">¥ CNY</option>
@@ -562,22 +684,22 @@
           <strong id="fxQuickOutput" class="num txt-gold" style="font-size: 14px;">$0.00</strong>
         </div>
         <div class="fx-inline-group">
-          <button id="fxSendToL1" type="button" class="btn btn-sm">→ 1. Yön Alışa Aktar</button>
-          <button id="fxSendToL2" type="button" class="btn btn-sm">→ 2. Yön Satışa Aktar</button>
+          <button id="fxSendToL1" type="button" class="btn btn-sm" data-i18n="fx.toL1">→ Send to Leg 1 Buy</button>
+          <button id="fxSendToL2" type="button" class="btn btn-sm" data-i18n="fx.toL2">→ Send to Leg 2 Sell</button>
         </div>
       </div>
 
-      <!-- Etkileşimli Canvas Grafikler: 12 Döngü Büyüme + Risk Duyarlılık Isı Haritası -->
+      <!-- Interactive Canvas Charts: 12-Cycle Curve + Volatility Heatmap -->
       <div class="charts-grid">
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h3 class="panel-title">12 Döngülük Bileşik Sermaye Eğrisi (168 Gün)</h3>
-              <p class="panel-subtitle">Fare ile üzerine gelerek gerçekçi nakit eşdeğeri vs teorik büyümeyi inceleyin.</p>
+              <h3 class="panel-title" data-i18n="chart.compTitle">12-Cycle Compound Capital Curve (168 Days)</h3>
+              <p class="panel-subtitle" data-i18n="chart.compSub">Hover to compare Realistic Cash-Equivalent vs Theoretical Compounding.</p>
             </div>
             <div class="chart-legend">
-              <span><i class="legend-dot" style="background: var(--gold);"></i>Gerçekçi (Nakit Eşd.)</span>
-              <span><i class="legend-dot" style="background: var(--mint);"></i>Teorik (Mⁿ)</span>
+              <span><i class="legend-dot" style="background: var(--gold);"></i><span data-i18n="chart.legReal">Realistic (Cash-Equiv)</span></span>
+              <span><i class="legend-dot" style="background: var(--mint);"></i><span data-i18n="chart.legTheo">Theoretical (Mⁿ)</span></span>
             </div>
           </div>
           <div class="canvas-stage">
@@ -589,8 +711,8 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h3 class="panel-title">Fiyat Dalgalanma Risk Haritası (7+7G Hold)</h3>
-              <p class="panel-subtitle">Takas kilidi boyunca Steam (S1) veya Pazar (M2) fiyatı oynarsa Net ROI ne olur?</p>
+              <h3 class="panel-title" data-i18n="chart.heatTitle">Price Volatility Risk Heatmap (7+7D Hold)</h3>
+              <p class="panel-subtitle" data-i18n="chart.heatSub">Net Cycle ROI if Steam (S1) or Cashout (M2) prices shift during trade hold.</p>
             </div>
           </div>
           <div class="canvas-stage">
@@ -600,19 +722,19 @@
         </div>
       </div>
 
-      <!-- 12 Döngü Detaylı Projeksiyon Tablosu -->
+      <!-- 12-Cycle Projection Table -->
       <div class="panel">
         <div class="panel-head">
           <div>
-            <h3 class="panel-title">Bileşik Döngü Simülasyon Tablosu</h3>
+            <h3 class="panel-title" data-i18n="table.title">Compound Cycle Simulation Table</h3>
             <p id="compTableDesc" class="panel-subtitle"></p>
           </div>
           <div class="seg-group">
-            <button type="button" class="seg-btn is-active" data-comp-mode="REALISTIC">
-              Gerçekçi (Tam Sayı + Nakit Eşdeğeri)
+            <button type="button" class="seg-btn is-active" data-comp-mode="REALISTIC" data-i18n="table.realistic">
+              Realistic (Integer + Cash-Equiv)
             </button>
-            <button type="button" class="seg-btn" data-comp-mode="PROPORTIONAL">
-              Teorik Oransal (Mⁿ)
+            <button type="button" class="seg-btn" data-comp-mode="PROPORTIONAL" data-i18n="table.proportional">
+              Theoretical Proportional (Mⁿ)
             </button>
           </div>
         </div>
@@ -626,156 +748,159 @@
     </section>
 
     <!-- ================================================================= -->
-    <!-- SEKME 2: CANLI TARAYICI (4.500+ GERÇEK CS2 SKİN & KASA)           -->
+    <!-- VIEW 2: LIVE SCANNER (4,500+ CS2 SKINS & CASES)                   -->
     <!-- ================================================================= -->
     <section id="view-scanner" class="view-panel hidden">
 
-      <!-- Otomatik En İyi Tam Döngü Çiftleri -->
+      <!-- Top Live Full-Cycle Pairs -->
       <div class="panel panel-corner">
         <div class="panel-head">
           <div>
-            <h3 class="panel-title">⚡ Otomatik En İyi Tam Döngü Çiftleri (Anti-Manipülasyon Filtreli)</h3>
-            <p class="panel-subtitle">Sermayenize uygun, yüksek likiditeli ve 7g/30g fiyat tutarlılığı doğrulanmış en kârlı 1. Yön + 2. Yön eşleşmeleri.</p>
+            <h3 class="panel-title" data-i18n="scan.pairsTitle">⚡ Top Live Full-Cycle Pairs (Velocity &amp; Anti-Manipulation Verified)</h3>
+            <p class="panel-subtitle" data-i18n="scan.pairsSub">Highest-confidence, actively traded Leg 1 + Leg 2 pairs tailored to your budget.</p>
           </div>
         </div>
         <div id="optimalPairsGrid" class="pair-strip"></div>
       </div>
 
-      <!-- Gelişmiş Tarayıcı Kontrolleri -->
+      <!-- Scanner Controls -->
       <div class="panel">
         <div class="scanner-controls">
           <div class="scanner-row">
-            <div class="seg-group" role="group" aria-label="Tarama Yönü">
-              <button type="button" class="seg-btn is-active" data-scan-mode="LEG1">1. Yön (Bakiye Kârı)</button>
-              <button type="button" class="seg-btn" data-scan-mode="LEG2">2. Yön (Düşük Kayıplı Nakit)</button>
-              <button type="button" class="seg-btn" data-scan-mode="ALL">Tüm Eşyalar</button>
-              <button type="button" class="seg-btn" data-scan-mode="WATCH">★ İzleme Listem</button>
-              <button type="button" class="seg-btn" data-scan-mode="CUSTOM">Özel Eşyalar</button>
+            <div class="seg-group" role="group" aria-label="Scanner Mode">
+              <button type="button" class="seg-btn is-active" data-scan-mode="LEG1" data-i18n="scan.mode.LEG1">Leg 1 (Steam Boost)</button>
+              <button type="button" class="seg-btn" data-scan-mode="LEG2" data-i18n="scan.mode.LEG2">Leg 2 (Low-Loss Cashout)</button>
+              <button type="button" class="seg-btn" data-scan-mode="ALL" data-i18n="scan.mode.ALL">All Items</button>
+              <button type="button" class="seg-btn" data-scan-mode="WATCH" data-i18n="scan.mode.WATCH">★ Watchlist</button>
+              <button type="button" class="seg-btn" data-scan-mode="CUSTOM" data-i18n="scan.mode.CUSTOM">Custom Items</button>
             </div>
 
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <label class="fee-chip" style="cursor: pointer;" title="Steam 24s anlık sıçramalarına karşı min(24s, 7g) muhafazakar fiyat kullan">
+              <label class="fee-chip" style="cursor: pointer;" title="Uses min(24h, 7d, 30d×1.12) to filter artificial Steam spikes">
                 <input id="toggleConservativeSteam" type="checkbox" checked style="width: auto;" />
-                <span>Anti-Manipülasyon (24s/7g)</span>
+                <span data-i18n="scan.antiManip">Anti-Manipulation (24h/7d)</span>
               </label>
-              <label class="fee-chip" style="cursor: pointer;" title="2. Yönde CSFloat ilan fiyatı yerine en yüksek alım emrini (anında nakit) kullan">
+              <label class="fee-chip" style="cursor: pointer;" title="Evaluate Leg 2 using CSFloat highest Buy Order instead of lowest listing">
                 <input id="toggleBuyOrderLeg2" type="checkbox" style="width: auto;" />
-                <span>2. Yön Buy Order</span>
+                <span data-i18n="scan.buyOrder">Leg 2 Buy Order</span>
               </label>
-              <button id="toggleCustomItemBtn" type="button" class="btn btn-sm">+ Özel Eşya</button>
-              <button id="toggleImportItemsBtn" type="button" class="btn btn-sm">CSV / JSON Ekle</button>
+              <button id="toggleCustomItemBtn" type="button" class="btn btn-sm" data-i18n="scan.addCustom">+ Custom Item</button>
+              <button id="toggleImportItemsBtn" type="button" class="btn btn-sm" data-i18n="scan.importBulk">Import CSV / JSON</button>
             </div>
           </div>
 
           <div class="scanner-filters-grid">
             <div>
-              <label for="scannerSearchInput" class="field-label">Arama</label>
-              <input id="scannerSearchInput" type="text" class="input" placeholder="Örn: ak red ft, case, asiimov..." />
+              <label for="scannerSearchInput" class="field-label" data-i18n="scan.searchLbl">Search</label>
+              <input id="scannerSearchInput" type="text" class="input" data-i18n-ph="scan.searchPh" placeholder="e.g. ak red ft, case, asiimov..." />
             </div>
             <div>
-              <label for="scannerCategorySelect" class="field-label">Kategori</label>
+              <label for="scannerCategorySelect" class="field-label" data-i18n="scan.catLbl">Category</label>
               <select id="scannerCategorySelect" class="select">
-                <option value="ALL">Tümü</option>
-                <option value="Case">Kasa (Case)</option>
-                <option value="Rifles">Tüfekler</option>
-                <option value="Pistols">Tabancalar</option>
-                <option value="SMGs">SMG</option>
-                <option value="Heavy">Ağır</option>
-                <option value="Knives">Bıçaklar</option>
-                <option value="Gloves">Eldivenler</option>
-                <option value="Agent">Ajanlar</option>
-                <option value="Capsule">Kapsüller</option>
+                <option value="ALL" data-i18n="cat.ALL">All Categories</option>
+                <option value="Case" data-i18n="cat.Case">Cases</option>
+                <option value="Rifles" data-i18n="cat.Rifles">Rifles</option>
+                <option value="Pistols" data-i18n="cat.Pistols">Pistols</option>
+                <option value="SMGs" data-i18n="cat.SMGs">SMGs</option>
+                <option value="Heavy" data-i18n="cat.Heavy">Heavy</option>
+                <option value="Knives" data-i18n="cat.Knives">Knives</option>
+                <option value="Gloves" data-i18n="cat.Gloves">Gloves</option>
+                <option value="Agent" data-i18n="cat.Agent">Agents</option>
+                <option value="Capsule" data-i18n="cat.Capsule">Capsules</option>
               </select>
             </div>
             <div>
-              <label for="scannerMinQtySelect" class="field-label">Min. İlan</label>
+              <label for="scannerMinQtySelect" class="field-label" data-i18n="scan.minQtyLbl">Min Listings</label>
               <select id="scannerMinQtySelect" class="select num">
                 <option value="0">0+</option>
-                <option value="15" selected>15+ ilan</option>
-                <option value="50">50+ ilan</option>
-                <option value="150">150+ ilan</option>
+                <option value="15" selected>15+</option>
+                <option value="50">50+</option>
+                <option value="150">150+</option>
               </select>
             </div>
             <div>
-              <label for="scannerMinPriceInput" class="field-label">Min (<span class="cur-sym">$</span>)</label>
+              <label for="scannerMinPriceInput" class="field-label"><span data-i18n="scan.minPriceLbl">Min</span> (<span class="cur-sym">$</span>)</label>
               <input id="scannerMinPriceInput" type="number" step="1" min="0" placeholder="0" class="input num" />
             </div>
             <div>
-              <label for="scannerMaxPriceInput" class="field-label">Maks (<span class="cur-sym">$</span>)</label>
+              <label for="scannerMaxPriceInput" class="field-label"><span data-i18n="scan.maxPriceLbl">Max</span> (<span class="cur-sym">$</span>)</label>
               <input id="scannerMaxPriceInput" type="number" step="1" min="0" placeholder="500" value="500" class="input num" />
             </div>
             <div>
-              <label for="scannerSortSelect" class="field-label">Sıralama</label>
+              <label for="scannerSortSelect" class="field-label" data-i18n="scan.sortLbl">Sort By</label>
               <select id="scannerSortSelect" class="select">
-                <option value="AUTO">Otomatik</option>
-                <option value="LEG1_DESC">1. Yön Kâr %</option>
-                <option value="LEG2_ASC">2. Yön Kayıp %</option>
-                <option value="SPEED_DESC">Satış Hızı</option>
-                <option value="QTY_DESC">İlan Sayısı</option>
-                <option value="PRICE_ASC">Fiyat ↑</option>
-                <option value="PRICE_DESC">Fiyat ↓</option>
+                <option value="AUTO" data-i18n="sort.AUTO">Smart Auto</option>
+                <option value="LEG1_DESC" data-i18n="sort.LEG1_DESC">Best Leg 1 Boost %</option>
+                <option value="LEG2_ASC" data-i18n="sort.LEG2_ASC">Lowest Leg 2 Loss %</option>
+                <option value="SPEED_DESC" data-i18n="sort.SPEED_DESC">Fastest Sales Speed</option>
+                <option value="QTY_DESC" data-i18n="sort.QTY_DESC">Most Listings</option>
+                <option value="PRICE_ASC" data-i18n="sort.PRICE_ASC">Price: Low → High</option>
+                <option value="PRICE_DESC" data-i18n="sort.PRICE_DESC">Price: High → Low</option>
               </select>
             </div>
             <div style="text-align: right;">
-              <span id="scannerCountInfo" class="pill pill-muted">0 eşya</span>
+              <span id="scannerCountInfo" class="pill pill-muted">0 items</span>
             </div>
           </div>
         </div>
 
-        <!-- Özel Eşya Ekleme Çekmecesi -->
+        <!-- Custom Item Drawer -->
         <div id="customItemDrawer" class="drawer-box hidden">
           <form id="customItemForm" class="drawer-grid">
             <div>
-              <label for="customItemName" class="field-label">Eşya Adı</label>
-              <input id="customItemName" type="text" required class="input" placeholder="Örn: Gallery Case" />
+              <label for="customItemName" class="field-label" data-i18n="custom.name">Item Name</label>
+              <input id="customItemName" type="text" required class="input" placeholder="e.g. Gallery Case" />
             </div>
             <div>
-              <label for="customItemMkt" class="field-label">Pazar Fiyatı (<span class="cur-sym">$</span>)</label>
+              <label for="customItemMkt" class="field-label"><span data-i18n="custom.mktPrice">Market Price</span> (<span class="cur-sym">$</span>)</label>
               <input id="customItemMkt" type="number" step="0.01" min="0.01" required class="input num" placeholder="0.82" />
             </div>
             <div>
-              <label for="customItemSteam" class="field-label">Steam Fiyatı (<span class="cur-sym">$</span>)</label>
+              <label for="customItemSteam" class="field-label"><span data-i18n="custom.steamPrice">Steam Price</span> (<span class="cur-sym">$</span>)</label>
               <input id="customItemSteam" type="number" step="0.01" min="0.03" required class="input num" placeholder="1.28" />
             </div>
             <div>
-              <label for="customItemCat" class="field-label">Kategori</label>
+              <label for="customItemCat" class="field-label" data-i18n="scan.catLbl">Category</label>
               <select id="customItemCat" class="select">
                 <option value="Case">Case</option>
                 <option value="Rifles">Rifles</option>
                 <option value="Pistols">Pistols</option>
                 <option value="Knives">Knives</option>
-                <option value="Özel">Özel</option>
+                <option value="Custom">Custom</option>
               </select>
             </div>
-            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <button type="submit" class="btn btn-primary" data-i18n="custom.save">Save Item</button>
           </form>
         </div>
 
-        <!-- CSV / JSON Toplu İçe Aktarma Çekmecesi -->
+        <!-- Bulk CSV/JSON Import Drawer -->
         <div id="importItemsDrawer" class="drawer-box hidden">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px;">
-            <span class="txt-sec">Aktif para birimi (<span class="cur-sym">$</span>) cinsinden <code>ad,pazarFiyati,steamFiyati,kategori</code> veya JSON yapıştırın:</span>
-            <button id="fillImportSampleBtn" type="button" class="btn btn-sm btn-ghost">Örnek CSV Doldur</button>
+            <span class="txt-sec">
+              <span data-lang-only="en">Paste CSV <code>name,marketPrice,steamPrice,category</code> or JSON in active currency (<span class="cur-sym">$</span>):</span>
+              <span data-lang-only="tr" class="hidden">Aktif para birimi (<span class="cur-sym">$</span>) cinsinden <code>ad,pazarFiyati,steamFiyati,kategori</code> veya JSON yapıştırın:</span>
+            </span>
+            <button id="fillImportSampleBtn" type="button" class="btn btn-sm btn-ghost" data-i18n="bulk.fillSample">Fill Sample CSV</button>
           </div>
           <textarea id="bulkImportTextarea" rows="3" class="textarea num" placeholder="Gallery Case,0.82,1.28,Case"></textarea>
           <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
-            <button id="runBulkImportBtn" type="button" class="btn btn-primary btn-sm">Listeye Aktar</button>
+            <button id="runBulkImportBtn" type="button" class="btn btn-primary btn-sm" data-i18n="bulk.importBtn">Import Items</button>
           </div>
         </div>
 
-        <!-- Canlı Eşya Tablosu -->
+        <!-- Live Item Table -->
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Eşya / Görsel / Nadirlik</th>
-                <th class="ta-right">Satış Hızı (24s/7g)</th>
-                <th class="ta-right"><span class="mkt-name">CSFloat</span> Fiyat</th>
-                <th class="ta-right">Steam Fiyat</th>
-                <th class="ta-center">90g Trend</th>
-                <th class="ta-right">1. Yön Kâr %</th>
-                <th class="ta-right">2. Yön Kayıp %</th>
-                <th class="ta-right">Döngüye Aktar</th>
+                <th data-i18n="scan.colItem">Item / Visual / Rarity</th>
+                <th class="ta-right" data-i18n="scan.colSpeed">Sales Speed (24h/7d)</th>
+                <th class="ta-right"><span class="mkt-name">CSFloat</span> <span data-i18n="scan.colMkt">Price</span></th>
+                <th class="ta-right" data-i18n="scan.colSteam">Steam Price</th>
+                <th class="ta-center" data-i18n="scan.colTrend">90d Trend</th>
+                <th class="ta-right" data-i18n="scan.colL1">Leg 1 Boost %</th>
+                <th class="ta-right" data-i18n="scan.colL2">Leg 2 Loss %</th>
+                <th class="ta-right" data-i18n="scan.colAct">Load to Desk</th>
               </tr>
             </thead>
             <tbody id="scannerTableBody"></tbody>
@@ -783,52 +908,52 @@
         </div>
 
         <div class="scanner-pagination">
-          <span id="scannerPageInfo" class="num">Sayfa 1 / 1</span>
+          <span id="scannerPageInfo" class="num">Page 1 / 1</span>
           <div style="display: flex; gap: 8px;">
-            <button id="scannerPrevPage" type="button" class="btn btn-sm">← Önceki</button>
-            <button id="scannerNextPage" type="button" class="btn btn-sm">Sonraki →</button>
+            <button id="scannerPrevPage" type="button" class="btn btn-sm" data-i18n="scan.prev">← Prev</button>
+            <button id="scannerNextPage" type="button" class="btn btn-sm" data-i18n="scan.next">Next →</button>
           </div>
         </div>
       </div>
     </section>
 
     <!-- ================================================================= -->
-    <!-- SEKME 3: AKTİF DÖNGÜ TAKİBİ (2-PHASE 14-DAY CYCLE TRACKER)        -->
+    <!-- VIEW 3: 14-DAY CYCLE TRACKER                                      -->
     <!-- ================================================================= -->
     <section id="view-tracker" class="view-panel hidden">
 
       <div class="tracker-kpi-grid">
         <div class="panel kpi-card">
-          <div class="kpi-card-label">Takipteki Döngüler</div>
-          <div id="trActiveCount" class="kpi-card-value">0 aktif</div>
-          <div id="trReadySub" class="kpi-card-sub">Tüm aktif döngüler takas kilidinde</div>
+          <div class="kpi-card-label" data-i18n="tr.active">Tracked Cycles</div>
+          <div id="trActiveCount" class="kpi-card-value">0 active</div>
+          <div id="trReadySub" class="kpi-card-sub">All active cycles currently in trade hold</div>
         </div>
         <div class="panel kpi-card">
-          <div class="kpi-card-label">Aktif Bağlı Sermaye</div>
+          <div class="kpi-card-label" data-i18n="tr.capital">Active Locked Capital</div>
           <div id="trActiveCapital" class="kpi-card-value">$0.00</div>
-          <div class="kpi-card-sub">Aktif kur üzerinden birleştirildi</div>
+          <div class="kpi-card-sub" data-i18n="tr.capitalSub">Normalized to display currency</div>
         </div>
         <div class="panel kpi-card">
-          <div class="kpi-card-label">Beklenen Aktif Kâr</div>
+          <div class="kpi-card-label" data-i18n="tr.expected">Expected Active Profit</div>
           <div id="trExpectedProfit" class="kpi-card-value txt-mint">+$0.00</div>
-          <div class="kpi-card-sub">Açık Faz 1 + Faz 2 toplamı</div>
+          <div class="kpi-card-sub" data-i18n="tr.expectedSub">Open Phase 1 + Phase 2 total</div>
         </div>
         <div class="panel kpi-card">
-          <div class="kpi-card-label">Gerçekleşen Toplam Kâr</div>
+          <div class="kpi-card-label" data-i18n="tr.realized">Realized Total Profit</div>
           <div id="trRealizedProfit" class="kpi-card-value txt-gold">+$0.00</div>
-          <div class="kpi-card-sub">Tamamlanmış döngüler defteri</div>
+          <div class="kpi-card-sub" data-i18n="tr.realizedSub">Completed cycles ledger</div>
         </div>
       </div>
 
       <div class="panel panel-pad" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
         <div class="seg-group">
-          <button type="button" class="seg-btn is-active" data-tracker-filter="ALL">Tümü</button>
-          <button type="button" class="seg-btn" data-tracker-filter="ACTIVE">Aktif Hold</button>
-          <button type="button" class="seg-btn" data-tracker-filter="DONE">Tamamlananlar</button>
+          <button type="button" class="seg-btn is-active" data-tracker-filter="ALL" data-i18n="tr.all">All</button>
+          <button type="button" class="seg-btn" data-tracker-filter="ACTIVE" data-i18n="tr.activeFilter">Active Hold</button>
+          <button type="button" class="seg-btn" data-tracker-filter="DONE" data-i18n="tr.doneFilter">Completed</button>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button id="exportCyclesCsvBtn" type="button" class="btn btn-sm">↓ CSV Defter İndir</button>
-          <button id="loadSampleCyclesBtn" type="button" class="btn btn-sm">Örnek Döngü Yükle</button>
+          <button id="exportCyclesCsvBtn" type="button" class="btn btn-sm" data-i18n="tr.csv">↓ Export CSV Ledger</button>
+          <button id="loadSampleCyclesBtn" type="button" class="btn btn-sm" data-i18n="tr.demo">Load Sample Cycles</button>
         </div>
       </div>
 
@@ -836,22 +961,19 @@
     </section>
 
     <!-- ================================================================= -->
-    <!-- SEKME 4: ARBİTRAJ AKADEMİSİ (REHBER + KOMİSYON LABORATUVARI)      -->
+    <!-- VIEW 4: CS2 ARBITRAGE GUIDE & SEO ACADEMY                         -->
     <!-- ================================================================= -->
     <section id="view-academy" class="view-panel hidden">
 
-      <!-- Editorial Hero + Gemini Banana Afiş -->
+      <!-- Editorial Hero + Gemini Banana Banner -->
       <div class="panel panel-corner academy-hero">
         <div>
-          <span class="pill pill-gold">CS2 ARBİTRAJ REHBERİ • SPREAD.HAKING.TR</span>
-          <h2 style="font-size: 26px; margin-top: 10px;">
-            CSFloat &amp; Youpin898 ↔ Steam İki Yönlü Arbitraj Nasıl Çalışır?
+          <span class="pill pill-gold" data-i18n="acad.badge">CS2 ARBITRAGE ACADEMY • SPREAD.HAKING.TR</span>
+          <h2 style="font-size: 25px; margin-top: 10px;" data-i18n="acad.h2">
+            What is CS2 Steam Arbitrage? How CSFloat &amp; Youpin898 ↔ Steam Loops Work
           </h2>
-          <p class="academy-lead">
-            Steam Topluluk Pazarı'nda eşyalar gerçek nakit pazarlara (CSFloat, Youpin898) kıyasla
-            genellikle <strong>%20 ile %45 daha yüksek</strong> fiyatlanır; çünkü Steam cüzdan bakiyesi
-            doğrudan banka hesabına çekilemez. İki yönlü arbitraj, bu yapısal fiyat makasını
-            (<em>spread</em>) 14 günlük disiplinli bir döngüyle gerçek nakit kârına dönüştürme stratejisidir.
+          <p class="academy-lead" data-i18n="acad.lead">
+            Items on the Steam Community Market typically trade 20% to 45% higher than real-cash P2P marketplaces like CSFloat and Youpin898 because Steam Wallet funds cannot be withdrawn directly to a bank account. Two-way CS2 arbitrage captures this structural price spread in a disciplined 14-day loop.
           </p>
         </div>
         <div class="academy-hero-banner">
@@ -862,51 +984,84 @@
         </div>
       </div>
 
-      <!-- 4 Adımlı Döngü Mimarisi -->
+      <!-- Visual 14-Day Arbitrage Capital Flow Diagram -->
+      <div class="panel panel-pad">
+        <div class="arch-header-row">
+          <span class="pill pill-mint" data-lang-only="en">VISUAL LOOP MECHANIC</span>
+          <span class="pill pill-mint hidden" data-lang-only="tr">GÖRSEL DÖNGÜ ŞEMASI</span>
+          <strong style="font-size: 13.5px;" data-lang-only="en">How $200 Compounds Through a 2-Leg CS2 Arbitrage Cycle</strong>
+          <strong style="font-size: 13.5px;" data-lang-only="tr" class="hidden">$200 Sermaye 2 Yönlü CS2 Arbitraj Döngüsünde Nasıl Büyür?</strong>
+        </div>
+        <div class="arch-pipeline">
+          <div class="arch-node is-gold">
+            <span class="arch-tag">DAY 0 • CASH</span>
+            <strong data-lang-only="en">1. Buy on CSFloat</strong>
+            <strong data-lang-only="tr" class="hidden">1. CSFloat Alış</strong>
+            <span class="txt-muted num" style="font-size: 11px;">$200 • 0% Buy Fee</span>
+          </div>
+          <div class="arch-arrow">→ <small>7D Hold</small> →</div>
+          <div class="arch-node is-mint">
+            <span class="arch-tag">DAY 7 • STEAM M₁</span>
+            <strong data-lang-only="en">2. Sell on Steam</strong>
+            <strong data-lang-only="tr" class="hidden">2. Steam Satış</strong>
+            <span class="txt-mint num" style="font-size: 11px;">~$255 Net Wallet (1.275x)</span>
+          </div>
+          <div class="arch-arrow">→ <small>7D Hold</small> →</div>
+          <div class="arch-node is-ice">
+            <span class="arch-tag">DAY 7–14 • EXIT M₂</span>
+            <strong data-lang-only="en">3. Liquid Exit Skin</strong>
+            <strong data-lang-only="tr" class="hidden">3. Likit Dönüş Skini</strong>
+            <span class="txt-ice num" style="font-size: 11px;">~8–10% Loss (0.91x)</span>
+          </div>
+          <div class="arch-arrow">→ <small>Compound</small> →</div>
+          <div class="arch-node is-mint">
+            <span class="arch-tag">DAY 14 • NET CASH</span>
+            <strong data-lang-only="en">4. Real Cash Profit</strong>
+            <strong data-lang-only="tr" class="hidden">4. Net Nakit Kâr</strong>
+            <span class="txt-mint num" style="font-size: 11px;">~$232 (+16% Net ROI)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4-Step Loop Architecture -->
       <div class="academy-steps-grid">
         <div class="panel step-card">
-          <span class="step-num">ADIM 01 • GÜN 0</span>
-          <h3 class="step-title">Yüksek Makaslı Alım (1. Yön)</h3>
-          <p class="step-desc">
-            CSFloat veya Youpin898'de Steam fiyatına göre ciddi iskontolu, yüksek hacimli likit eşyalar
-            (çoğunlukla aktif düşen CS2 kasaları) gerçek nakitle alınır.
+          <span class="step-num" data-i18n="acad.s1.num">STEP 01 • DAY 0</span>
+          <h3 class="step-title" data-i18n="acad.s1.t">Buy Undervalued Liquid Items (Leg 1)</h3>
+          <p class="step-desc" data-i18n="acad.s1.d">
+            Purchase high-spread, fast-selling CS2 cases or play skins on CSFloat (0% buy fee) or Youpin898 using real cash.
           </p>
         </div>
         <div class="panel step-card">
-          <span class="step-num">ADIM 02 • GÜN 0–7</span>
-          <h3 class="step-title">7 Gün Trade Protection Kilidi</h3>
-          <p class="step-desc">
-            Valve'ın Temmuz 2025 Trade Protection kuralı gereği takasla gelen eşyalar 7 gün boyunca
-            koruma altındadır ve pazarda satılamaz. Bu süre boyunca fiyat dalgalanma riski yönetilir.
+          <span class="step-num" data-i18n="acad.s2.num">STEP 02 • DAY 0–7</span>
+          <h3 class="step-title" data-i18n="acad.s2.t">7-Day Valve Trade Protection</h3>
+          <p class="step-desc" data-i18n="acad.s2.d">
+            Under Valve’s July 2025 Trade Protection rule, traded items remain locked for 7 days before market listing. Volatility risk is tracked live.
           </p>
         </div>
         <div class="panel step-card">
-          <span class="step-num">ADIM 03 • GÜN 7</span>
-          <h3 class="step-title">Steam Satışı &amp; Dönüş Alımı</h3>
-          <p class="step-desc">
-            Eşyalar Steam Pazarı'nda satılarak cüzdan bakiyesi büyütülür (M₁ çarpanı). Büyüyen bakiye ile
-            Steam–CSFloat makası çok dar olan (%6–10 kayıplı) likit skinler (AK-47 Redline, Asiimov vb.) alınır.
+          <span class="step-num" data-i18n="acad.s3.num">STEP 03 • DAY 7</span>
+          <h3 class="step-title" data-i18n="acad.s3.t">Sell on Steam &amp; Buy Exit Skin</h3>
+          <p class="step-desc" data-i18n="acad.s3.d">
+            Sell on Steam Market to multiply wallet balance (M₁), then buy a high-liquidity, low-loss cashout skin (e.g. AK-47 Redline, Printstream).
           </p>
         </div>
         <div class="panel step-card">
-          <span class="step-num">ADIM 04 • GÜN 14</span>
-          <h3 class="step-title">Nakit Dönüş &amp; Bileşik Döngü</h3>
-          <p class="step-desc">
-            2. yön eşyalarının 7 günlük takas kilidi açıldığında CSFloat (%2 kesinti) veya Youpin898 (%1)
-            üzerinde nakde dönülür. M₁ × M₂ &gt; 1.00 ise net nakit kârı bir sonraki döngüye devredilir.
+          <span class="step-num" data-i18n="acad.s4.num">STEP 04 • DAY 14</span>
+          <h3 class="step-title" data-i18n="acad.s4.t">Cash Out &amp; Compound (Leg 2)</h3>
+          <p class="step-desc" data-i18n="acad.s4.d">
+            After the second 7-day hold clears, sell on CSFloat (2% fee) or Youpin898 (1% fee) back to cash. When M₁ × M₂ &gt; 1.00, reinvest profits.
           </p>
         </div>
       </div>
 
-      <!-- İnteraktif Steam Komisyon Laboratuvarı + Pazar Karşılaştırması -->
+      <!-- Interactive Steam Fee Lab + Marketplace Comparison -->
       <div class="academy-2col">
         <div class="panel panel-pad">
-          <span class="pill pill-crimson">GERÇEK ORAN LABORATUVARI</span>
-          <h3 style="margin-top: 8px; font-size: 16px;">Steam $0.01 + $0.01 Minimum Komisyon Tuzağı</h3>
-          <p class="txt-sec" style="font-size: 12.5px; margin-top: 6px;">
-            Çoğu hesaplayıcı Steam komisyonunu düz <code>÷ 1.15 (%13.04)</code> sayar. Oysa Valve her
-            satışta <strong>en az $0.01 Steam + en az $0.01 CS2</strong> kesintisi uygular. Ucuz eşyalarda
-            efektif komisyon %66'ya kadar çıkar! Fiyatı kaydırıp farkı görün:
+          <span class="pill pill-crimson" data-i18n="acad.labBadge">EXACT FEE SIMULATOR</span>
+          <h3 style="margin-top: 8px; font-size: 16px;" data-i18n="acad.labTitle">Steam $0.01 + $0.01 Minimum Fee Trap Lab</h3>
+          <p class="txt-sec" style="font-size: 12.5px; margin-top: 6px;" data-i18n="acad.labDesc">
+            Most calculators assume a flat ÷ 1.15 (13.04%) Steam fee. In reality, Valve enforces a minimum $0.01 Steam fee + $0.01 CS2 fee per item — pushing real fees up to 66.7% on cheap items.
           </p>
 
           <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
@@ -919,24 +1074,24 @@
             </div>
 
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button type="button" class="btn btn-sm" data-lab-preset="0.03">$0.03 (Tuzak!)</button>
+              <button type="button" class="btn btn-sm" data-lab-preset="0.03">$0.03 (66.7%!)</button>
               <button type="button" class="btn btn-sm" data-lab-preset="0.15">$0.15</button>
               <button type="button" class="btn btn-sm" data-lab-preset="0.50">$0.50</button>
-              <button type="button" class="btn btn-sm" data-lab-preset="0.76">$0.76 (Kasa)</button>
+              <button type="button" class="btn btn-sm" data-lab-preset="0.76">$0.76 (Case)</button>
               <button type="button" class="btn btn-sm" data-lab-preset="20.00">$20.00 (Skin)</button>
             </div>
 
             <div class="fee-lab-result">
               <div class="fee-lab-box">
-                <div class="kpi-card-label">Gerçek Net Ele Geçen</div>
+                <div class="kpi-card-label" data-i18n="acad.labNet">Exact Net Proceeds</div>
                 <div id="feeLabNet" class="metric-cell-val">$0.13</div>
               </div>
               <div class="fee-lab-box">
-                <div class="kpi-card-label">Gerçek Efektif Kesinti</div>
-                <div id="feeLabEff" class="metric-cell-val txt-crimson">%13.33</div>
+                <div class="kpi-card-label" data-i18n="acad.labEff">Real Effective Fee</div>
+                <div id="feeLabEff" class="metric-cell-val txt-crimson">13.33%</div>
               </div>
               <div class="fee-lab-box">
-                <div class="kpi-card-label">÷1.15 Farkı</div>
+                <div class="kpi-card-label" data-i18n="acad.labDiff">vs ÷1.15 Diff</div>
                 <div id="feeLabDiff" class="metric-cell-val" style="font-size: 14px;">$0.0000</div>
               </div>
             </div>
@@ -945,14 +1100,48 @@
           </div>
         </div>
 
-        <!-- CSFloat vs Youpin898 & Risk Kontrol Listesi -->
+        <!-- CSFloat vs Youpin898 Benchmark -->
         <div class="panel panel-pad" style="display: flex; flex-direction: column; gap: 14px;">
           <div>
-            <span class="pill pill-ice">PAZAR KARŞILAŞTIRMASI</span>
-            <h3 style="margin-top: 8px; font-size: 16px;">CSFloat vs Youpin898 (2025/2026 Gerçek Oranlar)</h3>
+            <span class="pill pill-ice" data-i18n="acad.cmpBadge">MARKETPLACE BENCHMARK</span>
+            <h3 style="margin-top: 8px; font-size: 16px;" data-i18n="acad.cmpTitle">CSFloat vs Youpin898 (2025/2026 Real Fees)</h3>
           </div>
 
-          <div class="table-wrap">
+          <div class="table-wrap" data-lang-only="en">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>CSFloat (Primary)</th>
+                  <th>Youpin898</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Buy / Sell Fee</td>
+                  <td class="num txt-mint">0% Buy / 2% Sell</td>
+                  <td class="num txt-gold">0% Buy / 1% Sell</td>
+                </tr>
+                <tr>
+                  <td>Cash Withdrawal</td>
+                  <td class="num">0.5% – 2.5% (Bank/Crypto)</td>
+                  <td class="num">1% (Alipay / CN Bank)</td>
+                </tr>
+                <tr>
+                  <td>Global Access</td>
+                  <td class="txt-mint">Open Worldwide</td>
+                  <td class="txt-amber">Requires Chinese KYC</td>
+                </tr>
+                <tr>
+                  <td>Instant Exit (Buy Orders)</td>
+                  <td>Deep USD order book</td>
+                  <td>Massive CNY liquidity</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-wrap hidden" data-lang-only="tr">
             <table class="data-table">
               <thead>
                 <tr>
@@ -969,36 +1158,242 @@
                 </tr>
                 <tr>
                   <td>Nakit Çekim Kesintisi</td>
-                  <td class="num">%0.5 – %2.5 (Hacme göre)</td>
-                  <td class="num">%1 (Alipay / Çin hesabı)</td>
+                  <td class="num">%0.5 – %2.5 (Banka/Kripto)</td>
+                  <td class="num">%1 (Alipay / Çin Hesabı)</td>
                 </tr>
                 <tr>
                   <td>TR / Global Erişim</td>
-                  <td class="txt-mint">Doğrudan açık (Banka/Kripto)</td>
+                  <td class="txt-mint">Doğrudan açık</td>
                   <td class="txt-amber">Çin KYC &amp; Alipay gerektirir</td>
                 </tr>
                 <tr>
                   <td>Anlık Satış (Buy Order)</td>
-                  <td>Güçlü emir defteri</td>
+                  <td>Güçlü USD emir defteri</td>
                   <td>Çok yüksek CNY likidite</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <div class="checklist-items">
+          <div class="checklist-items" data-lang-only="en">
             <div class="checklist-row">
               <span class="check-dot">1</span>
-              <div><strong>Manipülasyon Koruması:</strong> Tarayıcıdaki <em>Anti-Manipülasyon</em> filtresi Steam 24 saatlik suni sıçramaları elemek için <code>min(24s, 7g)</code> baz alır.</div>
+              <div><strong>Anti-Manipulation Guard:</strong> Uses <code>min(24h, 7d, 30d×1.12)</code> so artificial 1-day Steam spikes never fool the calculator.</div>
             </div>
             <div class="checklist-row">
               <span class="check-dot">2</span>
-              <div><strong>Envanter &amp; Hacim Sınırı:</strong> CS2 envanter limiti 1.000 eşyadır. Akıllı Bütçe Danışmanı sermayene göre slot sınırını aşmayan eşyaları önceliklendirir.</div>
+              <div><strong>Inventory &amp; Effort Realism:</strong> CS2 inventory holds 1,000 items. Strategy Advisor flags storage-unit bottlenecks and slow knives automatically.</div>
             </div>
             <div class="checklist-row">
               <span class="check-dot">3</span>
-              <div><strong>Kalan Steam Bakiyesi Gerçeği:</strong> SPREAD, cüzdanınızda artan Steam bakiyesini 1:1 nakit saymaz; <code>M₂</code> dönüşüm oranıyla iskonto ederek gerçek nakit kârınızı gösterir.</div>
+              <div><strong>True Cash-Equivalent Math:</strong> Leftover Steam Wallet cents are never counted 1:1 as cash — they are discounted by your exact <code>M₂</code> exit rate.</div>
             </div>
+          </div>
+
+          <div class="checklist-items hidden" data-lang-only="tr">
+            <div class="checklist-row">
+              <span class="check-dot">1</span>
+              <div><strong>Manipülasyon Koruması:</strong> <code>min(24s, 7g, 30g×1.12)</code> formülü ile 1 günlük sahte Steam fiyat sıçramalarını otomatik eler.</div>
+            </div>
+            <div class="checklist-row">
+              <span class="check-dot">2</span>
+              <div><strong>Envanter &amp; Gerçekçilik:</strong> CS2 envanter sınırı 1.000 eşyadır. Strateji Danışmanı depo yükünü ve yavaş satılan bıçakları önceden uyarır.</div>
+            </div>
+            <div class="checklist-row">
+              <span class="check-dot">3</span>
+              <div><strong>Nakit Eşdeğeri Matematiği:</strong> Steam cüzdanında kalan küsurat 1:1 nakit sayılmaz; <code>M₂</code> dönüşüm oranıyla iskonto edilerek gerçek kâr hesaplanır.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bilingual SEO FAQ Section -->
+      <div class="panel panel-pad">
+        <div class="arch-header-row" style="margin-bottom: 12px;">
+          <span class="pill pill-gold">FAQ</span>
+          <h3 style="font-size: 16px;" data-lang-only="en">Frequently Asked Questions About CS2 Arbitrage</h3>
+          <h3 style="font-size: 16px;" data-lang-only="tr" class="hidden">CS2 Arbitraj Hakkında Sık Sorulan Sorular</h3>
+        </div>
+
+        <div class="faq-grid" data-lang-only="en">
+          <details class="faq-item" open>
+            <summary>Why are CS2 skins 20% to 45% more expensive on Steam than CSFloat?</summary>
+            <p>Steam Wallet funds are closed-loop store credit that cannot be withdrawn to a bank account. Traders selling for real cash on CSFloat or Youpin898 accept a liquidity discount (typically 20%–35%), creating a repeatable spread for disciplined two-way arbitrageurs.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What is the difference between Leg 1 (Steam Boost) and Leg 2 (Cashout)?</summary>
+            <p>Leg 1 converts real cash into expanded Steam Wallet credit (maximizing <code>M₁</code> via high-spread cases or liquid skins). Leg 2 converts that Steam Wallet balance back into real cash with the smallest possible discount (maximizing <code>M₂</code>). Profit exists whenever <code>M₁ × M₂ &gt; 1.0000</code>.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How does SPREAD prevent dead-item or rare-float traps?</summary>
+            <p>Our Quant Engine cross-checks real 24h/7d/30d sales volume (Skinport + Market.CSGO + live Steam 24h verification), CSFloat Bid/Ask spread ratio, pattern-sensitive finishes (Crimson Web, Doppler, Case Hardened), and thin-book Leg 2 anomalies — scoring every pair with a transparent <strong>Trust % (Confidence Score)</strong>.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How much capital do I need to start CS2 arbitrage?</summary>
+            <p>You can test the mechanics with $25–$100 using active liquid cases and affordable play skins. The sweet spot for low effort and high fill speed is typically $150–$1,000, where you can combine fast cases or low-count ($15–$120) skins without hitting inventory clutter.</p>
+          </details>
+        </div>
+
+        <div class="faq-grid hidden" data-lang-only="tr">
+          <details class="faq-item" open>
+            <summary>CS2 skinleri Steam Pazarı'nda neden CSFloat'tan %20–%45 daha pahalı?</summary>
+            <p>Steam cüzdan bakiyesi doğrudan banka hesabına çekilemeyen kapalı devre bir kredidir. Gerçek nakit isteyen oyuncular CSFloat veya Youpin898'de %20–%35 iskonto ile satış yapar; iki yönlü arbitraj bu yapısal farkı düzenli kâra çevirir.</p>
+          </details>
+          <details class="faq-item">
+            <summary>1. Yön (Bakiye Büyütme) ile 2. Yön (Nakit Dönüş) farkı nedir?</summary>
+            <p>1. Yön, nakit paranı Steam cüzdan bakiyesine çevirirken en yüksek artışı (<code>M₁</code>) hedefler. 2. Yön ise büyüyen Steam bakiyesini en az kayıpla (en yüksek <code>M₂</code> ile) tekrar nakde çevirir. <code>M₁ × M₂ &gt; 1.0000</code> olduğunda net nakit kârı oluşur.</p>
+          </details>
+          <details class="faq-item">
+            <summary>SPREAD zor satılan ölü kapsülleri veya float tuzaklarını nasıl engeller?</summary>
+            <p>Kantitatif motorumuz gerçek 24s/7g/30g satış hacmini (Skinport + Market.CSGO + canlı Steam 24s doğrulaması), CSFloat Bid/Ask oranını, desen/float hassas skinleri (Crimson Web, Doppler, Case Hardened) ve dar tahta anomalilerini çapraz denetler; her stratejiye şeffaf bir <strong>Güven % Skoru</strong> verir.</p>
+          </details>
+          <details class="faq-item">
+            <summary>CS2 arbitrajına başlamak için minimum ne kadar bütçe gerekir?</summary>
+            <p>$25–$100 aralığında aktif düşen kasalar ve uygun fiyatlı likit skinlerle sistemin mantığını risksiz test edebilirsiniz. En akıcı ve düşük eforlu verim aralığı genellikle $150–$1.000 bandıdır.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- VIEW 5: ABOUT & TRUST (SYSTEM ARCHITECTURE, TELEMETRY & SECURITY) -->
+    <!-- ================================================================= -->
+    <section id="view-about" class="view-panel hidden">
+
+      <!-- About Hero -->
+      <div class="panel panel-corner about-hero">
+        <div>
+          <span class="pill pill-mint" data-i18n="about.badge">TRANSPARENCY &amp; ARCHITECTURE • SPREAD.HAKING.TR</span>
+          <h2 style="font-size: 25px; margin-top: 10px;" data-i18n="about.h2">
+            How SPREAD Works Under the Hood &amp; Why You Can Trust It
+          </h2>
+          <p class="academy-lead" data-i18n="about.lead">
+            SPREAD is built from the ground up as a zero-login, open-source quantitative desk for CS2 traders. No account access, no hidden backend tracking, and 100% verifiable real-market math.
+          </p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;">
+            <span class="pill pill-mint">Zero Steam Login</span>
+            <span class="pill pill-gold">100% Local Vault</span>
+            <span class="pill pill-ice">Strict CSP • Zero innerHTML</span>
+            <span class="pill pill-muted">MIT Open Source</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Trust Pillars -->
+      <div class="trust-grid">
+        <div class="panel trust-card">
+          <div class="trust-icon is-mint">🔒</div>
+          <h3 data-i18n="about.t1.t">Zero Login &amp; Zero API Keys</h3>
+          <p data-i18n="about.t1.d">We never ask for Steam login, Steam Guard, trade URLs, CSFloat API keys, or browser extensions. Your inventory stays 100% untouched.</p>
+        </div>
+        <div class="panel trust-card">
+          <div class="trust-icon is-gold">⛁</div>
+          <h3 data-i18n="about.t2.t">100% Local-First Browser Vault</h3>
+          <p data-i18n="about.t2.d">Your tracked cycles, custom prices, and watchlist stay strictly in your own browser (localStorage) with SHA-256 verified JSON backups.</p>
+        </div>
+        <div class="panel trust-card">
+          <div class="trust-icon is-ice">🛡</div>
+          <h3 data-i18n="about.t3.t">Strict CSP &amp; Zero-XSS Hardening</h3>
+          <p data-i18n="about.t3.d">Zero runtime third-party JS libraries, zero inline scripts, zero innerHTML sinks, strict Content-Security-Policy, and open-source MIT code on GitHub.</p>
+        </div>
+        <div class="panel trust-card">
+          <div class="trust-icon is-mint">⚡</div>
+          <h3 data-i18n="about.t4.t">Real Sales Velocity &amp; Anomaly Guard</h3>
+          <p data-i18n="about.t4.d">Unlike naive spread tables that push dead capsules or manipulated floats, SPREAD cross-checks 24h/7d/30d sales volume, Bid/Ask depth, and Steam price history.</p>
+        </div>
+      </div>
+
+      <!-- Live System Pipeline Architecture + Live Feed Telemetry -->
+      <div class="panel panel-pad">
+        <span class="pill pill-ice">EDGE ARCHITECTURE</span>
+        <h3 style="margin-top: 8px; font-size: 17px;" data-i18n="about.pipeTitle">Live Multi-Source Data Pipeline (Cloudflare Edge)</h3>
+        <p class="txt-sec" style="font-size: 12.5px; margin-top: 4px;" data-i18n="about.pipeDesc">
+          Every 5 minutes, our open-source Cloudflare Worker aggregates 5 independent public feeds into a normalized 4,500-item quant matrix, plus on-demand live Steam 24h verification:
+        </p>
+
+        <!-- Visual 4-Stage Pipeline Schematic -->
+        <div class="arch-pipeline" style="margin-top: 14px;">
+          <div class="arch-node is-gold">
+            <span class="arch-tag">STAGE 1 • PUBLIC FEEDS</span>
+            <strong>5 Independent Sources</strong>
+            <span class="txt-muted" style="font-size: 11px;">CSFloat • Steam • Youpin • Skinport • Market.CSGO</span>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-node is-ice">
+            <span class="arch-tag">STAGE 2 • CLOUDFLARE WORKER</span>
+            <strong>Read-Only Edge Proxy</strong>
+            <span class="txt-muted" style="font-size: 11px;">5m Edge Cache • Zero User Data Logged</span>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-node is-mint">
+            <span class="arch-tag">STAGE 3 • QUANT ENGINE (CLIENT)</span>
+            <strong>In-Browser Verification</strong>
+            <span class="txt-muted" style="font-size: 11px;">Valve Cent Fee • Anti-Spike • Confidence Score</span>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-node is-gold">
+            <span class="arch-tag">STAGE 4 • YOUR DEVICE</span>
+            <strong>Local Browser Vault</strong>
+            <span class="txt-muted" style="font-size: 11px;">localStorage + SHA-256 JSON Backup</span>
+          </div>
+        </div>
+
+        <!-- Live Dynamic Telemetry Feed Grid (Hydrated by about-view.js) -->
+        <div id="aboutLiveTelemetryGrid" class="telemetry-grid" style="margin-top: 16px;"></div>
+      </div>
+
+      <!-- Quantitative Engine Deep-Dive -->
+      <div class="panel panel-pad">
+        <span class="pill pill-gold">QUANTITATIVE ENGINE V2</span>
+        <h3 style="margin-top: 8px; font-size: 17px;" data-i18n="about.mathTitle">Quantitative Engine Highlights</h3>
+
+        <div class="quant-cards-grid" data-lang-only="en" style="margin-top: 12px;">
+          <div class="quant-card">
+            <strong>1. Exact Valve Cent Fee Solver</strong>
+            <p>Solves Steam’s exact <code>floor(net × 0.05, min $0.01) + floor(net × 0.10, min $0.01)</code> cent rounding instead of naive <code>÷ 1.15</code>, preventing hidden 20%–66% fee traps on low-cost items.</p>
+          </div>
+          <div class="quant-card">
+            <strong>2. Cash-Equivalent M₂ Accounting</strong>
+            <p>Integer unit purchases always leave fractional Steam Wallet balance. SPREAD discounts leftover Steam credit by <code>M₂</code> so Realistic ROI never inflates above Theoretical ROI.</p>
+          </div>
+          <div class="quant-card">
+            <strong>3. Pattern &amp; Thin-Book Float Guard</strong>
+            <p>Detects pattern-sensitive skins (Doppler, Crimson Web, Case Hardened, Fade) and flags unrealistic &lt;3% Leg 2 conversion gaps caused by 1–2 low-float outliers on thin order books.</p>
+          </div>
+          <div class="quant-card">
+            <strong>4. Confidence / Trust Score (35–99%)</strong>
+            <p>Every recommended strategy earns an honest composite score weighing 24h/7d sales velocity, Bid/Ask spread stability, inventory click burden, and anomaly penalties — and never labels slow knives as "Fast".</p>
+          </div>
+        </div>
+
+        <div class="quant-cards-grid hidden" data-lang-only="tr" style="margin-top: 12px;">
+          <div class="quant-card">
+            <strong>1. Gerçek Valve Cent Komisyon Çözücü</strong>
+            <p>Düz <code>÷ 1.15</code> yerine Valve’ın gerçek <code>min $0.01 Steam + min $0.01 CS2</code> cent yuvarlamasını çözer; ucuz eşyalardaki gizli %20–%66 kesinti tuzaklarını anında yakalar.</p>
+          </div>
+          <div class="quant-card">
+            <strong>2. M₂ Nakit Eşdeğeri Muhasebesi</strong>
+            <p>Tam sayı adet alımlarında Steam cüzdanında her zaman küsurat kalır. SPREAD bu kalanı 1:1 nakit saymaz; <code>M₂</code> dönüşüm oranıyla iskonto ederek gerçekçi kârı gösterir.</p>
+          </div>
+          <div class="quant-card">
+            <strong>3. Desen &amp; Dar Tahta Float Koruması</strong>
+            <p>Desen/float hassasiyeti yüksek skinleri (Doppler, Crimson Web, Case Hardened, Fade) ve 1–2 ilanlık dar tahtalardaki yapay &lt;%3 kayıplı 2. yön anomalilerini otomatik tespit eder.</p>
+          </div>
+          <div class="quant-card">
+            <strong>4. Şeffaf Güven Skoru (%35–%99)</strong>
+            <p>Her strateji; 24s/7g gerçek satış hızı, Bid/Ask derinliği, işlem adedi yorgunluğu ve anomali riskine göre puanlanır. Yavaş satılan bıçaklar asla "Hızlı" etiketiyle gösterilmez.</p>
+          </div>
+        </div>
+
+        <div class="support-mail-bar" style="margin-top: 16px;">
+          <div>
+            <div class="kpi-card-label" data-i18n="support.mailLbl">Official Support &amp; Security Email</div>
+            <div class="num" style="font-size: 13.5px; font-weight: 700; margin-top: 2px;">spread@haking.tr</div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="mailto:spread@haking.tr" class="btn btn-sm" style="text-decoration: none;" data-i18n="support.sendMail">✉ Send Email</a>
+            <a href="https://buymeacoffee.com/haking" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-coffee" style="text-decoration: none;">☕ Buy Me a Coffee</a>
+            <a href="https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-steam" style="text-decoration: none;" data-i18n="footer.steamBtn">⇄ Support via Steam Trade</a>
           </div>
         </div>
       </div>
@@ -1006,37 +1401,36 @@
   </main>
 
   <!-- =================================================================== -->
-  <!-- ZENGİN ALT BİLGİ (FOOTER + DESTEK + BAĞIŞ BAĞLANTILARI)             -->
+  <!-- FOOTER (SUPPORT, CONTACT & OPEN-SOURCE NOTICE)                      -->
   <!-- =================================================================== -->
   <footer class="app-footer">
     <div class="footer-grid">
       <div>
         <div class="footer-col-title">SPREAD • spread.haking.tr</div>
-        <p style="line-height: 1.6;">
-          %100 tarayıcı içi yerel depolamalı, açık kaynaklı CS2 iki yönlü arbitraj terminali.
-          Hiçbir Steam veya pazar girişi istemez. Valve Corporation, Steam, CSFloat veya Youpin898 ile resmi bağlantısı yoktur.
+        <p style="line-height: 1.6;" data-i18n="footer.desc">
+          100% local-first, open-source CS2 two-way arbitrage terminal. Zero Steam login required. Not affiliated with Valve Corporation, Steam, CSFloat, or Youpin898.
         </p>
       </div>
 
       <div>
-        <div class="footer-col-title">Destek &amp; İletişim</div>
-        <p style="line-height: 1.6;">
-          Hata bildirimi, özellik önerisi veya iş birliği için doğrudan ulaşabilirsiniz:
+        <div class="footer-col-title" data-i18n="footer.contact">Support &amp; Contact</div>
+        <p style="line-height: 1.6;" data-i18n="footer.contactDesc">
+          Bug reports, feature ideas, or inquiries:
         </p>
         <div class="footer-support-actions">
           <a href="mailto:spread@haking.tr" class="btn btn-sm" style="text-decoration: none;">
             ✉ spread@haking.tr
           </a>
-          <button id="footerSupportBtn" type="button" class="btn btn-sm">
-            Destek Detayları
+          <button id="footerSupportBtn" type="button" class="btn btn-sm" data-i18n="footer.supportBtn">
+            Support Details
           </button>
         </div>
       </div>
 
       <div>
-        <div class="footer-col-title">Geliştiriciyi Destekle</div>
-        <p style="line-height: 1.6;">
-          SPREAD tamamen ücretsizdir. Sunucu ve geliştirme sürecine gönüllü destek olmak istersen:
+        <div class="footer-col-title" data-i18n="footer.supportTitle">Support the Developer</div>
+        <p style="line-height: 1.6;" data-i18n="footer.supportDesc">
+          SPREAD is free and open-source. Support server &amp; dev costs:
         </p>
         <div class="footer-support-actions">
           <a
@@ -1054,28 +1448,29 @@
             rel="noopener noreferrer"
             class="btn btn-sm btn-steam"
             style="text-decoration: none;"
+            data-i18n="footer.steamBtn"
           >
-            ⇄ Steam Takasla Destekle
+            ⇄ Support via Steam Trade
           </a>
         </div>
       </div>
     </div>
 
     <div class="footer-bottom">
-      <span>© 2026 SPREAD • spread.haking.tr • MIT</span>
-      <span>Yatırım tavsiyesi değildir — piyasa fiyatları anlık değişebilir.</span>
+      <span>© 2026 SPREAD • spread.haking.tr • MIT License</span>
+      <span data-i18n="footer.disclaimer">Not financial advice — CS2 market prices fluctuate in real time.</span>
     </div>
   </footer>
 
   <!-- =================================================================== -->
-  <!-- MODAL 1: GELİŞMİŞ FİYAT & SKİN ARAMA PALETİ (CTRL+K)                -->
+  <!-- MODAL 1: SKIN & PRICE RANGE SEARCH PALETTE (CTRL+K)                 -->
   <!-- =================================================================== -->
   <div id="cmdPaletteModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="cmdTitle">
     <div class="modal-card cmd-modal-wide">
       <div class="modal-head">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <h3 id="cmdTitle" class="panel-title">⌕ CS2 Skin &amp; Fiyat Aralığı Arama</h3>
-          <span id="cmdMatchCount" class="pill pill-muted">0 sonuç</span>
+          <h3 id="cmdTitle" class="panel-title" data-i18n="cmd.title">⌕ CS2 Skin &amp; Price Range Search</h3>
+          <span id="cmdMatchCount" class="pill pill-muted">0 results</span>
         </div>
         <button id="cmdCloseBtn" type="button" class="btn btn-sm btn-ghost">ESC ✕</button>
       </div>
@@ -1084,43 +1479,44 @@
           id="cmdSearchInput"
           type="text"
           class="input"
-          placeholder="İsimle ara (örn: ak red ft, printstream) veya boş bırakıp aşağıdaki fiyat aralığıyla en kârlıları listele..."
+          data-i18n-ph="cmd.ph"
+          placeholder="Search by name (e.g. ak red ft, printstream) or leave blank &amp; set Min/Max price..."
         />
 
-        <!-- Fiyat Aralığı + Kategori + Akıllı Sıralama -->
+        <!-- Price Range + Category + Sort -->
         <div class="cmd-filters-bar">
           <div class="input-prefix-wrap">
             <span class="input-prefix cur-sym">$</span>
-            <input id="cmdMinPriceInput" type="number" step="1" min="0" placeholder="Min fiyat" class="input num" />
+            <input id="cmdMinPriceInput" type="number" step="1" min="0" data-i18n-ph="cmd.minPh" placeholder="Min price" class="input num" />
           </div>
           <div class="input-prefix-wrap">
             <span class="input-prefix cur-sym">$</span>
-            <input id="cmdMaxPriceInput" type="number" step="1" min="0" placeholder="Maks fiyat" class="input num" />
+            <input id="cmdMaxPriceInput" type="number" step="1" min="0" data-i18n-ph="cmd.maxPh" placeholder="Max price" class="input num" />
           </div>
           <select id="cmdCategorySelect" class="select">
-            <option value="ALL">Tüm Kategoriler</option>
-            <option value="Case">Kasa (Case)</option>
-            <option value="Rifles">Tüfekler</option>
-            <option value="Pistols">Tabancalar</option>
-            <option value="SMGs">SMG</option>
-            <option value="Knives">Bıçaklar</option>
-            <option value="Gloves">Eldivenler</option>
-            <option value="Agent">Ajanlar</option>
+            <option value="ALL" data-i18n="cat.ALL">All Categories</option>
+            <option value="Case" data-i18n="cat.Case">Cases</option>
+            <option value="Rifles" data-i18n="cat.Rifles">Rifles</option>
+            <option value="Pistols" data-i18n="cat.Pistols">Pistols</option>
+            <option value="SMGs" data-i18n="cat.SMGs">SMGs</option>
+            <option value="Knives" data-i18n="cat.Knives">Knives</option>
+            <option value="Gloves" data-i18n="cat.Gloves">Gloves</option>
+            <option value="Agent" data-i18n="cat.Agent">Agents</option>
           </select>
           <select id="cmdSortSelect" class="select">
-            <option value="LEG1_DESC">1. Yön En Kârlı</option>
-            <option value="LEG2_ASC">2. Yön En Az Kayıp</option>
-            <option value="QTY_DESC">En Yüksek Likidite</option>
-            <option value="PRICE_ASC">Fiyat: Artan</option>
-            <option value="PRICE_DESC">Fiyat: Azalan</option>
+            <option value="LEG1_DESC" data-i18n="sort.LEG1_DESC">Best Leg 1 Boost %</option>
+            <option value="LEG2_ASC" data-i18n="sort.LEG2_ASC">Lowest Leg 2 Loss %</option>
+            <option value="QTY_DESC" data-i18n="sort.QTY_DESC">Most Listings</option>
+            <option value="PRICE_ASC" data-i18n="sort.PRICE_ASC">Price: Low → High</option>
+            <option value="PRICE_DESC" data-i18n="sort.PRICE_DESC">Price: High → Low</option>
           </select>
-          <button id="cmdClearFiltersBtn" type="button" class="btn btn-sm btn-ghost" title="Filtreleri Temizle">Sıfırla</button>
+          <button id="cmdClearFiltersBtn" type="button" class="btn btn-sm btn-ghost" data-i18n="cmd.reset" title="Reset Filters">Reset</button>
         </div>
 
-        <!-- Hızlı Fiyat Bandı Seçicileri -->
+        <!-- Quick Price Range Chips -->
         <div class="cmd-chips-row">
           <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-            <button type="button" class="preset-chip" data-cmd-range="0:0">Tümü</button>
+            <button type="button" class="preset-chip" data-cmd-range="0:0" data-i18n="tr.all">All</button>
             <button type="button" class="preset-chip" data-cmd-range="0:5">$0–$5</button>
             <button type="button" class="preset-chip" data-cmd-range="5:25">$5–$25</button>
             <button type="button" class="preset-chip" data-cmd-range="25:100">$25–$100</button>
@@ -1128,7 +1524,7 @@
             <button type="button" class="preset-chip" data-cmd-range="100:0">$100+</button>
             <button type="button" class="preset-chip" data-cmd-range="250:0">$250+</button>
           </div>
-          <span class="txt-muted" style="font-size: 11px;">Min $50 seçerek yüksek bütçeye uygun en iyi sonuçları görün</span>
+          <span class="txt-muted" style="font-size: 11px;" data-i18n="cmd.hint">Set Min $50 to filter top high-tier spreads instantly</span>
         </div>
 
         <div id="cmdResultsList" class="cmd-list"></div>
@@ -1137,12 +1533,12 @@
   </div>
 
   <!-- =================================================================== -->
-  <!-- MODAL 2: DÖNGÜ TAMAMLAMA & GERÇEKLEŞEN KÂR KAYDI                    -->
+  <!-- MODAL 2: COMPLETE CYCLE & LOG REALIZED PROFIT                       -->
   <!-- =================================================================== -->
   <div id="completeCycleModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="completeTitle">
     <div class="modal-card" style="max-width: 480px;">
       <div class="modal-head">
-        <h3 id="completeTitle" class="panel-title">✓ Döngüyü Tamamla &amp; Gerçekleşen Kârı İşle</h3>
+        <h3 id="completeTitle" class="panel-title" data-i18n="modal.completeTitle">✓ Complete Cycle &amp; Log Realized Profit</h3>
         <button id="closeCompleteModalBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
       </div>
       <form id="confirmCompleteForm">
@@ -1150,49 +1546,48 @@
           <p id="completeCycleSummary" class="txt-sec" style="font-size: 12.5px;"></p>
           <div>
             <label for="actualEndAmountInput" class="field-label">
-              <span>Elinize Geçen Gerçek Net Tutar (<span class="cur-sym">$</span>)</span>
+              <span><span data-i18n="modal.actualEndLbl">Actual Net Cash Received</span> (<span class="cur-sym">$</span>)</span>
             </label>
             <input id="actualEndAmountInput" type="number" step="0.01" min="0" required class="input num" />
           </div>
           <div>
-            <label for="actualCycleNoteInput" class="field-label">Not (Opsiyonel)</label>
-            <input id="actualCycleNoteInput" type="text" maxlength="240" class="input" placeholder="Örn: CSFloat buy order ile hızlı satıldı" />
+            <label for="actualCycleNoteInput" class="field-label" data-i18n="modal.noteLbl">Note (Optional)</label>
+            <input id="actualCycleNoteInput" type="text" maxlength="240" class="input" data-i18n-ph="modal.notePh" placeholder="e.g. Sold instantly via CSFloat buy order" />
           </div>
         </div>
         <div class="modal-foot">
-          <button id="cancelCompleteBtn" type="button" class="btn btn-sm">İptal</button>
-          <button type="submit" class="btn btn-mint btn-sm">Deftere Kaydet</button>
+          <button id="cancelCompleteBtn" type="button" class="btn btn-sm" data-i18n="modal.cancel">Cancel</button>
+          <button type="submit" class="btn btn-mint btn-sm" data-i18n="modal.saveLedger">Save to Ledger</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- =================================================================== -->
-  <!-- MODAL 3: YEREL VERİ KASASI (JSON YEDEKLEME & GERİ YÜKLEME)          -->
+  <!-- MODAL 3: LOCAL DATA VAULT (JSON BACKUP & RESTORE)                   -->
   <!-- =================================================================== -->
   <div id="vaultModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="vaultTitle">
     <div class="modal-card">
       <div class="modal-head">
-        <h3 id="vaultTitle" class="panel-title">⛁ Yerel Veri Kasası — JSON Yedekleme &amp; Geri Yükleme</h3>
+        <h3 id="vaultTitle" class="panel-title" data-i18n="vault.title">⛁ Local Data Vault — JSON Backup &amp; Restore</h3>
         <button id="closeVaultBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
       </div>
       <div class="modal-body">
-        <p class="txt-sec" style="font-size: 12.5px;">
-          Tüm döngüleriniz, favori eşyalarınız ve özel fiyat kayıtlarınız <strong>yalnızca kendi tarayıcınızda (localStorage)</strong>
-          saklanır; hiçbir harici sunucuya gönderilmez. Verilerinizi cihazlar arası taşımak için SHA-256 doğrulamalı JSON yedeği alabilirsiniz.
+        <p class="txt-sec" style="font-size: 12.5px;" data-i18n="vault.desc">
+          All cycles, watchlist items, and custom prices live exclusively in your browser (localStorage) — never sent to any server. Export a SHA-256 verified JSON backup anytime.
         </p>
 
         <div id="vaultStatsGrid" class="fee-lab-result" style="grid-template-columns: repeat(4, minmax(0, 1fr));"></div>
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <button id="vaultExportJsonBtn" type="button" class="btn btn-primary">
-            ↓ Tam JSON Yedeği İndir (.json)
+          <button id="vaultExportJsonBtn" type="button" class="btn btn-primary" data-i18n="vault.exportJson">
+            ↓ Download Full JSON Backup (.json)
           </button>
-          <button id="vaultExportCsvBtn" type="button" class="btn">
-            ↓ Döngü Defteri İndir (.csv)
+          <button id="vaultExportCsvBtn" type="button" class="btn" data-i18n="vault.exportCsv">
+            ↓ Export Cycle Ledger (.csv)
           </button>
           <label class="btn" style="cursor: pointer;">
-            ↑ JSON Yedeği Yükle
+            <span data-i18n="vault.importJson">↑ Restore JSON Backup</span>
             <input id="vaultFileInput" type="file" accept=".json,application/json" class="hidden" />
           </label>
         </div>
@@ -1200,9 +1595,9 @@
         <div id="vaultImportPreview" class="hidden"></div>
 
         <div style="padding-top: 12px; border-top: 1px solid var(--border-hair); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <span class="txt-muted" style="font-size: 11.5px;">Tehlikeli Alan: Tarayıcıdaki tüm SPREAD kayıtlarını temizler.</span>
-          <button id="vaultResetBtn" type="button" class="btn btn-danger btn-sm">
-            Tüm Yerel Verileri Temizle
+          <span class="txt-muted" style="font-size: 11.5px;" data-i18n="vault.danger">Danger Zone: Permanently clears all local SPREAD data in this browser.</span>
+          <button id="vaultResetBtn" type="button" class="btn btn-danger btn-sm" data-i18n="vault.clear">
+            Clear All Local Data
           </button>
         </div>
       </div>
@@ -1210,27 +1605,27 @@
   </div>
 
   <!-- =================================================================== -->
-  <!-- MODAL 4: DÖNGÜYÜ PAYLAŞ (ARKADAŞLA PAYLAŞILABİLİR ÖZEL LİNK)        -->
+  <!-- MODAL 4: SHARE ARBITRAGE SETUP                                      -->
   <!-- =================================================================== -->
   <div id="shareModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
     <div class="modal-card" style="max-width: 560px;">
       <div class="modal-head">
-        <h3 id="shareTitle" class="panel-title">↗ Bu Arbitraj Kurulumunu Paylaş</h3>
+        <h3 id="shareTitle" class="panel-title" data-i18n="share.title">↗ Share This Arbitrage Setup</h3>
         <button id="closeShareModalBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
       </div>
       <div class="modal-body">
         <p id="sharePreviewSummary" class="panel panel-pad num" style="background: var(--bg-inset); font-size: 12px; padding: 11px 13px;"></p>
 
         <div>
-          <label for="shareUrlInput" class="field-label">Doğrudan Paylaşım Linki (Arkadaşın açınca birebir bu kurulum yüklenir)</label>
+          <label for="shareUrlInput" class="field-label" data-i18n="share.lbl">Direct Share Link (opens this exact configuration for your friend)</label>
           <div class="share-url-row">
             <input id="shareUrlInput" type="text" readonly class="input num" style="font-size: 11.5px;" />
-            <button id="copyShareUrlBtn" type="button" class="btn btn-primary">Kopyala</button>
+            <button id="copyShareUrlBtn" type="button" class="btn btn-primary" data-i18n="share.copy">Copy</button>
           </div>
         </div>
 
         <div class="share-socials">
-          <button id="copyShareSummaryBtn" type="button" class="btn btn-sm">📋 Discord / Özet Metni Kopyala</button>
+          <button id="copyShareSummaryBtn" type="button" class="btn btn-sm" data-i18n="share.copySummary">📋 Copy Discord / Chat Summary</button>
           <a id="shareWhatsappLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-mint" style="text-decoration: none;">WhatsApp ↗</a>
           <a id="shareTelegramLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-steam" style="text-decoration: none;">Telegram ↗</a>
           <a id="shareXLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="text-decoration: none;">X (Twitter) ↗</a>
@@ -1240,27 +1635,26 @@
   </div>
 
   <!-- =================================================================== -->
-  <!-- MODAL 5: GELİŞTİRİCİYİ DESTEKLE & İLETİŞİM                         -->
+  <!-- MODAL 5: SUPPORT DEVELOPER & CONTACT                                -->
   <!-- =================================================================== -->
   <div id="supportModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="supportTitle">
     <div class="modal-card" style="max-width: 580px;">
       <div class="modal-head">
-        <h3 id="supportTitle" class="panel-title">☕ SPREAD'i Destekle &amp; İletişim</h3>
+        <h3 id="supportTitle" class="panel-title" data-i18n="support.title">☕ Support SPREAD &amp; Contact</h3>
         <button id="closeSupportModalBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
       </div>
       <div class="modal-body">
-        <p class="txt-sec" style="font-size: 12.5px; line-height: 1.6;">
-          <strong>SPREAD (`spread.haking.tr`)</strong> reklamsız, ücretsiz ve açık kaynaklı olarak geliştirilmektedir.
-          Projenin canlı piyasa altyapısına ve yeni özelliklerine gönüllü destek olmak isterseniz aşağıdaki güvenli kanalları kullanabilirsiniz:
+        <p class="txt-sec" style="font-size: 12.5px; line-height: 1.6;" data-i18n="support.desc">
+          SPREAD (spread.haking.tr) is free, ad-free, and open-source. If it helps you spot profitable spreads, you can voluntarily support hosting &amp; development:
         </p>
 
         <div class="support-cards-grid">
           <div class="support-card is-coffee">
             <div>
-              <span class="pill pill-gold">FİNANSAL DESTEK</span>
+              <span class="pill pill-gold" data-i18n="support.coffeeTag">FINANCIAL SUPPORT</span>
               <h4 style="margin-top: 8px; font-size: 15px;">Buy Me a Coffee</h4>
-              <p class="txt-sec" style="font-size: 12px; margin-top: 4px;">
-                Geliştiriciye bir kahve ısmarlayarak projenin sürdürülebilirliğine katkıda bulun.
+              <p class="txt-sec" style="font-size: 12px; margin-top: 4px;" data-i18n="support.coffeeDesc">
+                Buy the developer a coffee to help keep live edge feeds and updates running.
               </p>
             </div>
             <a
@@ -1276,10 +1670,10 @@
 
           <div class="support-card is-steam">
             <div>
-              <span class="pill pill-ice">CS2 SKIN / KASA</span>
-              <h4 style="margin-top: 8px; font-size: 15px;">Steam Takasla Destekle</h4>
-              <p class="txt-sec" style="font-size: 12px; margin-top: 4px;">
-                İstersen doğrudan Steam takas teklifi üzerinden kasa, çıkartma veya skin ile destek olabilirsin.
+              <span class="pill pill-ice" data-i18n="support.steamTag">CS2 SKIN / CASE</span>
+              <h4 style="margin-top: 8px; font-size: 15px;" data-i18n="support.steamTitle">Support via Steam Trade</h4>
+              <p class="txt-sec" style="font-size: 12px; margin-top: 4px;" data-i18n="support.steamDesc">
+                Prefer donating a spare CS2 case, sticker, or skin directly via Steam Trade Offer?
               </p>
             </div>
             <a
@@ -1288,30 +1682,120 @@
               rel="noopener noreferrer"
               class="btn btn-steam"
               style="width: 100%; text-decoration: none;"
+              data-i18n="support.steamBtn"
             >
-              ⇄ Steam Takas Teklifi Gönder ↗
+              ⇄ Send Steam Trade Offer ↗
             </a>
           </div>
         </div>
 
         <div class="support-mail-bar">
           <div>
-            <div class="kpi-card-label">Resmi Destek &amp; Güvenlik E-postası</div>
+            <div class="kpi-card-label" data-i18n="support.mailLbl">Official Support &amp; Security Email</div>
             <div class="num" style="font-size: 13.5px; font-weight: 700; margin-top: 2px;">spread@haking.tr</div>
           </div>
           <div style="display: flex; gap: 7px;">
-            <button id="copySupportEmailBtn" type="button" class="btn btn-sm">Adresi Kopyala</button>
-            <a href="mailto:spread@haking.tr" class="btn btn-sm btn-primary" style="text-decoration: none;">✉ Mail Gönder</a>
+            <button id="copySupportEmailBtn" type="button" class="btn btn-sm" data-i18n="support.copyMail">Copy Address</button>
+            <a href="mailto:spread@haking.tr" class="btn btn-sm btn-primary" style="text-decoration: none;" data-i18n="support.sendMail">✉ Send Email</a>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Toast Bildirim Alanı -->
+  <!-- =================================================================== -->
+  <!-- MODAL 6: INTERACTIVE FILTER & CONFIDENCE SCORE GUIDE POPUP          -->
+  <!-- =================================================================== -->
+  <div id="filterGuideModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="fguideTitle">
+    <div class="modal-card" style="max-width: 640px;">
+      <div class="modal-head">
+        <h3 id="fguideTitle" class="panel-title" data-i18n="fguide.title">ⓘ Strategy Filters &amp; Confidence Score Explained</h3>
+        <button id="closeFilterGuideBtn" type="button" class="btn btn-sm btn-ghost">✕</button>
+      </div>
+      <div class="modal-body" style="gap: 12px;">
+        <p class="txt-sec" style="font-size: 12.5px;" data-i18n="fguide.intro">
+          New to CS2 arbitrage? Here is what each filter and metric inside the Strategy Advisor means in plain language:
+        </p>
+
+        <!-- English Filter Guide Content -->
+        <div class="filter-guide-list" data-lang-only="en">
+          <div class="fguide-row">
+            <span class="pill pill-gold">Balanced Mix</span>
+            <div><strong>Best All-Round Selection:</strong> Automatically shows up to 6 diverse cards for your budget — combining Top Profit, Low-Count, Fastest Cash, Case Engine, and Patient plays.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-mint">Low-Count (≤10)</span>
+            <div><strong>Zero Click Fatigue:</strong> Limits Leg 1 to 1–10 skins instead of buying 80+ cases. Perfect if you want fast execution with minimal Steam confirmations.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-ice">Fastest Cash</span>
+            <div><strong>Ultra-Liquid Tier A/B Only:</strong> Prioritizes skins and cases selling dozens or hundreds of times per week so your capital never sits idle waiting for a buyer.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-gold">Case Engine</span>
+            <div><strong>Classic Case Spread Loop:</strong> Uses actively traded CS2 weapon cases in Leg 1 to maximize Steam wallet expansion (M₁), paired with liquid rifles/pistols in Leg 2.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-amber">High Margin / Knives</span>
+            <div><strong>Patient Higher-Ticket Plays:</strong> Unlocks knives, gloves, and mid-speed plays with bigger spreads — always displaying an honest 7d/30d wait warning.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-muted">Max Items &amp; Speed</span>
+            <div><strong>Precision Controls:</strong> Hard-cap how many Leg 1 items you are willing to trade (<code>≤5</code> to <code>≤150</code>), and choose whether slower Tier C items are allowed.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-mint">Clean Liquid Pool</span>
+            <div><strong>Anti-Trap Toggle (Recommended ON):</strong> Automatically hides slow StatTrak™ skins, Souvenirs, and obscure collector capsules that look profitable on paper but rarely sell.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-mint">Trust 85%+ Score</span>
+            <div><strong>Composite Confidence Score (35–99%):</strong> Grades every strategy on real 24h/7d sales velocity, Bid/Ask depth, pattern/float sensitivity, and thin-book anomaly checks. Aim for <strong>80%+</strong> for smooth loops.</div>
+          </div>
+        </div>
+
+        <!-- Turkish Filter Guide Content -->
+        <div class="filter-guide-list hidden" data-lang-only="tr">
+          <div class="fguide-row">
+            <span class="pill pill-gold">Karma (Önerilen)</span>
+            <div><strong>En Dengeli Seçim:</strong> Bütçene özel en iyi 6 farklı profili (Maksimum Kâr, Az İşlem, En Hızlı Nakit, Kasa Motoru ve Sabırlı) tek ekranda kıyaslar.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-mint">Az İşlem (≤10)</span>
+            <div><strong>Zahmetsiz Döngü:</strong> 80–100 tane kasa almak yerine sadece 1–10 adet kaliteli skinle döngü kurar. Steam onaylarıyla uğraşmak istemeyenler için idealdir.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-ice">En Hızlı Nakit</span>
+            <div><strong>Sadece Süper Likit (A/B):</strong> Son 24 saat ve 7 günde onlarca kez satılan eşyaları seçer; paran alıcı beklerken kilitlenmez.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-gold">Kasa Motoru</span>
+            <div><strong>Klasik Kasa Makası:</strong> 1. yönde yüksek makaslı CS2 kasalarıyla Steam bakiyesini büyütür (M₁), 2. yönde likit tüfek/tabanca ile nakde döner.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-amber">Yüksek Marj / Bıçak</span>
+            <div><strong>Sabırlı Yüksek Getiri:</strong> Bıçak, eldiven ve orta hızda satılan yüksek kârlı skinleri açar — satışı uzun sürebilecek her eşyada şeffaf 7g/30g satış uyarısı verir.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-muted">Adet &amp; Satış Hızı</span>
+            <div><strong>İnce Ayarlar:</strong> 1. yönde en fazla kaç adet alacağını (<code>≤5</code> – <code>≤150</code>) sınırla ve yalnızca "Çok Hızlı" ya da "Sabırlı Dahil" hız katmanını seç.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-mint">Güvenli Havuz</span>
+            <div><strong>Tuzak Filtresi (Açık Önerilir):</strong> Kâğıt üstünde yüksek kâr gösterip gerçekte alıcısı olmayan StatTrak™, Hatıra ve ölü koleksiyon kapsüllerini otomatik eler.</div>
+          </div>
+          <div class="fguide-row">
+            <span class="pill pill-mint">Güven %85+ Skoru</span>
+            <div><strong>Gerçekçilik ve Güven Puanı (%35–%99):</strong> 24s/7g gerçek satış hızı, Bid/Ask derinliği, desen/float hassasiyeti ve dar tahta anomalilerine göre hesaplanır. Sorunsuz döngüler için <strong>%80+</strong> hedefleyin.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Host -->
   <div id="toastHost" class="toast-host" aria-live="polite"></div>
 
-  <!-- Modüler ES Giriş Noktası -->
+  <!-- Modular ES Entry Point -->
   <script type="module" src="/js/main.js"></script>
 </body>
 </html>

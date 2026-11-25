@@ -6,6 +6,7 @@
 import { MARKETPLACES } from './core/config.js';
 import { el } from './core/security.js';
 import { evaluateItemMetrics, findOptimalPairs } from './core/math-engine.js';
+import { detectInitialLanguage, isTr, setLang, t } from './core/i18n.js';
 import {
   parseSharedSetupFromUrl,
   resolveTabFromPathname,
@@ -18,6 +19,7 @@ import { initCalculatorView } from './views/calculator-view.js';
 import { initScannerView } from './views/scanner-view.js';
 import { initTrackerView } from './views/tracker-view.js';
 import { initAcademyView } from './views/academy-view.js';
+import { initAboutView } from './views/about-view.js';
 import { initVaultModal } from './views/vault-modal.js';
 import { initShareAndSupportModals } from './views/share-support-modals.js';
 
@@ -111,6 +113,8 @@ class SpreadApp {
     if (tabName === 'calculator') this.views.calculator?.render();
     if (tabName === 'scanner') this.views.scanner?.render();
     if (tabName === 'tracker') this.views.tracker?.render();
+    if (tabName === 'academy') this.views.academy?.render();
+    if (tabName === 'about') this.views.about?.render();
   }
 
   applyItemToLeg(item, legNum) {
@@ -143,7 +147,7 @@ class SpreadApp {
     this.saveSettings();
     this.switchTab('calculator');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    this.toast(`"${item.n}" ${legNum}. Yöne aktarıldı.`);
+    this.toast(isTr() ? `"${item.n}" ${legNum}. Yöne aktarıldı.` : `"${item.n}" loaded into Leg ${legNum}.`);
   }
 
   applyPair(item1, item2, m1, m2) {
@@ -160,17 +164,17 @@ class SpreadApp {
     this.saveSettings();
     this.switchTab('calculator');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    this.toast(`Strateji uygulandı: ${item1.n} → ${item2.n}`);
+    this.toast(isTr() ? `Strateji uygulandı: ${item1.n} → ${item2.n}` : `Strategy applied: ${item1.n} → ${item2.n}`);
   }
 
   toggleWatchlist(itemName) {
     const idx = this.watchlist.indexOf(itemName);
     if (idx >= 0) {
       this.watchlist.splice(idx, 1);
-      this.toast(`"${itemName}" izleme listesinden çıkarıldı.`);
+      this.toast(isTr() ? `"${itemName}" izleme listesinden çıkarıldı.` : `Removed "${itemName}" from watchlist.`);
     } else {
       this.watchlist.unshift(itemName);
-      this.toast(`"${itemName}" izleme listesine eklendi.`);
+      this.toast(isTr() ? `"${itemName}" izleme listesine eklendi.` : `Added "${itemName}" to watchlist.`);
     }
     Vault.saveWatchlist(this.watchlist);
     this.views.scanner?.render();
@@ -182,7 +186,7 @@ class SpreadApp {
     this.items = this.market.rebuildWithCustomItems(this.customItems);
     this.rebuildItemIndex();
     this.renderAll();
-    this.toast(`${newItems.length} özel eşya yerel kasaya eklendi.`);
+    this.toast(isTr() ? `${newItems.length} özel eşya yerel kasaya eklendi.` : `Added ${newItems.length} custom item(s) to local vault.`);
   }
 
   deleteCustomItem(customId) {
@@ -191,13 +195,13 @@ class SpreadApp {
     this.items = this.market.rebuildWithCustomItems(this.customItems);
     this.rebuildItemIndex();
     this.renderAll();
-    this.toast('Özel eşya silindi.');
+    this.toast(isTr() ? 'Özel eşya silindi.' : 'Custom item removed.');
   }
 
   createTrackedCycleFromCalculator() {
     const d = this.latestMetrics;
     if (!d || d.capitalUsd <= 0) {
-      this.toast('Takibe almak için geçerli bir sermaye girin.', 'warn');
+      this.toast(isTr() ? 'Takibe almak için geçerli bir sermaye girin.' : 'Enter a valid starting capital first.', 'warn');
       return;
     }
 
@@ -231,7 +235,7 @@ class SpreadApp {
 
     this.saveCycles();
     this.switchTab('tracker');
-    this.toast('Döngü Faz 1 (Gün 0–7) olarak takibe alındı.');
+    this.toast(isTr() ? 'Döngü Faz 1 (Gün 0–7) olarak takibe alındı.' : 'Cycle added to Tracker (Phase 1 • Day 0–7).');
   }
 
   loadSampleCycles() {
@@ -241,6 +245,7 @@ class SpreadApp {
     const red = this.findItemByName('AK-47 | Redline (Field-Tested)');
     const kw = this.findItemByName('Kilowatt Case');
     const awp = this.findItemByName('AWP | Asiimov (Field-Tested)');
+    const tr = isTr();
 
     this.cycles = [
       {
@@ -258,7 +263,7 @@ class SpreadApp {
         expectedRoiPct: 22.4,
         actualEndUsd: null,
         actualProfitUsd: null,
-        note: 'Örnek aktif Faz 1 döngüsü',
+        note: tr ? 'Örnek aktif Faz 1 döngüsü' : 'Sample active Phase 1 cycle',
         phase: 1,
         phaseStartedAt: new Date(now - 134 * hour).toISOString(),
         cycleStartedAt: new Date(now - 134 * hour).toISOString(),
@@ -279,7 +284,7 @@ class SpreadApp {
         expectedRoiPct: 23.57,
         actualEndUsd: null,
         actualProfitUsd: null,
-        note: 'Örnek aktif Faz 2 dönüş döngüsü',
+        note: tr ? 'Örnek aktif Faz 2 dönüş döngüsü' : 'Sample active Phase 2 cashout cycle',
         phase: 2,
         phaseStartedAt: new Date(now - 88 * hour).toISOString(),
         cycleStartedAt: new Date(now - 256 * hour).toISOString(),
@@ -289,12 +294,12 @@ class SpreadApp {
 
     this.saveCycles();
     this.views.tracker?.render();
-    this.toast('Örnek 2 fazlı CSFloat döngüleri yüklendi.');
+    this.toast(tr ? 'Örnek 2 fazlı CSFloat döngüleri yüklendi.' : 'Sample 2-phase CSFloat cycles loaded.');
   }
 
   exportCyclesCsv() {
     if (this.cycles.length === 0) {
-      this.toast('Dışa aktarılacak döngü kaydı yok.', 'warn');
+      this.toast(isTr() ? 'Dışa aktarılacak döngü kaydı yok.' : 'No tracked cycles to export.', 'warn');
       return;
     }
     const csv = Vault.buildCyclesCsv(this.cycles);
@@ -307,7 +312,7 @@ class SpreadApp {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    this.toast('Döngü defteri CSV olarak indirildi.');
+    this.toast(isTr() ? 'Döngü defteri CSV olarak indirildi.' : 'Cycle ledger exported as CSV.');
   }
 
   syncHeaderControls() {
@@ -337,7 +342,7 @@ class SpreadApp {
         stBtn.textContent = '÷ 1.15';
         stBtn.className = 'fee-mode-pill';
       } else {
-        stBtn.textContent = 'Özel %';
+        stBtn.textContent = isTr() ? 'Özel %' : 'Custom %';
         stBtn.className = 'fee-mode-pill is-custom';
       }
     }
@@ -349,6 +354,18 @@ class SpreadApp {
       e.preventDefault();
       this.switchTab('calculator');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Language Switcher (EN default / TR auto-detect + persisted user choice)
+    document.querySelectorAll('[data-lang-btn]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const nextLang = btn.dataset.langBtn;
+        setLang(nextLang, true);
+        this.syncHeaderControls();
+        syncUrlForTab(this.activeTab, true);
+        this.renderAll();
+        this.toast(nextLang === 'tr' ? 'Dil Türkçe olarak kaydedildi.' : 'Language saved as English.');
+      });
     });
 
     // Marketplace selector (CSFloat primary / Youpin898 optional)
@@ -384,7 +401,11 @@ class SpreadApp {
         this.saveSettings();
         this.syncHeaderControls();
         this.renderAll();
-        this.toast(`Aktif pazar: ${MARKETPLACES[nextMkt].name} (Satış komisyonu %${this.settings.sellFeePct})`);
+        this.toast(
+          isTr()
+            ? `Aktif pazar: ${MARKETPLACES[nextMkt].name} (Satış komisyonu %${this.settings.sellFeePct})`
+            : `Marketplace switched to ${MARKETPLACES[nextMkt].name} (${this.settings.sellFeePct}% sell fee)`
+        );
       });
     });
 
@@ -397,7 +418,7 @@ class SpreadApp {
         this.saveSettings();
         this.syncHeaderControls();
         this.renderAll();
-        this.toast(`Para birimi ${cur} olarak güncellendi.`);
+        this.toast(isTr() ? `Para birimi ${cur} olarak güncellendi.` : `Display currency updated to ${cur}.`);
       });
     });
 
@@ -449,12 +470,18 @@ class SpreadApp {
       this.saveSettings();
       this.syncHeaderControls();
       this.renderAll();
-      const labels = {
-        EXACT_VALVE: 'Gerçek Valve Cent Hesabı ($0.01 taban kesinti dahil)',
-        DIV_115: 'Klasik ÷ 1.15 Oransal Formül',
-        CUSTOM: 'Özel Steam Komisyon Yüzdesi'
-      };
-      this.toast(`Steam kesinti modu: ${labels[next]}`);
+      const labels = isTr()
+        ? {
+            EXACT_VALVE: 'Gerçek Valve Cent Hesabı ($0.01 taban kesinti dahil)',
+            DIV_115: 'Klasik ÷ 1.15 Oransal Formül',
+            CUSTOM: 'Özel Steam Komisyon Yüzdesi'
+          }
+        : {
+            EXACT_VALVE: 'Exact Valve Cent Solver (incl. $0.01 floor fees)',
+            DIV_115: 'Classic ÷ 1.15 Flat Proportional Formula',
+            CUSTOM: 'Custom Steam Fee Percentage'
+          };
+      this.toast(isTr() ? `Steam kesinti modu: ${labels[next]}` : `Steam fee mode: ${labels[next]}`);
     });
 
     // Theme toggle
@@ -470,22 +497,29 @@ class SpreadApp {
     document.getElementById('syncLiveBtn')?.addEventListener('click', async () => {
       const btn = document.getElementById('syncLiveBtn');
       btn.disabled = true;
-      btn.textContent = 'Güncelleniyor...';
+      btn.textContent = t('hdr.refreshing');
       try {
         const res = await this.market.syncLive(this.customItems, true);
         this.items = res.items;
         this.rebuildItemIndex();
         this.renderAll();
         if (res.marketUpdated) {
-          this.toast(`Canlı fiyatlar yenilendi (${this.items.length.toLocaleString('tr-TR')} eşya).`);
+          this.toast(
+            isTr()
+              ? `Canlı fiyatlar yenilendi (${this.items.length.toLocaleString('tr-TR')} eşya).`
+              : `Live market prices refreshed (${this.items.length.toLocaleString('en-US')} items).`
+          );
         } else {
-          this.toast('Canlı API şu an ulaşılamıyor; yerel önbellek aktif.', 'warn');
+          this.toast(
+            isTr() ? 'Canlı API şu an ulaşılamıyor; yerel önbellek aktif.' : 'Live API temporarily unavailable; local cache active.',
+            'warn'
+          );
         }
       } catch {
-        this.toast('Canlı senkronizasyon başarısız oldu.', 'warn');
+        this.toast(isTr() ? 'Canlı senkronizasyon başarısız oldu.' : 'Live refresh failed.', 'warn');
       } finally {
         btn.disabled = false;
-        btn.textContent = '↻ Canlı Yenile';
+        btn.textContent = t('hdr.refresh');
       }
     });
 
@@ -504,6 +538,7 @@ class SpreadApp {
         this.vaultModal?.close();
         this.shareSupport?.closeShare();
         this.shareSupport?.closeSupport();
+        this.shareSupport?.closeFilterGuide();
         document.getElementById('completeCycleModal')?.classList.add('hidden');
         return;
       }
@@ -519,6 +554,8 @@ class SpreadApp {
           this.switchTab('tracker');
         } else if (e.key === '4') {
           this.switchTab('academy');
+        } else if (e.key === '5') {
+          this.switchTab('about');
         }
       }
     });
@@ -575,16 +612,23 @@ class SpreadApp {
     this.views.calculator?.render();
     this.views.scanner?.render();
     this.views.tracker?.render();
+    this.views.academy?.render();
+    this.views.about?.render();
   }
 
   async boot() {
+    // 0. Language resolution: ?lang > localStorage > navigator (TR -> tr, others -> en)
+    const initialLang = detectInitialLanguage();
+    setLang(initialLang, false);
+
     this.cmdPalette = initCommandPalette(this);
     this.vaultModal = initVaultModal(this);
     this.shareSupport = initShareAndSupportModals(this);
     this.views.calculator = initCalculatorView(this);
     this.views.scanner = initScannerView(this);
     this.views.tracker = initTrackerView(this);
-    initAcademyView();
+    this.views.academy = initAcademyView();
+    this.views.about = initAboutView(this);
 
     this.wireHeaderControls();
 
@@ -614,10 +658,10 @@ class SpreadApp {
       this.switchTab(this.activeTab, { updateHistory: true, replaceHistory: true });
       this.renderAll();
       if (sharedSetup) {
-        this.toast('Paylaşılan arbitraj kurulumu yüklendi!');
+        this.toast(isTr() ? 'Paylaşılan arbitraj kurulumu yüklendi!' : 'Shared arbitrage setup loaded!');
       }
     } catch (err) {
-      this.toast('Yerel katalog yüklenemedi. Lütfen HTTP sunucusu üzerinden açın.', 'err');
+      this.toast(isTr() ? 'Yerel katalog yüklenemedi. Lütfen HTTP sunucusu üzerinden açın.' : 'Failed to load local catalog. Please open via HTTP server.', 'err');
       console.error(err);
     }
 
