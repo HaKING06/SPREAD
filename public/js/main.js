@@ -608,12 +608,21 @@ class SpreadApp {
   }
 
   renderAll() {
-    renderLiveTicker(this);
-    this.views.calculator?.render();
-    this.views.scanner?.render();
-    this.views.tracker?.render();
-    this.views.academy?.render();
-    this.views.about?.render();
+    const tasks = [
+      ['ticker', () => renderLiveTicker(this)],
+      ['calculator', () => this.views.calculator?.render()],
+      ['scanner', () => this.views.scanner?.render()],
+      ['tracker', () => this.views.tracker?.render()],
+      ['academy', () => this.views.academy?.render()],
+      ['about', () => this.views.about?.render()]
+    ];
+    for (const [name, fn] of tasks) {
+      try {
+        fn();
+      } catch (err) {
+        console.error(`[SPREAD] View render error (${name}):`, err);
+      }
+    }
   }
 
   async boot() {
@@ -650,19 +659,31 @@ class SpreadApp {
 
     this.syncHeaderControls();
 
-    // 1. Instant boot from bundled ByMykel catalog + fresh snapshot
+    // 1. Instant boot from bundled ByMykel catalog + fresh snapshot (strictly isolated from UI rendering)
+    let catalogLoaded = false;
     try {
       this.items = await this.market.loadInitial(this.customItems);
       this.rebuildItemIndex();
       this.hydrateDefaultPairIfEmpty();
+      catalogLoaded = true;
+    } catch (err) {
+      console.error('[SPREAD] Initial catalog load failed:', err);
+      this.toast(
+        isTr()
+          ? 'Piyasa kataloğu yüklenemedi. Sayfayı yenileyin veya "Canlı Yenile"ye basın.'
+          : 'Market catalog could not load. Please refresh the page or click "Refresh Live".',
+        'warn'
+      );
+    }
+
+    try {
       this.switchTab(this.activeTab, { updateHistory: true, replaceHistory: true });
       this.renderAll();
-      if (sharedSetup) {
+      if (catalogLoaded && sharedSetup) {
         this.toast(isTr() ? 'Paylaşılan arbitraj kurulumu yüklendi!' : 'Shared arbitrage setup loaded!');
       }
     } catch (err) {
-      this.toast(isTr() ? 'Yerel katalog yüklenemedi. Lütfen HTTP sunucusu üzerinden açın.' : 'Failed to load local catalog. Please open via HTTP server.', 'err');
-      console.error(err);
+      console.error('[SPREAD] Initial render error:', err);
     }
 
     // 2. Non-blocking live API upgrade (/api/market + /api/fx)

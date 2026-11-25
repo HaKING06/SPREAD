@@ -95,7 +95,11 @@ export function initCalculatorView(app) {
               app.saveSettings();
               syncInputsFromSettings();
               renderMetricsOnly(true);
-              app.toast(`Sermaye ${fmtMoneyFromUsd(usd, cur, fx, { decimals: 0 })} olarak ayarlandı — öneriler güncellendi.`);
+              app.toast(
+                isTr()
+                  ? `Bütçe ${fmtMoneyFromUsd(usd, cur, fx, { decimals: 0 })} olarak ayarlandı — öneriler güncellendi.`
+                  : `Budget set to ${fmtMoneyFromUsd(usd, cur, fx, { decimals: 0 })} — strategies updated.`
+              );
             }
           },
           fmtMoneyFromUsd(usd, cur, fx, { decimals: 0 })
@@ -135,10 +139,10 @@ export function initCalculatorView(app) {
     const cur = s.currency;
 
     s.capitalUsd = Math.max(0, toUsd(parseFloat(capInput.value) || 0, cur, fx));
-    s.leg1.name = s1Name.value.trim() || '1. Yön Eşyası';
+    s.leg1.name = s1Name.value.trim() || (isTr() ? '1. Adım Eşyası' : 'Step 1 Item');
     s.leg1.marketUsd = Math.max(0, toUsd(parseFloat(pM1Input.value) || 0, cur, fx));
     s.leg1.steamUsd = Math.max(0, toUsd(parseFloat(pS1Input.value) || 0, cur, fx));
-    s.leg2.name = s2Name.value.trim() || '2. Yön Eşyası';
+    s.leg2.name = s2Name.value.trim() || (isTr() ? '2. Adım Eşyası' : 'Step 2 Item');
     s.leg2.steamUsd = Math.max(0, toUsd(parseFloat(pS2Input.value) || 0, cur, fx));
     s.leg2.marketUsd = Math.max(0, toUsd(parseFloat(pM2Input.value) || 0, cur, fx));
 
@@ -162,7 +166,7 @@ export function initCalculatorView(app) {
     const usdVal = toUsd(amount, fromCur, fx);
     const targetVal = fromUsd(usdVal, toCur, fx);
     const sym = getCurrencyMeta(toCur).symbol;
-    fxOutEl.textContent = `${sym}${targetVal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    fxOutEl.textContent = `${sym}${targetVal.toLocaleString(isTr() ? 'tr-TR' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     return { usdVal, targetVal };
   }
 
@@ -220,16 +224,20 @@ export function initCalculatorView(app) {
               type: 'button',
               className: 'pill pill-gold',
               style: { fontSize: '10px', cursor: 'pointer' },
-              title: 'CSFloat en yüksek alım emri (anında satış) fiyatını uygula',
+              title: tr ? 'CSFloat en yüksek alım emri (anında satış) fiyatını uygula' : 'Apply CSFloat highest buy order (instant sell) price',
               onClick: () => {
                 app.settings.leg2.marketUsd = found.cfo;
                 app.saveSettings();
                 syncInputsFromSettings();
                 renderMetricsOnly(true);
-                app.toast(`CSFloat Buy Order fiyatı (${fmtMoneyFromUsd(found.cfo, app.settings.currency, app.market.fxRates)}) uygulandı.`);
+                app.toast(
+                  isTr()
+                    ? `CSFloat anında satış fiyatı (${fmtMoneyFromUsd(found.cfo, app.settings.currency, app.market.fxRates)}) uygulandı.`
+                    : `Applied CSFloat instant buy order (${fmtMoneyFromUsd(found.cfo, app.settings.currency, app.market.fxRates)}).`
+                );
               }
             },
-            `Buy Order: ${fmtMoneyFromUsd(found.cfo, app.settings.currency, app.market.fxRates)}`
+            `${tr ? 'Anında Sat' : 'Instant Bid'}: ${fmtMoneyFromUsd(found.cfo, app.settings.currency, app.market.fxRates)}`
           )
         : null
     );
@@ -470,6 +478,7 @@ export function initCalculatorView(app) {
       const bar = el('div', { className: 'split-bar-track' });
       const legend = el('div', { className: 'split-legend-grid' });
 
+      const trSplit = isTr();
       advisor.tier.splitPlan.forEach((seg, idx) => {
         const segUsd = (s.capitalUsd * seg.pct) / 100;
         bar.appendChild(
@@ -486,7 +495,7 @@ export function initCalculatorView(app) {
               'div',
               { className: 'split-legend-head' },
               el('i', { className: 'legend-dot', style: { background: colors[idx % colors.length] } }),
-              el('strong', null, `%${seg.pct} • ${seg.role}`),
+              el('strong', null, trSplit ? `%${seg.pct} • ${seg.role}` : `${seg.pct}% • ${seg.role}`),
               el('span', { className: 'num txt-gold' }, money(segUsd))
             ),
             el('div', { className: 'txt-muted', style: { fontSize: '11.5px', marginTop: '2px' } }, seg.note)
@@ -542,7 +551,12 @@ export function initCalculatorView(app) {
       if (reality.needsUpperTierSuggestion && c1.q1 > 0) {
         realityBanner.classList.remove('hidden');
         realityBanner.className = `alert-banner ${reality.level === 'impractical' ? 'is-danger' : ''}`;
-        realityMsg.textContent = `${reality.label}: ${reality.reasons[0] || 'Yüksek adet veya düşük likidite nedeniyle döngü süresi 14 günü aşabilir.'}`;
+        realityMsg.textContent = `${reality.label}: ${
+          reality.reasons[0] ||
+          (isTr()
+            ? 'Yüksek adet veya düşük likidite nedeniyle döngü süresi 14 günü aşabilir.'
+            : 'High item count or lower sales speed may extend this cycle beyond 14 days.')
+        }`;
       } else {
         realityBanner.classList.add('hidden');
       }
@@ -841,7 +855,10 @@ export function initCalculatorView(app) {
   document.getElementById('autoBestPairBtn')?.addEventListener('click', () => {
     const best = lastAdvisorResult?.bestBenchmark;
     if (!best) {
-      app.toast('Mevcut bütçede uygun likit strateji bulunamadı.', 'warn');
+      app.toast(
+        isTr() ? 'Mevcut bütçede uygun likit strateji bulunamadı.' : 'No matching liquid strategy found for this budget.',
+        'warn'
+      );
       return;
     }
     app.applyPair(best.leg1.item, best.leg2.item, best.leg1.m, best.leg2.m);
@@ -870,7 +887,7 @@ export function initCalculatorView(app) {
       app.saveSettings();
       syncInputsFromSettings();
       renderMetricsOnly(true);
-      app.toast('Sermaye 1 adet alış tutarına eşitlendi.');
+      app.toast(isTr() ? 'Bütçe 1 adet alış tutarına eşitlendi.' : 'Budget matched to 1 unit purchase price.');
     }
   });
 
@@ -881,27 +898,27 @@ export function initCalculatorView(app) {
   document.getElementById('fxSendToL1')?.addEventListener('click', () => {
     const res = updateFxBar();
     if (!res || res.usdVal <= 0) {
-      app.toast('Önce kur çeviriciye geçerli bir tutar girin.', 'warn');
+      app.toast(isTr() ? 'Önce kur çeviriciye geçerli bir tutar girin.' : 'Enter a valid amount in the FX converter first.', 'warn');
       return;
     }
     app.settings.leg1.marketUsd = res.usdVal;
     app.saveSettings();
     syncInputsFromSettings();
     renderMetricsOnly(true);
-    app.toast('Kur çevirici tutarı 1. Yön alış fiyatına aktarıldı.');
+    app.toast(isTr() ? 'Kur çevirici tutarı 1. Adım alış fiyatına aktarıldı.' : 'FX amount sent to Step 1 buy price.');
   });
 
   document.getElementById('fxSendToL2')?.addEventListener('click', () => {
     const res = updateFxBar();
     if (!res || res.usdVal <= 0) {
-      app.toast('Önce kur çeviriciye geçerli bir tutar girin.', 'warn');
+      app.toast(isTr() ? 'Önce kur çeviriciye geçerli bir tutar girin.' : 'Enter a valid amount in the FX converter first.', 'warn');
       return;
     }
     app.settings.leg2.marketUsd = res.usdVal;
     app.saveSettings();
     syncInputsFromSettings();
     renderMetricsOnly(true);
-    app.toast('Kur çevirici tutarı 2. Yön satış fiyatına aktarıldı.');
+    app.toast(isTr() ? 'Kur çevirici tutarı 2. Adım satış fiyatına aktarıldı.' : 'FX amount sent to Step 2 sell price.');
   });
 
   // Track cycle button

@@ -332,20 +332,27 @@
     <!-- ================================================================= -->
     <section id="view-calculator" class="view-panel">
 
-      <!-- 1-Line Quick Start Strip (Dismissible) -->
+      <!-- Crystal-Clear Newcomer Welcome Strip (Dismissible) -->
       <div id="onboardingGuideCard" class="panel onboarding-card">
+        <div class="onboarding-top">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span class="pill pill-gold" data-i18n="onboard.badge">HOW IT WORKS</span>
+            <p class="onboarding-pitch" data-i18n="onboard.pitch">
+              Buy discounted CS2 skins/cases on CSFloat → sell higher on Steam → cash out via fast liquid skins for real profit in a 14-day loop.
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            <a href="/academy" class="btn btn-sm btn-ghost" data-tab="academy" data-i18n="onboard.guide" style="text-decoration: none;">Full Guide →</a>
+            <button id="dismissOnboardingBtn" type="button" class="btn btn-sm btn-ghost" title="Dismiss">✕</button>
+          </div>
+        </div>
         <div class="onboarding-bar">
           <div class="onboarding-pills">
-            <span class="pill pill-gold" data-i18n="onboard.badge">QUICK START</span>
-            <span class="onboard-pill"><span class="onboard-num">1</span> <span data-i18n="onboard.s1">Enter your budget</span></span>
+            <span class="onboard-pill"><span class="onboard-num">1</span> <span data-i18n="onboard.s1">Enter your budget below</span></span>
             <span class="txt-muted">→</span>
-            <span class="onboard-pill"><span class="onboard-num">2</span> <span data-i18n="onboard.s2">Pick a budget-fit strategy</span></span>
+            <span class="onboard-pill"><span class="onboard-num">2</span> <span data-i18n="onboard.s2">Pick a ready strategy card</span></span>
             <span class="txt-muted">→</span>
-            <span class="onboard-pill"><span class="onboard-num">3</span> <span data-i18n="onboard.s3">Track 14d cycle or share</span></span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <a href="/academy" class="btn btn-sm btn-ghost" data-tab="academy" data-i18n="onboard.guide" style="text-decoration: none;">Guide →</a>
-            <button id="dismissOnboardingBtn" type="button" class="btn btn-sm btn-ghost" title="Dismiss">✕</button>
+            <span class="onboard-pill"><span class="onboard-num">3</span> <span data-i18n="onboard.s3">Track your 14-day cycle</span></span>
           </div>
         </div>
       </div>
@@ -355,8 +362,8 @@
         <div class="capital-box">
           <label for="calcCapitalInput" class="field-label">
             <span>
-              <span data-i18n="calc.capital">Starting Capital (Capital₀)</span>
-              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.capital.tip" data-tip="Cash budget available on CSFloat or Youpin898 for Leg 1 purchases.">?</span>
+              <span data-i18n="calc.capital">Your Budget</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.capital.tip" data-tip="Cash budget available on CSFloat or Youpin898 for your Step 1 purchases.">?</span>
             </span>
           </label>
           <div class="input-prefix-wrap">
@@ -369,41 +376,41 @@
         <div class="hero-metrics-grid">
           <div>
             <div class="metric-cell-label">
-              <span data-i18n="calc.mult">Full Cycle Multiplier</span>
-              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.mult.tip" data-tip="Strict multiplicative return: M₁ (Steam boost) × M₂ (cashout rate). Above 1.0000x = net profit.">?</span>
+              <span data-i18n="calc.mult">14-Day Return Multiplier</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.mult.tip" data-tip="Combined return of Step 1 (Steam boost) × Step 2 (cashout rate). Anything above 1.0000x means net cash profit.">?</span>
             </div>
             <div class="metric-cell-val">
               <span id="heroMultVal">1.0000x</span>
               <span id="heroRoiPill" class="pill pill-mint">+0.00%</span>
             </div>
-            <div class="metric-cell-sub" data-i18n="calc.mult.sub">Multiplicative: M₁ × M₂</div>
+            <div class="metric-cell-sub" data-i18n="calc.mult.sub">Buy → Steam → Back to Cash</div>
           </div>
 
           <div>
             <div class="metric-cell-label">
-              <span data-i18n="calc.realProfit">Cycle 1 Net Profit</span>
-              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.realProfit.tip" data-tip="Realistic integer-unit cash profit. Leftover Steam wallet balance is discounted by M₂ to true cash value.">?</span>
+              <span data-i18n="calc.realProfit">Est. Cycle 1 Net Profit</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.realProfit.tip" data-tip="Realistic net cash profit using whole items. Any leftover Steam Wallet cents are converted to true cash value.">?</span>
             </div>
             <div id="heroRealProfit" class="metric-cell-val txt-mint">+$0.00</div>
-            <div id="heroRealSub" class="metric-cell-sub" data-i18n="calc.realProfit.sub">Cash-Equivalent (Steam × M₂)</div>
+            <div id="heroRealSub" class="metric-cell-sub" data-i18n="calc.realProfit.sub">Total Cash Value (incl. Steam)</div>
           </div>
 
           <div>
             <div class="metric-cell-label">
-              <span data-i18n="calc.breakEven">Break-Even Loss Limit</span>
-              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.breakEven.tip" data-tip="Maximum Leg 2 cashout loss tolerated without losing money: 1 − (1 / M₁).">?</span>
+              <span data-i18n="calc.breakEven">Safe Exit Loss Limit</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.breakEven.tip" data-tip="Maximum cashout discount you can accept in Step 2 and still break even: 1 − (1 / Step 1 Boost).">?</span>
             </div>
             <div id="heroBreakEven" class="metric-cell-val">0.00%</div>
-            <div id="heroBreakEvenSub" class="metric-cell-sub" data-i18n="calc.breakEven.sub">Max Leg 2 cashout loss</div>
+            <div id="heroBreakEvenSub" class="metric-cell-sub" data-i18n="calc.breakEven.sub">Max Step 2 cashout discount</div>
           </div>
 
           <div>
             <div class="metric-cell-label">
-              <span data-i18n="calc.monthly">Monthly Compound (2x)</span>
-              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.monthly.tip" data-tip="Theoretical 28-day compounded return across 2 full 14-day trade-hold cycles.">?</span>
+              <span data-i18n="calc.monthly">Est. Monthly (2 Cycles)</span>
+              <span class="tip-badge" tabindex="0" data-i18n-tip="calc.monthly.tip" data-tip="Estimated 28-day compounded return across 2 back-to-back 14-day trade-hold cycles.">?</span>
             </div>
             <div id="heroMonthlyRoi" class="metric-cell-val txt-gold">+0.00%</div>
-            <div class="metric-cell-sub" data-i18n="calc.monthly.sub">28 Days • 2 × (7+7D Hold)</div>
+            <div class="metric-cell-sub" data-i18n="calc.monthly.sub">28 Days • 2 Full Loops</div>
           </div>
         </div>
 
@@ -446,15 +453,15 @@
         <!-- Strategy Filter Toolbar -->
         <div class="advisor-toolbar">
           <div class="seg-group" role="group" aria-label="Strategy Mode">
-            <button type="button" class="seg-btn is-active" data-adv-style="ALL" data-i18n="adv.style.ALL">Balanced Mix</button>
-            <button type="button" class="seg-btn" data-adv-style="LOW_QTY" data-i18n="adv.style.LOW_QTY">Low-Count (≤10)</button>
+            <button type="button" class="seg-btn is-active" data-adv-style="ALL" data-i18n="adv.style.ALL">Best Mix</button>
+            <button type="button" class="seg-btn" data-adv-style="LOW_QTY" data-i18n="adv.style.LOW_QTY">Few Items (≤10)</button>
             <button type="button" class="seg-btn" data-adv-style="FAST" data-i18n="adv.style.FAST">Fastest Cash</button>
-            <button type="button" class="seg-btn" data-adv-style="CASES" data-i18n="adv.style.CASES">Case Engine</button>
-            <button type="button" class="seg-btn" data-adv-style="PATIENT" data-i18n="adv.style.PATIENT">High Margin / Knives</button>
+            <button type="button" class="seg-btn" data-adv-style="CASES" data-i18n="adv.style.CASES">Cases Only</button>
+            <button type="button" class="seg-btn" data-adv-style="PATIENT" data-i18n="adv.style.PATIENT">High Profit / Knives</button>
           </div>
 
           <div class="advisor-controls-right">
-            <label class="fee-chip" title="Maximum units to purchase in Leg 1">
+            <label class="fee-chip" title="Maximum units to purchase in Step 1">
               <span data-i18n="adv.maxQty">Max Items:</span>
               <select id="advisorMaxQtySelect" class="advisor-mini-sel num">
                 <option value="0" data-i18n="adv.auto">Auto</option>
@@ -466,18 +473,18 @@
               </select>
             </label>
 
-            <label class="fee-chip" title="Minimum real-world sales speed tier">
-              <span data-i18n="adv.speed">Speed:</span>
+            <label class="fee-chip" title="How fast recommended skins sell in real trading">
+              <span data-i18n="adv.speed">Sell Speed:</span>
               <select id="advisorSpeedSelect" class="advisor-mini-sel">
-                <option value="ULTRA" data-i18n="adv.speed.ULTRA">Ultra Fast (A)</option>
-                <option value="FAST" selected data-i18n="adv.speed.FAST">Fast+ (A+B)</option>
-                <option value="MODERATE" data-i18n="adv.speed.MODERATE">All (Incl. Patient)</option>
+                <option value="ULTRA" data-i18n="adv.speed.ULTRA">Sells Instantly</option>
+                <option value="FAST" selected data-i18n="adv.speed.FAST">Fast Sellers</option>
+                <option value="MODERATE" data-i18n="adv.speed.MODERATE">All (Incl. Slower)</option>
               </select>
             </label>
 
-            <label class="fee-chip" style="cursor: pointer;" data-i18n-title="adv.cleanPool.tip" title="Automatically hides hard-to-sell StatTrak™, Souvenir &amp; dead collector capsules">
+            <label class="fee-chip" style="cursor: pointer;" data-i18n-title="adv.cleanPool.tip" title="Automatically hides hard-to-sell StatTrak™, Souvenir &amp; low-demand collector capsules">
               <input id="advisorCleanToggle" type="checkbox" checked style="width: auto;" />
-              <span data-i18n="adv.cleanPool">Clean Liquid Pool</span>
+              <span data-i18n="adv.cleanPool">Hide Rare/Dead Skins</span>
             </label>
           </div>
         </div>
@@ -819,12 +826,12 @@
               </select>
             </div>
             <div>
-              <label for="scannerMinPriceInput" class="field-label"><span data-i18n="scan.minPriceLbl">Min</span> (<span class="cur-sym">$</span>)</label>
+              <label for="scannerMinPriceInput" class="field-label"><span><span data-i18n="scan.minPriceLbl">Min</span> (<span class="cur-sym">$</span>)</span></label>
               <input id="scannerMinPriceInput" type="number" step="1" min="0" placeholder="0" class="input num" />
             </div>
             <div>
-              <label for="scannerMaxPriceInput" class="field-label"><span data-i18n="scan.maxPriceLbl">Max</span> (<span class="cur-sym">$</span>)</label>
-              <input id="scannerMaxPriceInput" type="number" step="1" min="0" placeholder="500" value="500" class="input num" />
+              <label for="scannerMaxPriceInput" class="field-label"><span><span data-i18n="scan.maxPriceLbl">Max</span> (<span class="cur-sym">$</span>)</span></label>
+              <input id="scannerMaxPriceInput" type="number" step="1" min="0" placeholder="∞" class="input num" />
             </div>
             <div>
               <label for="scannerSortSelect" class="field-label" data-i18n="scan.sortLbl">Sort By</label>
@@ -852,11 +859,11 @@
               <input id="customItemName" type="text" required class="input" placeholder="e.g. Gallery Case" />
             </div>
             <div>
-              <label for="customItemMkt" class="field-label"><span data-i18n="custom.mktPrice">Market Price</span> (<span class="cur-sym">$</span>)</label>
+              <label for="customItemMkt" class="field-label"><span><span data-i18n="custom.mktPrice">Market Price</span> (<span class="cur-sym">$</span>)</span></label>
               <input id="customItemMkt" type="number" step="0.01" min="0.01" required class="input num" placeholder="0.82" />
             </div>
             <div>
-              <label for="customItemSteam" class="field-label"><span data-i18n="custom.steamPrice">Steam Price</span> (<span class="cur-sym">$</span>)</label>
+              <label for="customItemSteam" class="field-label"><span><span data-i18n="custom.steamPrice">Steam Price</span> (<span class="cur-sym">$</span>)</span></label>
               <input id="customItemSteam" type="number" step="0.01" min="0.03" required class="input num" placeholder="1.28" />
             </div>
             <div>
@@ -1720,36 +1727,36 @@
         <!-- English Filter Guide Content -->
         <div class="filter-guide-list" data-lang-only="en">
           <div class="fguide-row">
-            <span class="pill pill-gold">Balanced Mix</span>
-            <div><strong>Best All-Round Selection:</strong> Automatically shows up to 6 diverse cards for your budget — combining Top Profit, Low-Count, Fastest Cash, Case Engine, and Patient plays.</div>
+            <span class="pill pill-gold">Best Mix</span>
+            <div><strong>Best All-Round Selection:</strong> Automatically shows up to 6 diverse strategies for your budget — combining Top Profit, Few Items, Fastest Cash, Cases Only, and High Profit plays.</div>
           </div>
           <div class="fguide-row">
-            <span class="pill pill-mint">Low-Count (≤10)</span>
-            <div><strong>Zero Click Fatigue:</strong> Limits Leg 1 to 1–10 skins instead of buying 80+ cases. Perfect if you want fast execution with minimal Steam confirmations.</div>
+            <span class="pill pill-mint">Few Items (≤10)</span>
+            <div><strong>Zero Click Fatigue:</strong> Limits Step 1 to 1–10 skins instead of buying 80+ cases. Perfect if you want minimal Steam trade confirmations.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-ice">Fastest Cash</span>
-            <div><strong>Ultra-Liquid Tier A/B Only:</strong> Prioritizes skins and cases selling dozens or hundreds of times per week so your capital never sits idle waiting for a buyer.</div>
+            <div><strong>Sells Instantly Only:</strong> Picks only the highest-volume CS2 skins and cases selling dozens or hundreds of times per week so your money never sits idle waiting for a buyer.</div>
           </div>
           <div class="fguide-row">
-            <span class="pill pill-gold">Case Engine</span>
-            <div><strong>Classic Case Spread Loop:</strong> Uses actively traded CS2 weapon cases in Leg 1 to maximize Steam wallet expansion (M₁), paired with liquid rifles/pistols in Leg 2.</div>
+            <span class="pill pill-gold">Cases Only</span>
+            <div><strong>Classic Case Spread Loop:</strong> Uses actively traded CS2 weapon cases in Step 1 to maximize your Steam balance, then exits via popular liquid skins.</div>
           </div>
           <div class="fguide-row">
-            <span class="pill pill-amber">High Margin / Knives</span>
-            <div><strong>Patient Higher-Ticket Plays:</strong> Unlocks knives, gloves, and mid-speed plays with bigger spreads — always displaying an honest 7d/30d wait warning.</div>
+            <span class="pill pill-amber">High Profit / Knives</span>
+            <div><strong>Patient Higher-Profit Plays:</strong> Unlocks knives, gloves, and slower plays with bigger margins — always displaying an honest 7d/30d sales wait warning.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-muted">Max Items &amp; Speed</span>
-            <div><strong>Precision Controls:</strong> Hard-cap how many Leg 1 items you are willing to trade (<code>≤5</code> to <code>≤150</code>), and choose whether slower Tier C items are allowed.</div>
+            <div><strong>Simple Precision Controls:</strong> Cap how many Step 1 items you are willing to trade (<code>≤5</code> to <code>≤150</code>), and choose between <em>Sells Instantly</em>, <em>Fast Sellers</em>, or <em>All (Incl. Slower)</em>.</div>
           </div>
           <div class="fguide-row">
-            <span class="pill pill-mint">Clean Liquid Pool</span>
-            <div><strong>Anti-Trap Toggle (Recommended ON):</strong> Automatically hides slow StatTrak™ skins, Souvenirs, and obscure collector capsules that look profitable on paper but rarely sell.</div>
+            <span class="pill pill-mint">Hide Rare/Dead Skins</span>
+            <div><strong>Anti-Trap Filter (Recommended ON):</strong> Automatically hides slow StatTrak™ skins, Souvenirs, and obscure collector capsules that look profitable on paper but rarely sell.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-mint">Trust 85%+ Score</span>
-            <div><strong>Composite Confidence Score (35–99%):</strong> Grades every strategy on real 24h/7d sales velocity, Bid/Ask depth, pattern/float sensitivity, and thin-book anomaly checks. Aim for <strong>80%+</strong> for smooth loops.</div>
+            <div><strong>Composite Confidence Score (35–99%):</strong> Grades every strategy on real 24h/7d sales speed, active buy orders, pattern/float sensitivity, and anomaly checks. Aim for <strong>80%+</strong> for smooth loops.</div>
           </div>
         </div>
 
@@ -1757,7 +1764,7 @@
         <div class="filter-guide-list hidden" data-lang-only="tr">
           <div class="fguide-row">
             <span class="pill pill-gold">Karma (Önerilen)</span>
-            <div><strong>En Dengeli Seçim:</strong> Bütçene özel en iyi 6 farklı profili (Maksimum Kâr, Az İşlem, En Hızlı Nakit, Kasa Motoru ve Sabırlı) tek ekranda kıyaslar.</div>
+            <div><strong>En Dengeli Seçim:</strong> Bütçene özel en iyi 6 farklı profili (Maksimum Kâr, Az İşlem, En Hızlı Nakit, Sadece Kasalar ve Sabırlı) tek ekranda kıyaslar.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-mint">Az İşlem (≤10)</span>
@@ -1765,27 +1772,27 @@
           </div>
           <div class="fguide-row">
             <span class="pill pill-ice">En Hızlı Nakit</span>
-            <div><strong>Sadece Süper Likit (A/B):</strong> Son 24 saat ve 7 günde onlarca kez satılan eşyaları seçer; paran alıcı beklerken kilitlenmez.</div>
+            <div><strong>Yalnızca Anında Satılanlar:</strong> Son 24 saat ve 7 günde onlarca kez satılan en popüler eşyaları seçer; paran alıcı beklerken kilitlenmez.</div>
           </div>
           <div class="fguide-row">
-            <span class="pill pill-gold">Kasa Motoru</span>
-            <div><strong>Klasik Kasa Makası:</strong> 1. yönde yüksek makaslı CS2 kasalarıyla Steam bakiyesini büyütür (M₁), 2. yönde likit tüfek/tabanca ile nakde döner.</div>
+            <span class="pill pill-gold">Sadece Kasalar</span>
+            <div><strong>Klasik Kasa Döngüsü:</strong> 1. adımda yüksek makaslı CS2 kasalarıyla Steam bakiyesini büyütür, 2. adımda hızlı satılan skinle nakde döner.</div>
           </div>
           <div class="fguide-row">
-            <span class="pill pill-amber">Yüksek Marj / Bıçak</span>
+            <span class="pill pill-amber">Yüksek Kâr / Bıçak</span>
             <div><strong>Sabırlı Yüksek Getiri:</strong> Bıçak, eldiven ve orta hızda satılan yüksek kârlı skinleri açar — satışı uzun sürebilecek her eşyada şeffaf 7g/30g satış uyarısı verir.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-muted">Adet &amp; Satış Hızı</span>
-            <div><strong>İnce Ayarlar:</strong> 1. yönde en fazla kaç adet alacağını (<code>≤5</code> – <code>≤150</code>) sınırla ve yalnızca "Çok Hızlı" ya da "Sabırlı Dahil" hız katmanını seç.</div>
+            <div><strong>İnce Ayarlar:</strong> 1. adımda en fazla kaç eşya alacağını (<code>≤5</code> – <code>≤150</code>) sınırla; <em>Anında Satılanlar</em>, <em>Hızlı Satılanlar</em> veya <em>Tümü (Yavaş Dahil)</em> arasından seç.</div>
           </div>
           <div class="fguide-row">
-            <span class="pill pill-mint">Güvenli Havuz</span>
-            <div><strong>Tuzak Filtresi (Açık Önerilir):</strong> Kâğıt üstünde yüksek kâr gösterip gerçekte alıcısı olmayan StatTrak™, Hatıra ve ölü koleksiyon kapsüllerini otomatik eler.</div>
+            <span class="pill pill-mint">Zor Satılanları Gizle</span>
+            <div><strong>Tuzak Filtresi (Açık Önerilir):</strong> Kâğıt üstünde yüksek kâr gösterip gerçekte alıcısı olmayan StatTrak™, Hatıra ve ölü koleksiyon kapsüllerini otomatik gizler.</div>
           </div>
           <div class="fguide-row">
             <span class="pill pill-mint">Güven %85+ Skoru</span>
-            <div><strong>Gerçekçilik ve Güven Puanı (%35–%99):</strong> 24s/7g gerçek satış hızı, Bid/Ask derinliği, desen/float hassasiyeti ve dar tahta anomalilerine göre hesaplanır. Sorunsuz döngüler için <strong>%80+</strong> hedefleyin.</div>
+            <div><strong>Gerçekçilik ve Güven Puanı (%35–%99):</strong> 24s/7g gerçek satış hızı, anında alım emirleri, desen/float hassasiyeti ve fiyat anomalilerine göre hesaplanır. Sorunsuz döngüler için <strong>%80+</strong> hedefleyin.</div>
           </div>
         </div>
       </div>

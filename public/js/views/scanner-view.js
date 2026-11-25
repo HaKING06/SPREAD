@@ -18,7 +18,7 @@ export function initScannerView(app) {
     search: '',
     minQty: 15,
     minPriceUsd: 0,
-    maxPriceUsd: 500,
+    maxPriceUsd: 0,
     sortBy: 'AUTO',
     page: 1
   };
@@ -64,18 +64,20 @@ export function initScannerView(app) {
     const money = (u) => fmtMoneyFromUsd(u, s.currency, fx);
     const pairs = findOptimalPairs(app.items, getEvalOpts(), s.capitalUsd);
 
+    const tr = isTr();
     if (pairs.length === 0) {
       pairGrid.appendChild(
         el(
           'div',
           { className: 'txt-muted', style: { gridColumn: '1 / -1', fontSize: '12.5px' } },
-          'Mevcut komisyon ve sermaye kısıtlarıyla kârlı likit tam döngü çifti bulunamadı. Sermayeyi veya pazar modunu değiştirmeyi deneyin.'
+          tr
+            ? 'Mevcut komisyon ve bütçe sınırlarıyla kârlı hızlı çift bulunamadı. Bütçeyi veya pazarı değiştirmeyi deneyin.'
+            : 'No profitable fast pairs found under current budget & fees. Try adjusting your budget or marketplace.'
         )
       );
       return;
     }
 
-    const tr = isTr();
     pairs.forEach((p, idx) => {
       const card = el(
         'div',
@@ -165,7 +167,7 @@ export function initScannerView(app) {
 
       if (tokens.length > 0) {
         const hay = `${item.n} ${item.c} ${item.w} ${item.r}`.toLowerCase();
-        if (!tokens.every((t) => hay.includes(t))) continue;
+        if (!tokens.every((tok) => hay.includes(tok))) continue;
       }
 
       const m = evaluateItemMetrics(item, evalOpts);
@@ -225,7 +227,9 @@ export function initScannerView(app) {
           el(
             'td',
             { colspan: '8', className: 'ta-center txt-muted', style: { padding: '32px' } },
-            'Filtrelere uygun eşya bulunamadı. Minimum ilan derinliğini veya fiyat sınırını genişletmeyi deneyin.'
+            tr
+              ? 'Filtrelere uygun eşya bulunamadı. Minimum ilan sayısını veya fiyat sınırını genişletmeyi deneyin.'
+              : 'No items match your filters. Try lowering Min Listings or widening the price range.'
           )
         )
       );
@@ -237,7 +241,10 @@ export function initScannerView(app) {
       const l1Cls = m.leg1ProfitPct > 0 ? 'pill-mint' : 'pill-crimson';
       const l2Cls = m.leg2LossPct <= 10 ? 'pill-mint' : m.leg2LossPct <= 15 ? 'pill-amber' : 'pill-crimson';
 
-      const sparkCanvas = el('canvas', { className: 'sparkline-canvas', title: 'Steam 90g → 30g → 7g → 24s trendi' });
+      const sparkCanvas = el('canvas', {
+        className: 'sparkline-canvas',
+        title: tr ? 'Steam 90g → 30g → 7g → 24s fiyat trendi' : 'Steam 90d → 30d → 7d → 24h price trend'
+      });
       requestAnimationFrame(() => {
         drawSparkline(sparkCanvas, [item.s90, item.s30, item.s7, item.s]);
       });
@@ -247,7 +254,15 @@ export function initScannerView(app) {
         { className: 'ta-right num' },
         el('div', { style: { fontWeight: '600' } }, money(m.marketBuyUsd)),
         s.marketplace === 'CSFLOAT' && item.cfo > 0
-          ? el('div', { style: { fontSize: '10.5px' }, className: 'txt-muted' }, `BO: ${money(item.cfo)}`)
+          ? el(
+              'div',
+              {
+                style: { fontSize: '10.5px' },
+                className: 'txt-muted',
+                title: tr ? 'Anında satış (en yüksek alım emri)' : 'Instant sell (highest buy order)'
+              },
+              `${tr ? 'Anlık' : 'Bid'}: ${money(item.cfo)}`
+            )
           : null
       );
 
@@ -256,11 +271,11 @@ export function initScannerView(app) {
         { className: 'ta-right num' },
         el('div', { style: { fontWeight: '600' } }, money(m.steamUsd)),
         m.isSpiky
-          ? el('div', { style: { fontSize: '10px' }, className: 'txt-amber' }, '⚠ Volatil')
-          : el('div', { style: { fontSize: '10.5px' }, className: 'txt-muted' }, `7g: ${money(item.s7)}`)
+          ? el('div', { style: { fontSize: '10px' }, className: 'txt-amber' }, tr ? '⚠ Dalgalı' : '⚠ Volatile')
+          : el('div', { style: { fontSize: '10.5px' }, className: 'txt-muted' }, `${tr ? '7g' : '7d'}: ${money(item.s7)}`)
       );
 
-      const tr = el(
+      const rowEl = el(
         'tr',
         null,
         // Item with real CS2 image & rarity color bar
@@ -275,7 +290,9 @@ export function initScannerView(app) {
               {
                 type: 'button',
                 className: isWatched ? 'txt-gold' : 'txt-muted',
-                title: isWatched ? 'İzleme listesinden çıkar' : 'İzleme listesine ekle',
+                title: isWatched
+                  ? tr ? 'İzleme listesinden çıkar' : 'Remove from watchlist'
+                  : tr ? 'İzleme listesine ekle' : 'Add to watchlist',
                 style: { fontSize: '15px', padding: '2px' },
                 onClick: () => app.toggleWatchlist(item.n)
               },
@@ -322,13 +339,13 @@ export function initScannerView(app) {
           { className: 'ta-right num' },
           el(
             'span',
-            { className: `pill ${m.velocity.pillCls}`, title: m.velocity.slowWarning || 'Gerçek 24s/7g satış temposu' },
+            { className: `pill ${m.velocity.pillCls}`, title: m.velocity.slowWarning || (tr ? 'Son 24 saat / 7 gün gerçek satış hızı' : 'Real 24h / 7d sales speed') },
             m.velocity.shortLabel
           ),
           el(
             'div',
             { style: { fontSize: '10px', marginTop: '2px' }, className: 'txt-muted' },
-            `${m.velocity.volText}${item.q > 0 ? ` • ${item.q} iln` : ''}`
+            `${m.velocity.volText}${item.q > 0 ? ` • ${item.q} ${tr ? 'ilan' : 'listed'}` : ''}`
           )
         ),
         // Market price
@@ -380,7 +397,7 @@ export function initScannerView(app) {
                   {
                     type: 'button',
                     className: 'btn btn-sm btn-danger',
-                    title: 'Özel eşyayı sil',
+                    title: tr ? 'Özel eşyayı sil' : 'Delete custom item',
                     onClick: () => app.deleteCustomItem(item.customId)
                   },
                   '✕'
@@ -390,7 +407,7 @@ export function initScannerView(app) {
         )
       );
 
-      tbody.appendChild(tr);
+      tbody.appendChild(rowEl);
     }
   }
 
@@ -493,7 +510,7 @@ export function initScannerView(app) {
     const cat = cleanText(document.getElementById('customItemCat').value || 'Özel', 32);
 
     if (!name || !Number.isFinite(mktDisp) || mktDisp <= 0 || !Number.isFinite(stDisp) || stDisp <= 0) {
-      app.toast('Geçerli eşya adı ve fiyatlar girin.', 'warn');
+      app.toast(isTr() ? 'Geçerli eşya adı ve fiyatlar girin.' : 'Enter a valid item name and prices.', 'warn');
       return;
     }
 
@@ -527,7 +544,7 @@ export function initScannerView(app) {
   document.getElementById('runBulkImportBtn')?.addEventListener('click', () => {
     const raw = (document.getElementById('bulkImportTextarea').value || '').trim();
     if (!raw) {
-      app.toast('İçe aktarılacak CSV veya JSON verisi girin.', 'warn');
+      app.toast(isTr() ? 'İçe aktarılacak CSV veya JSON verisi girin.' : 'Paste CSV or JSON data to import.', 'warn');
       return;
     }
     const cur = app.settings.currency;
@@ -581,12 +598,12 @@ export function initScannerView(app) {
         });
       }
     } catch {
-      app.toast('CSV/JSON ayrıştırılamadı. Formatı kontrol edin.', 'err');
+      app.toast(isTr() ? 'CSV/JSON ayrıştırılamadı. Formatı kontrol edin.' : 'Could not parse CSV/JSON. Check format.', 'err');
       return;
     }
 
     if (parsed.length === 0) {
-      app.toast('Geçerli eşya satırı bulunamadı.', 'warn');
+      app.toast(isTr() ? 'Geçerli eşya satırı bulunamadı.' : 'No valid item rows found.', 'warn');
       return;
     }
 

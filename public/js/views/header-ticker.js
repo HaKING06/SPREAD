@@ -49,13 +49,18 @@ export function renderLiveTicker(app) {
   const leg1Top = [];
   const leg2Top = [];
   for (const item of app.items) {
-    if (s.marketplace === 'CSFLOAT' && item.q < 30) continue;
+    if (item.st || item.sv) continue;
+    if (item.c === 'Capsule' && (item.v7 || 0) < 35) continue;
+    if (s.marketplace === 'CSFLOAT' && item.q < 25) continue;
     const m = evaluateItemMetrics(item, evalOpts);
-    if (!m.hasValidMarket || m.isSpiky) continue;
-    if (m.effBuy >= 0.25 && m.leg1ProfitPct >= 8 && m.leg1ProfitPct <= 60) {
+    if (!m.hasValidMarket || m.isSpiky || m.isAnomalySpread) continue;
+    const vel = m.velocity;
+    if ((vel.tier !== 'A' && vel.tier !== 'B') || vel.isKnifeOrGlove) continue;
+    if (m.effBuy >= 0.3 && m.leg1ProfitPct >= 8 && m.leg1ProfitPct <= 48) {
       leg1Top.push({ item, m });
     }
-    if (m.steamUsd >= 5 && m.steamUsd <= 250 && m.leg2LossPct >= -2 && m.leg2LossPct <= 11) {
+    const l2Valid = m.leg2LossPct >= 3.0 || (vel.tier === 'A' && vel.mktVol >= 150 && m.leg2LossPct >= 0.5);
+    if (l2Valid && m.steamUsd >= 5 && m.steamUsd <= 250 && m.leg2LossPct <= 11.5) {
       leg2Top.push({ item, m });
     }
   }
@@ -69,7 +74,9 @@ export function renderLiveTicker(app) {
 
   clearNode(track);
   if (combined.length === 0) {
-    track.appendChild(el('span', { className: 'txt-muted' }, 'Canlı piyasa verileri hazırlanıyor...'));
+    track.appendChild(
+      el('span', { className: 'txt-muted' }, isTr() ? 'Canlı piyasa verileri hazırlanıyor...' : 'Loading live market spreads...')
+    );
     return;
   }
 
@@ -142,7 +149,7 @@ export function initCommandPalette(app) {
       if (category !== 'ALL' && item.c !== category) continue;
       if (tokens.length > 0) {
         const hay = `${item.n} ${item.c} ${item.w} ${item.r}`.toLowerCase();
-        if (!tokens.every((t) => hay.includes(t))) continue;
+        if (!tokens.every((tok) => hay.includes(tok))) continue;
       }
 
       const m = evaluateItemMetrics(item, evalOpts);

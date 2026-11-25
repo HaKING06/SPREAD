@@ -247,6 +247,143 @@ async function main() {
     fail('Shareable Deep-Link parser failed validation.');
   }
 
+  // 5c. Runtime View Render Test (DOM Shim — catches TDZ, ReferenceError, empty scanner table in BOTH EN & TR!)
+  {
+    const idMap = new Map();
+    const makeFakeNode = (tag = 'div', id = '') => {
+      const node = {
+        tagName: tag.toUpperCase(),
+        id,
+        className: '',
+        value: '',
+        checked: false,
+        disabled: false,
+        textContent: '',
+        dataset: {},
+        style: { setProperty() {} },
+        children: [],
+        get firstChild() { return this.children[0] || null; },
+        classList: { toggle() {}, add() {}, remove() {} },
+        appendChild(ch) { this.children.push(ch); return ch; },
+        removeChild(ch) {
+          const i = this.children.indexOf(ch);
+          if (i >= 0) this.children.splice(i, 1);
+          return ch;
+        },
+        setAttribute(k, v) { if (k === 'id') this.id = v; },
+        getAttribute() { return ''; },
+        addEventListener() {},
+        querySelector() { return null; },
+        querySelectorAll() { return []; },
+        getBoundingClientRect() { return { width: 400, height: 220, left: 0, top: 0 }; },
+        getContext() {
+          return {
+            setTransform() {}, clearRect() {}, beginPath() {}, moveTo() {}, lineTo() {},
+            stroke() {}, fill() {}, closePath() {}, arc() {}, fillText() {}, save() {},
+            restore() {}, setLineDash() {}, roundRect() {},
+            createLinearGradient() { return { addColorStop() {} }; }
+          };
+        }
+      };
+      if (id) idMap.set(id, node);
+      return node;
+    };
+
+    for (const id of htmlIds) makeFakeNode('div', id);
+    globalThis.Node = class FakeNode {};
+    globalThis.requestAnimationFrame = (cb) => cb();
+    globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#f0b90b' });
+    globalThis.window = {
+      devicePixelRatio: 1,
+      location: { pathname: '/', search: '', hostname: 'spread.haking.tr', origin: 'https://spread.haking.tr' },
+      history: { replaceState() {}, pushState() {} },
+      addEventListener() {},
+      scrollTo() {}
+    };
+    globalThis.document = {
+      documentElement: { setAttribute() {}, getAttribute: () => 'dark' },
+      title: '',
+      createElement: (tag) => {
+        const n = makeFakeNode(tag);
+        Object.setPrototypeOf(n, globalThis.Node.prototype);
+        return n;
+      },
+      createTextNode: (txt) => {
+        const n = { textContent: String(txt) };
+        Object.setPrototypeOf(n, globalThis.Node.prototype);
+        return n;
+      },
+      getElementById: (id) => idMap.get(id) || null,
+      querySelectorAll: () => []
+    };
+
+    const { renderLiveTicker } = await import('../public/js/views/header-ticker.js');
+    const { initScannerView } = await import('../public/js/views/scanner-view.js');
+    const { initCalculatorView } = await import('../public/js/views/calculator-view.js');
+    const { initTrackerView } = await import('../public/js/views/tracker-view.js');
+    const { initAcademyView } = await import('../public/js/views/academy-view.js');
+    const { initAboutView } = await import('../public/js/views/about-view.js');
+
+    const mockApp = {
+      activeTab: 'scanner',
+      items: mergedSample,
+      cycles: [],
+      watchlist: [],
+      customItems: [],
+      market: {
+        sourceMode: 'live-edge',
+        updatedAt: new Date().toISOString(),
+        fxRates: { USD: 1, TRY: 50.67, CNY: 6.68, EUR: 0.91 },
+        feeds: { csfloatLive: true, steam: true, youpin: true },
+        verifySteamLive: async () => ({})
+      },
+      settings: {
+        marketplace: 'CSFLOAT', currency: 'USD', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0,
+        steamFeeMode: 'EXACT_VALVE', steamCustomFeePct: 13.04, useBuyOrderForLeg2: false,
+        conservativeSteamPrice: true, capitalUsd: 200, compoundMode: 'REALISTIC',
+        leg1: { name: 'Revolution Case', marketUsd: 0.5, steamUsd: 0.78 },
+        leg2: { name: 'AK-47 | Redline (Field-Tested)', steamUsd: 22, marketUsd: 20.1 }
+      },
+      findItemByName: (n) => mergedSample.find((x) => x.n.toLowerCase() === String(n).toLowerCase()) || null,
+      saveSettings() {}, saveCycles() {}, toast() {}, openCommandPalette() {}, applyItemToLeg() {}, applyPair() {}, toggleWatchlist() {}
+    };
+
+    const scannerView = initScannerView(mockApp);
+    const calcView = initCalculatorView(mockApp);
+    const trackerView = initTrackerView(mockApp);
+    const academyView = initAcademyView();
+    const aboutView = initAboutView(mockApp);
+
+    let runtimeOk = true;
+    for (const lang of ['en', 'tr']) {
+      setLang(lang, false);
+      try {
+        renderLiveTicker(mockApp);
+        calcView.render();
+        scannerView.render();
+        trackerView.render();
+        academyView.render();
+        aboutView.render();
+        const scannerRows = idMap.get('scannerTableBody')?.children?.length || 0;
+        const tickerChips = idMap.get('tickerTrack')?.children?.length || 0;
+        const stratCards = idMap.get('advisorStrategiesGrid')?.children?.length || 0;
+        if (scannerRows < 20 || tickerChips < 4 || stratCards < 2) {
+          fail(`Runtime render [${lang}] insufficient DOM nodes: scannerRows=${scannerRows}, tickerChips=${tickerChips}, stratCards=${stratCards}`);
+          runtimeOk = false;
+        }
+      } catch (err) {
+        fail(`Runtime view render crashed in [${lang}]: ${err.stack || err.message}`);
+        runtimeOk = false;
+      }
+    }
+    setLang('en', false);
+    if (runtimeOk) {
+      const rowsCount = idMap.get('scannerTableBody')?.children?.length || 0;
+      const tickerCount = idMap.get('tickerTrack')?.children?.length || 0;
+      pass(`Runtime DOM render audit (EN & TR) passed with 0 errors: Scanner rendered ${rowsCount} rows/page, Ticker ${tickerCount} live chips.`);
+    }
+  }
+
   if (process.argv.includes('--live')) {
     console.log('\nRunning live local server + /api/market & /api/fx smoke test...');
     const port = '4189';
