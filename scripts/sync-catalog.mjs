@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 /**
- * SPREAD (spread.haking.tr) — Official CS2 Catalog & Live Market Sync Script
+ * SPREAD (spread.haking.tr) — Official CS2 Catalog, Prices & Real Sales Volume Sync
  *
- * Downloads official CS2 item metadata & image URLs from ByMykel/CSGO-API (GitHub)
- * and merges live market prices from CSFloat, Steam Community Market, Youpin898,
- * and open.er-api.com FX rates into compact, fast-loading local JSON datasets:
- *   - data/catalog.json         (official item metadata + Steam CDN image hashes)
- *   - data/market-snapshot.json (fresh live pricing snapshot for instant boot & offline fallback)
+ * Pulls official CS2 skin/case/agent metadata from ByMykel/CSGO-API and enriches
+ * every item with:
+ *   - CSFloat live min_price, listing depth (q), and highest Buy Order (cfo)
+ *   - Steam Community Market 24h / 7d / 30d / 90d prices
+ *   - Youpin898 USD prices
+ *   - REAL Sales Velocity: Skinport 24h / 7d / 30d actual sold counts (v24, v7, v30)
+ *     + 7d median sold price (vm) + Market.CSGO cross-market volume (mv)
+ *   - Live USD / TRY / CNY / EUR exchange rates
  */
 
 import fs from 'node:fs/promises';
@@ -27,16 +30,21 @@ const ENDPOINTS = {
   csfloatOrders: 'https://prices.csgotrader.app/latest/csfloat.json',
   steamPrices: 'https://prices.csgotrader.app/latest/steam.json',
   youpinPrices: 'https://prices.csgotrader.app/latest/youpin.json',
+  skinportSales: 'https://api.skinport.com/v1/sales/history?app_id=730&currency=USD',
+  marketCsgo: 'https://market.csgo.com/api/v2/prices/USD.json',
   fx: 'https://open.er-api.com/v6/latest/USD'
 };
 
-async function fetchJson(label, url, timeoutMs = 25000) {
+async function fetchJson(label, url, timeoutMs = 30000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { 'User-Agent': 'SpreadTerminal-Sync/1.0 (+https://spread.haking.tr)' }
+      headers: {
+        'User-Agent': 'SpreadTerminal-Sync/1.2 (+https://spread.haking.tr)',
+        'Accept-Encoding': 'br, gzip, deflate'
+      }
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -49,14 +57,10 @@ async function fetchJson(label, url, timeoutMs = 25000) {
 
 function stripImagePrefix(url) {
   if (!url || typeof url !== 'string') return '';
-  if (url.startsWith(STEAM_IMG_PREFIX)) {
-    return url.slice(STEAM_IMG_PREFIX.length);
-  }
-  return url;
+  return url.startsWith(STEAM_IMG_PREFIX) ? url.slice(STEAM_IMG_PREFIX.length) : url;
 }
 
 function wearCode(wearName) {
-  if (!wearName) return '';
   const map = {
     'Factory New': 'FN',
     'Minimal Wear': 'MW',
@@ -72,22 +76,33 @@ function round2(n) {
 }
 
 async function main() {
-  console.log('SPREAD Sync: Fetching ByMykel/CSGO-API + live market feeds...');
+  console.log('SPREAD Sync: Fetching ByMykel/CSGO-API + live prices + real 24h/7d sales volumes...');
   await fs.mkdir(DATA_DIR, { recursive: true });
 
-  const [crates, skins, agents, csfloatLive, csfloatOrders, steamPrices, youpinPrices, fxData] =
-    await Promise.all([
-      fetchJson('ByMykel crates.json', ENDPOINTS.crates),
-      fetchJson('ByMykel skins_not_grouped.json', ENDPOINTS.skins),
-      fetchJson('ByMykel agents.json', ENDPOINTS.agents),
-      fetchJson('CSFloat Live Price List', ENDPOINTS.csfloatLive),
-      fetchJson('CSGOTrader CSFloat Orders', ENDPOINTS.csfloatOrders),
-      fetchJson('CSGOTrader Steam Prices', ENDPOINTS.steamPrices),
-      fetchJson('CSGOTrader Youpin898 Prices', ENDPOINTS.youpinPrices),
-      fetchJson('Open ER-API FX Rates', ENDPOINTS.fx)
-    ]);
+  const [
+    crates,
+    skins,
+    agents,
+    csfloatLive,
+    csfloatOrders,
+    steamPrices,
+    youpinPrices,
+    skinportSales,
+    marketCsgo,
+    fxData
+  ] = await Promise.all([
+    fetchJson('ByMykel crates.json', ENDPOINTS.crates),
+    fetchJson('ByMykel skins_not_grouped.json', ENDPOINTS.skins),
+    fetchJson('ByMykel agents.json', ENDPOINTS.agents),
+    fetchJson('CSFloat Live Price List', ENDPOINTS.csfloatLive),
+    fetchJson('CSGOTrader CSFloat Orders', ENDPOINTS.csfloatOrders),
+    fetchJson('CSGOTrader Steam Prices', ENDPOINTS.steamPrices),
+    fetchJson('CSGOTrader Youpin898 Prices', ENDPOINTS.youpinPrices),
+    fetchJson('Skinport Sales History (24h/7d/30d)', ENDPOINTS.skinportSales),
+    fetchJson('Market.CSGO Volume Feed', ENDPOINTS.marketCsgo),
+    fetchJson('Open ER-API FX Rates', ENDPOINTS.fx)
+  ]);
 
-  // Index CSFloat live array -> map
   const cfLiveMap = new Map();
   if (Array.isArray(csfloatLive)) {
     for (const row of csfloatLive) {
@@ -100,7 +115,29 @@ async function main() {
     }
   }
 
-  // Build unified metadata index from ByMykel/CSGO-API
+  const spMap = new Map();
+  if (Array.isArray(skinportSales)) {
+    for (const row of skinportSales) {
+      if (row && typeof row.market_hash_name === 'string') {
+        spMap.set(row.market_hash_name, {
+          v24: Number(row.last_24_hours?.volume) || 0,
+          v7: Number(row.last_7_days?.volume) || 0,
+          v30: Number(row.last_30_days?.volume) || 0,
+          vm: Number(row.last_7_days?.median) || Number(row.last_30_days?.median) || 0
+        });
+      }
+    }
+  }
+
+  const mcsMap = new Map();
+  if (Array.isArray(marketCsgo?.items)) {
+    for (const row of marketCsgo.items) {
+      if (row && typeof row.market_hash_name === 'string') {
+        mcsMap.set(row.market_hash_name, Number(row.volume) || 0);
+      }
+    }
+  }
+
   const metaMap = new Map();
 
   for (const c of crates) {
@@ -121,10 +158,9 @@ async function main() {
   for (const s of skins) {
     const mhn = s?.market_hash_name || s?.name;
     if (!mhn || metaMap.has(mhn)) continue;
-    const catName = s.category?.name || 'Skin';
     metaMap.set(mhn, {
       n: mhn,
-      c: catName,
+      c: s.category?.name || 'Skin',
       wp: s.weapon?.name || '',
       w: wearCode(s.wear?.name),
       r: s.rarity?.name || 'Consumer Grade',
@@ -150,7 +186,6 @@ async function main() {
     });
   }
 
-  // Merge catalog items that have valid Steam + (CSFloat or Youpin) pricing & real market activity
   const catalogItems = [];
   const snapshotPrices = {};
 
@@ -167,17 +202,15 @@ async function main() {
     const cfPrice = cfLive?.minUsd || Number(cfOrd?.starting_at?.price) || Number(cfOrd?.price) || 0;
     const cfQty = cfLive?.qty || 0;
     const cfBuyOrder = Number(cfOrd?.highest_order?.price) || 0;
-
     const ypPrice = Number(youpinPrices[mhn]) || 0;
 
-    // Require valid Steam price + at least one secondary marketplace price
+    const sp = spMap.get(mhn) || { v24: 0, v7: 0, v30: 0, vm: 0 };
+    const mv = mcsMap.get(mhn) || 0;
+
     if (steamUsd <= 0.02 || (cfPrice <= 0.02 && ypPrice <= 0.02)) continue;
-    // Keep all Cases/Capsules with any listings, and skins/agents with meaningful liquidity (qty >= 4)
     const isContainer = meta.c === 'Case' || meta.c === 'Capsule';
     if (!isContainer && cfQty < 4 && ypPrice <= 0) continue;
-    // Filter extreme illiquid/garbage souvenirs & anomalous > $5000 collector items for arbitrage clarity
-    if (steamUsd > 3500) continue;
-    if (!meta.img) continue;
+    if (steamUsd > 3500 || !meta.img) continue;
 
     catalogItems.push(meta);
 
@@ -189,21 +222,24 @@ async function main() {
       cf: cfPrice > 0 ? round2(cfPrice) : 0,
       cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
       q: cfQty,
-      yp: ypPrice > 0 ? round2(ypPrice) : 0
+      yp: ypPrice > 0 ? round2(ypPrice) : 0,
+      v24: sp.v24,
+      v7: sp.v7,
+      v30: sp.v30,
+      vm: sp.vm > 0 ? round2(sp.vm) : 0,
+      mv
     };
   }
 
-  // Sort catalog: Cases first, then by CSFloat listing depth descending
+  // Prioritize items with REAL sales velocity (v7 & mv) so top 4,500 are the truly active CS2 market
   catalogItems.sort((a, b) => {
-    const qa = snapshotPrices[a.n]?.q || 0;
-    const qb = snapshotPrices[b.n]?.q || 0;
-    const ca = a.c === 'Case' ? 1 : 0;
-    const cb = b.c === 'Case' ? 1 : 0;
-    if (ca !== cb) return cb - ca;
-    return qb - qa;
+    const pa = snapshotPrices[a.n];
+    const pb = snapshotPrices[b.n];
+    const scoreA = (pa.v7 || 0) * 10 + (pa.mv || 0) * 1.5 + (pa.q || 0) * 0.5 + (a.c === 'Case' ? 400 : 0);
+    const scoreB = (pb.v7 || 0) * 10 + (pb.mv || 0) * 1.5 + (pb.q || 0) * 0.5 + (b.c === 'Case' ? 400 : 0);
+    return scoreB - scoreA;
   });
 
-  // Cap to top 4,500 most liquid CS2 items to keep bundle ultra-fast (< 1.5MB uncompressed, ~250KB gzipped)
   const MAX_ITEMS = 4500;
   const trimmedCatalog = catalogItems.slice(0, MAX_ITEMS);
   const trimmedPrices = {};
@@ -213,48 +249,53 @@ async function main() {
 
   const fxRates = {
     USD: 1,
-    TRY: Number(fxData?.rates?.TRY) || 34.5,
-    CNY: Number(fxData?.rates?.CNY) || 7.25,
-    EUR: Number(fxData?.rates?.EUR) || 0.92
+    TRY: Number(fxData?.rates?.TRY) || 50.67,
+    CNY: Number(fxData?.rates?.CNY) || 6.68,
+    EUR: Number(fxData?.rates?.EUR) || 0.91
   };
 
   const nowIso = new Date().toISOString();
 
-  const catalogPayload = {
-    schemaVersion: 1,
-    source: 'ByMykel/CSGO-API',
-    updatedAt: nowIso,
-    imgPrefix: STEAM_IMG_PREFIX,
-    count: trimmedCatalog.length,
-    items: trimmedCatalog
-  };
-
-  const snapshotPayload = {
-    schemaVersion: 1,
-    sources: {
-      csfloat: 'csfloat.com/api/v1/listings/price-list + csgotrader',
-      steam: 'prices.csgotrader.app/latest/steam.json',
-      youpin: 'prices.csgotrader.app/latest/youpin.json',
-      fx: 'open.er-api.com/v6/latest/USD'
-    },
-    updatedAt: nowIso,
-    fx: fxRates,
-    count: trimmedCatalog.length,
-    prices: trimmedPrices
-  };
-
-  const catalogPath = path.join(DATA_DIR, 'catalog.json');
-  const snapshotPath = path.join(DATA_DIR, 'market-snapshot.json');
-
   await Promise.all([
-    fs.writeFile(catalogPath, JSON.stringify(catalogPayload), 'utf8'),
-    fs.writeFile(snapshotPath, JSON.stringify(snapshotPayload), 'utf8')
+    fs.writeFile(
+      path.join(DATA_DIR, 'catalog.json'),
+      JSON.stringify({
+        schemaVersion: 2,
+        source: 'ByMykel/CSGO-API',
+        updatedAt: nowIso,
+        imgPrefix: STEAM_IMG_PREFIX,
+        count: trimmedCatalog.length,
+        items: trimmedCatalog
+      }),
+      'utf8'
+    ),
+    fs.writeFile(
+      path.join(DATA_DIR, 'market-snapshot.json'),
+      JSON.stringify({
+        schemaVersion: 2,
+        sources: {
+          csfloat: 'csfloat.com/api/v1/listings/price-list + csgotrader',
+          steam: 'prices.csgotrader.app/latest/steam.json',
+          youpin: 'prices.csgotrader.app/latest/youpin.json',
+          salesVelocity: 'api.skinport.com/v1/sales/history + market.csgo.com',
+          fx: 'open.er-api.com/v6/latest/USD'
+        },
+        updatedAt: nowIso,
+        fx: fxRates,
+        count: trimmedCatalog.length,
+        prices: trimmedPrices
+      }),
+      'utf8'
+    )
   ]);
 
-  const [catStat, snapStat] = await Promise.all([fs.stat(catalogPath), fs.stat(snapshotPath)]);
-  console.log(`\n[DONE] Catalog:  ${trimmedCatalog.length} items (${(catStat.size / 1024).toFixed(1)} KB) -> data/catalog.json`);
-  console.log(`[DONE] Snapshot: ${trimmedCatalog.length} items (${(snapStat.size / 1024).toFixed(1)} KB) -> data/market-snapshot.json`);
-  console.log(`[DONE] Live FX:  1 USD = ${fxRates.TRY} TRY | ${fxRates.CNY} CNY | ${fxRates.EUR} EUR`);
+  const [catStat, snapStat] = await Promise.all([
+    fs.stat(path.join(DATA_DIR, 'catalog.json')),
+    fs.stat(path.join(DATA_DIR, 'market-snapshot.json'))
+  ]);
+  const withVel = Object.values(trimmedPrices).filter((p) => p.v7 > 0 || p.mv > 0).length;
+  console.log(`\n[DONE] Catalog:  ${trimmedCatalog.length} items (${(catStat.size / 1024).toFixed(1)} KB)`);
+  console.log(`[DONE] Snapshot: ${trimmedCatalog.length} items (${(snapStat.size / 1024).toFixed(1)} KB) | ${withVel} with real sales velocity`);
 }
 
 main().catch((err) => {

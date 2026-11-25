@@ -312,12 +312,52 @@
             <h3 class="panel-title">
               <span>⚡ Bütçene Özel Strateji Danışmanı</span>
               <span id="advisorTierBadge" class="pill pill-gold">Büyüme Bütçesi</span>
+              <span id="advisorFilterStatus" class="pill pill-muted">6 strateji</span>
             </h3>
             <p id="advisorTierAdvice" class="advisor-advice-text" style="margin-top: 4px;"></p>
           </div>
           <a href="/tarayici" class="btn btn-sm" data-tab="scanner" style="text-decoration: none;">
             Tüm Eşyalar →
           </a>
+        </div>
+
+        <!-- Akıllı Strateji Filtreleme Çubuğu -->
+        <div class="advisor-toolbar">
+          <div class="seg-group" role="group" aria-label="Strateji Stili">
+            <button type="button" class="seg-btn is-active" data-adv-style="ALL">Tümü</button>
+            <button type="button" class="seg-btn" data-adv-style="LOW_QTY">Az Eşya (≤10)</button>
+            <button type="button" class="seg-btn" data-adv-style="FAST">Süper Hızlı</button>
+            <button type="button" class="seg-btn" data-adv-style="CASES">Likit Kasa</button>
+            <button type="button" class="seg-btn" data-adv-style="PATIENT">Sabırlı / Bıçak</button>
+          </div>
+
+          <div class="advisor-controls-right">
+            <label class="fee-chip" title="1. yönde en fazla kaç adet eşya alınsın?">
+              <span>Maks Adet:</span>
+              <select id="advisorMaxQtySelect" class="advisor-mini-sel num">
+                <option value="0">Otomatik</option>
+                <option value="5">≤ 5 adet</option>
+                <option value="10">≤ 10 adet</option>
+                <option value="25">≤ 25 adet</option>
+                <option value="50">≤ 50 adet</option>
+                <option value="150">≤ 150 adet</option>
+              </select>
+            </label>
+
+            <label class="fee-chip" title="Önerilen eşyaların minimum satış hızı">
+              <span>Hız:</span>
+              <select id="advisorSpeedSelect" class="advisor-mini-sel">
+                <option value="ULTRA">Çok Hızlı</option>
+                <option value="FAST" selected>Hızlı+</option>
+                <option value="MODERATE">Orta Dahil</option>
+              </select>
+            </label>
+
+            <label class="fee-chip" style="cursor: pointer;" title="Zor satılan StatTrak, Hatıra ve eski koleksiyon kapsüllerini otomatik ele">
+              <input id="advisorCleanToggle" type="checkbox" checked style="width: auto;" />
+              <span>Temiz Likit</span>
+            </label>
+          </div>
         </div>
 
         <div class="advisor-body">
@@ -670,7 +710,8 @@
                 <option value="AUTO">Otomatik</option>
                 <option value="LEG1_DESC">1. Yön Kâr %</option>
                 <option value="LEG2_ASC">2. Yön Kayıp %</option>
-                <option value="QTY_DESC">Likidite</option>
+                <option value="SPEED_DESC">Satış Hızı</option>
+                <option value="QTY_DESC">İlan Sayısı</option>
                 <option value="PRICE_ASC">Fiyat ↑</option>
                 <option value="PRICE_DESC">Fiyat ↓</option>
               </select>
@@ -728,7 +769,7 @@
             <thead>
               <tr>
                 <th>Eşya / Görsel / Nadirlik</th>
-                <th class="ta-right">Derinlik</th>
+                <th class="ta-right">Satış Hızı (24s/7g)</th>
                 <th class="ta-right"><span class="mkt-name">CSFloat</span> Fiyat</th>
                 <th class="ta-right">Steam Fiyat</th>
                 <th class="ta-center">90g Trend</th>

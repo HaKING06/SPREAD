@@ -189,19 +189,27 @@ async function main() {
 
   // Verify high-budget ($5000) realistic quantity cap & impracticality detector
   const extremeLoop = computeLoopMetrics({ capitalUsd: 5000, pM1Usd: 0.31, pS1Usd: 0.46, pS2Usd: 20, pM2Usd: 18.4, sellFeePct: 2 });
-  const extremeReality = estimateExecutionReality(extremeLoop, { q: 400 }, { q: 200 }, { marketplace: 'CSFLOAT' });
+  const extremeReality = estimateExecutionReality(extremeLoop, { q: 400, v7: 100, mv: 200 }, { q: 200, v7: 50, mv: 200 }, { marketplace: 'CSFLOAT' });
   const whaleAdv = analyzeCapitalStrategies(
     mergedSample,
     { marketplace: 'CSFLOAT', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true },
-    5000
+    5000,
+    { style: 'PATIENT', maxQty: 10, minSpeed: 'MODERATE', cleanOnly: true }
+  );
+  const lowQtyAdv = analyzeCapitalStrategies(
+    mergedSample,
+    { marketplace: 'CSFLOAT', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true },
+    200,
+    { style: 'LOW_QTY', maxQty: 10, minSpeed: 'FAST', cleanOnly: true }
   );
   const whaleMaxQ1 = whaleAdv.bestBenchmark?.c1?.q1 || 0;
-  if (extremeReality.level === 'impractical' && extremeReality.storageUnits > 10 && whaleMaxQ1 > 0 && whaleMaxQ1 <= 120) {
+  const lowQ1 = lowQtyAdv.bestBenchmark?.c1?.q1 || 0;
+  if (extremeReality.level === 'impractical' && extremeReality.storageUnits > 10 && whaleMaxQ1 > 0 && whaleMaxQ1 <= 10 && lowQ1 > 0 && lowQ1 <= 10) {
     pass(
-      `Execution Reality Engine verified: 16k-case warning (${extremeReality.label}) + $5,000 advisor caps Q1=${whaleMaxQ1} (realistic!).`
+      `Execution Reality & Velocity Filters verified: 16k-case warning (${extremeReality.label}) | $200 LOW_QTY Q1=${lowQ1} | $5,000 PATIENT Q1=${whaleMaxQ1} (${whaleAdv.strategies.length} strats).`
     );
   } else {
-    fail(`Execution Reality check failed: level=${extremeReality.level}, whaleQ1=${whaleMaxQ1}`);
+    fail(`Execution Reality check failed: level=${extremeReality.level}, lowQ1=${lowQ1}, whaleQ1=${whaleMaxQ1}, whaleStrats=${whaleAdv.strategies.length}`);
   }
 
   const parsedShare = parseSharedSetupFromUrl('?m=cf&cur=TRY&cap=250&l1=Revolution+Case&p1m=0.55&p1s=0.89&l2=AK-47+%7C+Redline+%28Field-Tested%29&p2s=20&p2m=18.2');
@@ -246,6 +254,7 @@ async function main() {
         ['/data/catalog.json', 200],
         ['/api/fx', 200],
         ['/api/market', 200],
+        ['/api/steam-verify?names=Revolution%20Case', 200],
         ['/server.mjs', 403],
         ['/scripts/sync-catalog.mjs', 403]
       ];

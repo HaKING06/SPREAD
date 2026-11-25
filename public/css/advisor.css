@@ -165,11 +165,80 @@
   overflow: hidden;
 }
 
+.advisor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 18px;
+  background: var(--bg-inset);
+  border-bottom: 1px solid var(--border-hair);
+}
+
+.advisor-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.advisor-mini-sel {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 11.5px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.advisor-mini-sel option {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
 .advisor-body {
   padding: 16px 18px 18px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.strategy-action-line {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.vel-micro-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.vel-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.vel-dot.is-A { background: var(--mint); box-shadow: 0 0 6px var(--mint); }
+.vel-dot.is-B { background: var(--ice); }
+.vel-dot.is-C { background: var(--amber); }
+.vel-dot.is-D { background: var(--crimson); }
+
+.strategy-caution {
+  padding: 6px 9px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--amber-border);
+  background: var(--amber-soft);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .advisor-advice-text {

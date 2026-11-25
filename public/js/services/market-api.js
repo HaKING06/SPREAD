@@ -1,10 +1,5 @@
 /**
- * SPREAD (spread.haking.tr) — 3-Tier Live Market Data Service
- *
- * Boot Strategy:
- *  1. Immediately loads bundled ByMykel/CSGO-API catalog + verified snapshot (< 200ms boot)
- *  2. Fetches real-time prices from /api/market (Cloudflare Pages Function or local server.mjs)
- *  3. Fetches live USD/TRY/CNY/EUR FX rates from /api/fx (or direct open.er-api.com CORS fallback)
+ * SPREAD (spread.haking.tr) — 3-Tier Live Market Data + Steam 24h Verification Service
  */
 
 import { DEFAULT_FX_RATES } from '../core/config.js';
@@ -25,7 +20,6 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
   const merged = [];
   const seen = new Set();
 
-  // Prepend user custom items
   for (const ci of customItems) {
     if (!ci || !ci.name || seen.has(ci.name)) continue;
     seen.add(ci.name);
@@ -47,6 +41,11 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       cfo: Number(ci.csfloatUsd) || 0,
       q: Number(ci.qty) || 99,
       yp: Number(ci.youpinUsd) || Number(ci.csfloatUsd) || 0,
+      v24: 10,
+      v7: 60,
+      v30: 240,
+      vm: Number(ci.csfloatUsd) || 0,
+      mv: 200,
       isCustom: true,
       customId: ci.id
     });
@@ -66,6 +65,11 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       cfo: Number(p.cfo) || 0,
       q: Number(p.q) || 0,
       yp: Number(p.yp) || 0,
+      v24: Number(p.v24) || 0,
+      v7: Number(p.v7) || 0,
+      v30: Number(p.v30) || 0,
+      vm: Number(p.vm) || 0,
+      mv: Number(p.mv) || 0,
       isCustom: false
     });
   }
@@ -78,10 +82,11 @@ export class MarketService {
     this.catalogRaw = null;
     this.priceMap = {};
     this.fxRates = { ...DEFAULT_FX_RATES };
-    this.sourceMode = 'loading'; // 'live-edge' | 'live-local' | 'snapshot'
+    this.sourceMode = 'loading';
     this.updatedAt = null;
     this.fxUpdatedAt = null;
     this.feeds = {};
+    this.steamLiveCache = new Map();
   }
 
   async loadInitial(customItems = []) {
@@ -108,7 +113,21 @@ export class MarketService {
 
     let marketUpdated = false;
     if (marketRes.status === 'fulfilled' && marketRes.value?.ok && marketRes.value?.prices) {
-      this.priceMap = { ...this.priceMap, ...marketRes.value.prices };
+      const incoming = marketRes.value.prices;
+      const mergedPrices = { ...this.priceMap };
+      for (const [k, val] of Object.entries(incoming)) {
+        const prev = mergedPrices[k] || {};
+        mergedPrices[k] = {
+          ...prev,
+          ...val,
+          v24: val.v24 || prev.v24 || 0,
+          v7: val.v7 || prev.v7 || 0,
+          v30: val.v30 || prev.v30 || 0,
+          vm: val.vm || prev.vm || 0,
+          mv: val.mv || prev.mv || 0
+        };
+      }
+      this.priceMap = mergedPrices;
       this.sourceMode = marketRes.value.mode || 'live-edge';
       this.updatedAt = marketRes.value.updatedAt || new Date().toISOString();
       this.feeds = marketRes.value.feeds || {};
@@ -127,6 +146,32 @@ export class MarketService {
       fxRates: { ...this.fxRates },
       items: mergeCatalogAndPrices(this.catalogRaw?.items || [], this.priceMap, customItems)
     };
+  }
+
+  /**
+   * Fetches real-time Steam Market 24h sold volume & median price for up to 2 active items.
+   */
+  async verifySteamLive(names = []) {
+    const unique = Array.from(new Set(names.filter(Boolean))).slice(0, 2);
+    const missing = unique.filter((n) => !this.steamLiveCache.has(n));
+    if (missing.length > 0) {
+      try {
+        const q = encodeURIComponent(missing.join('|'));
+        const res = await fetchJsonSafe(`/api/steam-verify?names=${q}`, 7000);
+        if (res?.ok && res.items) {
+          for (const [k, v] of Object.entries(res.items)) {
+            this.steamLiveCache.set(k, v);
+          }
+        }
+      } catch {
+        // Silent fallback — item still has v24/v7/v30/mv velocity data
+      }
+    }
+    const out = {};
+    for (const n of unique) {
+      if (this.steamLiveCache.has(n)) out[n] = this.steamLiveCache.get(n);
+    }
+    return out;
   }
 
   async fetchLiveFx() {

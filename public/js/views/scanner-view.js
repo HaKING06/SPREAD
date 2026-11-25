@@ -189,6 +189,7 @@ export function initScannerView(app) {
     evaluated.sort((a, b) => {
       if (activeSort === 'LEG1_DESC') return b.m.leg1ProfitPct - a.m.leg1ProfitPct;
       if (activeSort === 'LEG2_ASC') return a.m.leg2LossPct - b.m.leg2LossPct;
+      if (activeSort === 'SPEED_DESC') return (b.m.velocity?.score || 0) - (a.m.velocity?.score || 0);
       if (activeSort === 'QTY_DESC') return (b.item.q || 0) - (a.item.q || 0);
       if (activeSort === 'PRICE_ASC') return a.m.marketBuyUsd - b.m.marketBuyUsd;
       if (activeSort === 'PRICE_DESC') return b.m.marketBuyUsd - a.m.marketBuyUsd;
@@ -312,14 +313,19 @@ export function initScannerView(app) {
             )
           )
         ),
-        // Depth / Liquidity
+        // Sales Velocity & Depth
         el(
           'td',
           { className: 'ta-right num' },
           el(
             'span',
-            { className: `pill ${item.q >= 100 ? 'pill-mint' : item.q >= 25 ? 'pill-ice' : 'pill-muted'}` },
-            item.q > 0 ? `${item.q} ilan` : 'YP'
+            { className: `pill ${m.velocity.pillCls}`, title: m.velocity.slowWarning || 'Gerçek 24s/7g satış temposu' },
+            m.velocity.shortLabel
+          ),
+          el(
+            'div',
+            { style: { fontSize: '10px', marginTop: '2px' }, className: 'txt-muted' },
+            `${m.velocity.volText}${item.q > 0 ? ` • ${item.q} iln` : ''}`
           )
         ),
         // Market price

@@ -8,6 +8,7 @@ import {
   analyzeCapitalStrategies,
   computeLoopMetrics,
   computeSensitivityMatrix,
+  computeVelocityProfile,
   diagnoseCurrentSetup,
   estimateExecutionReality
 } from '../core/math-engine.js';
@@ -33,6 +34,15 @@ export function initCalculatorView(app) {
   const onboardingEl = document.getElementById('onboardingGuideCard');
   let advisorTimer = null;
   let lastAdvisorResult = null;
+  let lastSteamVerifyKey = '';
+  let liveSteamMap = {};
+
+  const advisorFilters = {
+    style: 'ALL',      // 'ALL' | 'LOW_QTY' | 'FAST' | 'CASES' | 'PATIENT'
+    maxQty: 0,         // 0 (auto) | 5 | 10 | 25 | 50 | 150
+    minSpeed: 'FAST',  // 'ULTRA' | 'FAST' | 'MODERATE'
+    cleanOnly: true
+  };
 
   // Onboarding visibility state
   function initOnboardingState() {
@@ -161,6 +171,8 @@ export function initCalculatorView(app) {
     clearNode(box);
 
     const found = app.findItemByName(itemName);
+    const vel = computeVelocityProfile(found);
+    const liveSteam = liveSteamMap[itemName];
     const mkt = MARKETPLACES[app.settings.marketplace] || MARKETPLACES.CSFLOAT;
     const imgUrl = buildImageUrl(found?.img);
     const rarityColor = found?.rc || '#f0b90b';
@@ -171,12 +183,34 @@ export function initCalculatorView(app) {
       el('img', { src: imgUrl, alt: itemName })
     );
 
+    const steamVolChip = liveSteam?.live
+      ? el(
+          'span',
+          {
+            className: `pill ${liveSteam.volume24h >= 50 ? 'pill-mint' : liveSteam.volume24h >= 10 ? 'pill-ice' : 'pill-amber'}`,
+            style: { fontSize: '10px', padding: '1px 6px' },
+            title: `Canlı Steam 24 saatlik satış adedi & medyan fiyat`
+          },
+          `Steam 24s: ${liveSteam.volume24h.toLocaleString('tr-TR')} satış${liveSteam.medianUsd > 0 ? ` • Med ${fmtMoneyFromUsd(liveSteam.medianUsd, app.settings.currency, app.market.fxRates)}` : ''}`
+        )
+      : found
+      ? el(
+          'span',
+          {
+            className: `pill ${vel.pillCls}`,
+            style: { fontSize: '10px', padding: '1px 6px' },
+            title: 'Son 7 günlük / 30 günlük gerçek satış temposu'
+          },
+          `${vel.shortLabel} • ${vel.volText}`
+        )
+      : null;
+
     const tags = el(
       'div',
       { className: 'leg-preview-tags' },
       found?.w ? el('span', { className: `wear-tag wear-${found.w}` }, found.w) : null,
-      found?.c ? el('span', { className: 'pill pill-muted', style: { fontSize: '10px', padding: '1px 6px' } }, found.c) : null,
-      found?.q ? el('span', { className: 'num' }, `Derinlik: ${found.q} ilan`) : null,
+      steamVolChip,
+      found?.q ? el('span', { className: 'num' }, `${found.q} ilan`) : null,
       found?.cfo && legNum === 2 && app.settings.marketplace === 'CSFLOAT'
         ? el(
             'button',
@@ -274,7 +308,8 @@ export function initCalculatorView(app) {
         useBuyOrderForLeg2: s.useBuyOrderForLeg2,
         conservativeSteamPrice: s.conservativeSteamPrice
       },
-      s.capitalUsd
+      s.capitalUsd,
+      advisorFilters
     );
     lastAdvisorResult = advisor;
 
@@ -283,6 +318,11 @@ export function initCalculatorView(app) {
     }
     if (tierAdviceEl) {
       tierAdviceEl.textContent = advisor.tier.advice;
+    }
+
+    const matchMeta = document.getElementById('advisorFilterStatus');
+    if (matchMeta) {
+      matchMeta.textContent = `${advisor.strategies.length} strateji • Maks ${advisor.effectiveMaxQ1} adet`;
     }
 
     // Live Diagnostics on current selection
@@ -302,14 +342,14 @@ export function initCalculatorView(app) {
       }
     }
 
-    // 3 Strategy Cards
+    // Up to 6 Smart Strategy Cards
     clearNode(strategiesGrid);
     if (advisor.strategies.length === 0) {
       strategiesGrid.appendChild(
         el(
           'div',
-          { className: 'txt-muted', style: { gridColumn: '1 / -1', fontSize: '12.5px' } },
-          'Bu bütçe ve komisyon ayarlarıyla kârlı likit strateji bulunamadı. Sermayeyi artırın veya komisyonları kontrol edin.'
+          { className: 'txt-muted', style: { gridColumn: '1 / -1', fontSize: '12.5px', padding: '12px 4px' } },
+          'Seçili adet/hız filtrelerinde kârlı eşleşme bulunamadı. "Maks. Adet" veya "Satış Hızı" filtresini genişletmeyi deneyin.'
         )
       );
     } else {
@@ -326,10 +366,18 @@ export function initCalculatorView(app) {
             'div',
             { className: 'strategy-card-head' },
             el('span', { className: `pill ${st.tagCls}` }, st.tag),
-            el('span', { className: 'num txt-mint', style: { fontWeight: '700', fontSize: '13.5px' } }, `${money(p.c1.netProfit, true)} (${fmtPct(p.c1.netRoiPct, true)})`)
+            el(
+              'span',
+              { className: 'num txt-mint', style: { fontWeight: '700', fontSize: '13.5px' } },
+              `${money(p.c1.netProfit, true)} (${fmtPct(p.c1.netRoiPct, true)})`
+            )
           ),
-          el('h4', { className: 'strategy-card-title' }, st.title),
-          el('p', { className: 'strategy-card-desc' }, st.reason),
+          el(
+            'div',
+            null,
+            el('h4', { className: 'strategy-card-title' }, st.title),
+            el('div', { className: 'strategy-action-line num' }, st.actionLine)
+          ),
           el(
             'div',
             { className: 'pair-items-stack' },
@@ -345,7 +393,17 @@ export function initCalculatorView(app) {
                 'div',
                 { className: 'pair-mini-info' },
                 el('div', { className: 'pair-mini-name', title: p.leg1.item.n }, `${p.c1.q1}x ${p.leg1.item.n}`),
-                el('div', { className: 'pair-mini-sub' }, `${money(p.leg1.m.marketBuyUsd)} → ${money(p.leg1.m.steamUsd)} (${fmtPct(p.leg1.m.leg1ProfitPct, true)})`)
+                el(
+                  'div',
+                  { className: 'pair-mini-sub' },
+                  `${money(p.leg1.m.marketBuyUsd)} → ${money(p.leg1.m.steamUsd)} (${fmtPct(p.leg1.m.leg1ProfitPct, true)})`
+                ),
+                el(
+                  'div',
+                  { className: 'vel-micro-row num' },
+                  el('span', { className: `vel-dot is-${p.leg1.vel.tier}` }),
+                  el('span', null, `${p.leg1.vel.shortLabel} • ${p.leg1.vel.volText}`)
+                )
               )
             ),
             el(
@@ -360,16 +418,29 @@ export function initCalculatorView(app) {
                 'div',
                 { className: 'pair-mini-info' },
                 el('div', { className: 'pair-mini-name', title: p.leg2.item.n }, `${p.c1.q2}x ${p.leg2.item.n}`),
-                el('div', { className: 'pair-mini-sub' }, `${money(p.leg2.m.steamUsd)} → ${money(p.leg2.m.marketSellUsd)} (${fmtPct(p.leg2.m.leg2LossPct, false)} kayıp)`)
+                el(
+                  'div',
+                  { className: 'pair-mini-sub' },
+                  `${money(p.leg2.m.steamUsd)} → ${money(p.leg2.m.marketSellUsd)} (${fmtPct(p.leg2.m.leg2LossPct, false)} kayıp)`
+                ),
+                el(
+                  'div',
+                  { className: 'vel-micro-row num' },
+                  el('span', { className: `vel-dot is-${p.leg2.vel.tier}` }),
+                  el('span', null, `${p.leg2.vel.shortLabel} • ${p.leg2.vel.volText}`)
+                )
               )
             )
           ),
+          st.cautionNote
+            ? el('div', { className: 'strategy-caution' }, `⏱ ${st.cautionNote}`)
+            : null,
           el(
             'div',
             { className: 'strategy-meta-strip num' },
             el('span', null, `~${p.reality.minDays}–${p.reality.maxDays}G`),
             el('span', null, `Verim %${p.utilizedPct.toFixed(0)}`),
-            el('span', null, `Adet ${p.c1.q1}`)
+            el('span', null, `Hız ${p.speedScore}/100`)
           ),
           el(
             'button',
@@ -381,7 +452,7 @@ export function initCalculatorView(app) {
                 app.applyPair(p.leg1.item, p.leg2.item, p.leg1.m, p.leg2.m);
               }
             },
-            isCurrent ? '✓ Masada Aktif' : 'Bu Stratejiyi Uygula →'
+            isCurrent ? '✓ Masada Aktif' : 'Stratejiyi Uygula →'
           )
         );
         strategiesGrid.appendChild(card);
@@ -473,9 +544,21 @@ export function initCalculatorView(app) {
       }
     }
 
-    // Preview wells
+    // Preview wells + async live Steam 24h sold volume verification
     renderSkinPreview('leg1PreviewWell', s.leg1.name, 1);
     renderSkinPreview('leg2PreviewWell', s.leg2.name, 2);
+
+    const verifyKey = `${s.leg1.name}|${s.leg2.name}`;
+    if (verifyKey !== lastSteamVerifyKey && app.items.length > 0) {
+      lastSteamVerifyKey = verifyKey;
+      app.market.verifySteamLive([s.leg1.name, s.leg2.name]).then((res) => {
+        if (res && Object.keys(res).length > 0) {
+          liveSteamMap = { ...liveSteamMap, ...res };
+          renderSkinPreview('leg1PreviewWell', app.settings.leg1.name, 1);
+          renderSkinPreview('leg2PreviewWell', app.settings.leg2.name, 2);
+        }
+      });
+    }
 
     // Top Hero Strip
     document.getElementById('heroMultVal').textContent = fmtMult(d.mCycle);
@@ -680,6 +763,52 @@ export function initCalculatorView(app) {
       }
     }
   }
+
+  // Advisor Filter Bar Events
+  document.querySelectorAll('[data-adv-style]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      advisorFilters.style = btn.dataset.advStyle;
+      document.querySelectorAll('[data-adv-style]').forEach((b) => {
+        b.classList.toggle('is-active', b.dataset.advStyle === advisorFilters.style);
+      });
+      // Sync maxQty & speed selects cleanly with style preset
+      const qtySel = document.getElementById('advisorMaxQtySelect');
+      const spdSel = document.getElementById('advisorSpeedSelect');
+      if (advisorFilters.style === 'LOW_QTY' && qtySel && Number(qtySel.value) === 0) {
+        advisorFilters.maxQty = 10;
+        qtySel.value = '10';
+      } else if (advisorFilters.style === 'ALL' && qtySel && Number(qtySel.value) === 10) {
+        advisorFilters.maxQty = 0;
+        qtySel.value = '0';
+      }
+      if (advisorFilters.style === 'FAST' && spdSel) {
+        advisorFilters.minSpeed = 'ULTRA';
+        spdSel.value = 'ULTRA';
+      } else if (advisorFilters.style === 'PATIENT' && spdSel) {
+        advisorFilters.minSpeed = 'MODERATE';
+        spdSel.value = 'MODERATE';
+      } else if (advisorFilters.style === 'ALL' && spdSel) {
+        advisorFilters.minSpeed = 'FAST';
+        spdSel.value = 'FAST';
+      }
+      renderAdvisorSection();
+    });
+  });
+
+  document.getElementById('advisorMaxQtySelect')?.addEventListener('change', (e) => {
+    advisorFilters.maxQty = Number(e.target.value) || 0;
+    renderAdvisorSection();
+  });
+
+  document.getElementById('advisorSpeedSelect')?.addEventListener('change', (e) => {
+    advisorFilters.minSpeed = e.target.value || 'FAST';
+    renderAdvisorSection();
+  });
+
+  document.getElementById('advisorCleanToggle')?.addEventListener('change', (e) => {
+    advisorFilters.cleanOnly = e.target.checked;
+    renderAdvisorSection();
+  });
 
   // Wire input listeners
   [capInput, s1Name, pM1Input, pS1Input, s2Name, pS2Input, pM2Input].forEach((inp) => {

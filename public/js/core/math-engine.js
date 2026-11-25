@@ -1,18 +1,14 @@
 /**
- * SPREAD (spread.haking.tr) — Quantitative CS2 Arbitrage Math Engine
+ * SPREAD (spread.haking.tr) — Quantitative CS2 Arbitrage, Sales Velocity & Smart Strategy Engine
  *
- * Key upgrades over basic calculators:
- *  1. Exact Valve cent-by-cent Steam Community Market fee solver (5% Steam min $0.01 + 10% CS2 min $0.01)
+ * Capabilities:
+ *  1. Exact Valve cent-by-cent Steam Community Market fee solver
  *  2. True cash-equivalent portfolio valuation (cashWallet + steamWallet * M2)
- *  3. Optional marketplace withdrawal/payout fee modeling
- *  4. 2D Spread Sensitivity Heatmap (Steam hold drop vs Leg 2 cashout shift)
- *  5. Anti-manipulation Auto-Pair Finder (uses liquidity depth & 24h vs 7d stability)
+ *  3. Real Sales Velocity & Liquidity Profiler (Skinport 24h/7d/30d + Market.CSGO + CSFloat Bid/Ask)
+ *  4. Execution Reality & Realistic Cycle Duration Estimator (slot limits, depth absorption, sell velocity)
+ *  5. Filterable Multi-Strategy Capital Advisor (up to 6 distinct, named, realistic strategies)
  */
 
-/**
- * Exact Valve Steam Community Market integer-cent fee solver.
- * Given a buyer listing price in USD, returns exact seller proceeds and fee breakdown.
- */
 export function calcExactValveSteamFee(buyerUsd) {
   const buyerCents = Math.max(0, Math.round((Number(buyerUsd) || 0) * 100));
   if (buyerCents < 3) {
@@ -52,34 +48,21 @@ export function calcExactValveSteamFee(buyerUsd) {
   };
 }
 
-/**
- * Calculates net Steam proceeds per unit (in USD) using selected fee mode.
- */
 export function calcNetSteamUsd(grossSteamUsd, steamFeeMode = 'EXACT_VALVE', customFeePct = 13.04) {
   const p = Math.max(0, Number(grossSteamUsd) || 0);
   if (p <= 0) return 0;
-  if (steamFeeMode === 'EXACT_VALVE') {
-    return calcExactValveSteamFee(p).netUsd;
-  }
-  if (steamFeeMode === 'DIV_115') {
-    return p / 1.15;
-  }
+  if (steamFeeMode === 'EXACT_VALVE') return calcExactValveSteamFee(p).netUsd;
+  if (steamFeeMode === 'DIV_115') return p / 1.15;
   const fee = Math.max(0, Math.min(99, Number(customFeePct) || 0));
   return p * (1 - fee / 100);
 }
 
-/**
- * Effective unit cost on external marketplace (CSFloat / Youpin898) including buy fee.
- */
 export function calcEffectiveBuyUsd(grossMarketUsd, buyFeePct = 0) {
   const p = Math.max(0, Number(grossMarketUsd) || 0);
   const fee = Math.max(0, Math.min(50, Number(buyFeePct) || 0));
   return p * (1 + fee / 100);
 }
 
-/**
- * Net cash returned per unit on external marketplace after sell fee + optional withdrawal fee.
- */
 export function calcNetSellUsd(grossMarketUsd, sellFeePct = 2.0, withdrawFeePct = 0) {
   const p = Math.max(0, Number(grossMarketUsd) || 0);
   const sFee = Math.max(0, Math.min(50, Number(sellFeePct) || 0));
@@ -88,8 +71,140 @@ export function calcNetSellUsd(grossMarketUsd, sellFeePct = 2.0, withdrawFeePct 
 }
 
 /**
- * Quick item-level arbitrage metrics for Scanner & Ticker.
+ * Real-World Sales Velocity & Liquidity Profiler.
+ * Separates genuinely fast-selling skins/cases from illiquid trade-up/collector traps
+ * (like P2000 Turf FN, old Autograph Capsules, or slow StatTrak skins).
  */
+export function computeVelocityProfile(item) {
+  if (!item) {
+    return {
+      tier: 'C',
+      score: 45,
+      label: 'Bilinmiyor',
+      shortLabel: 'Belirsiz',
+      pillCls: 'pill-muted',
+      sold24h: 0,
+      sold7d: 0,
+      sold30d: 0,
+      mktVol: 0,
+      bidAskPct: 0,
+      estWeeklyCap: 20,
+      extraSellDays: 2,
+      slowWarning: ''
+    };
+  }
+
+  const v24 = Number(item.v24) || 0;
+  const v7 = Number(item.v7) || 0;
+  const v30 = Number(item.v30) || 0;
+  const mv = Number(item.mv) || 0;
+  const cf = Number(item.cf) || 0;
+  const cfo = Number(item.cfo) || 0;
+  const steamUsd = Number(item.s) || 0;
+  const bidAskPct = cf > 0 && cfo > 0 ? (cfo / cf) * 100 : 0;
+
+  // Smoothed weekly sales (real observed Skinport 7d + 30d/4.3 baseline)
+  const sp7 = Math.max(v7, Math.round(v30 / 4.3));
+  const isKnifeOrGlove = item.c === 'Knives' || item.c === 'Gloves';
+  const isCapsule = item.c === 'Capsule';
+  const isStatTrak = Boolean(item.st);
+  const isSouvenir = Boolean(item.sv);
+
+  // Composite sales speed score (0-100)
+  let score = 0;
+  score += Math.min(48, Math.log10(sp7 + 1) * 26);
+  score += Math.min(34, Math.log10(mv + 1) * 14);
+  if (v24 >= 5) score += 8;
+  else if (v24 >= 1) score += 4;
+  if (bidAskPct >= 92) score += 10;
+  else if (bidAskPct >= 86) score += 6;
+  else if (bidAskPct > 0 && bidAskPct < 78) score -= 18;
+
+  // Structural slow-mover penalties (real CS2 market behavior)
+  if (isCapsule && sp7 < 25) score -= 30;
+  if (isSouvenir && sp7 < 20) score -= 28;
+  if (isStatTrak && sp7 < 15 && mv < 90) score -= 22;
+  if (isKnifeOrGlove && sp7 < 5) score -= 14;
+  if (steamUsd >= 200 && sp7 < 4) score -= 10;
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+
+  // Tier classification
+  let tier = 'D';
+  let label = 'Zor Satılır';
+  let shortLabel = 'Yavaş';
+  let pillCls = 'pill-crimson';
+  let extraSellDays = 8;
+  let slowWarning = '';
+
+  if (score >= 76 && (sp7 >= 20 || mv >= 240) && mv >= 40 && !isKnifeOrGlove) {
+    tier = 'A';
+    label = 'Çok Hızlı';
+    shortLabel = 'Çok Hızlı';
+    pillCls = 'pill-mint';
+    extraSellDays = 0;
+  } else if (score >= 58 && (sp7 >= 8 || mv >= 75) && mv >= 35) {
+    tier = 'B';
+    label = isKnifeOrGlove ? 'Orta-Hızlı' : 'Hızlı';
+    shortLabel = isKnifeOrGlove ? 'Orta-Hızlı' : 'Hızlı';
+    pillCls = isKnifeOrGlove ? 'pill-amber' : 'pill-ice';
+    extraSellDays = isKnifeOrGlove ? 3 : 1;
+    if (isKnifeOrGlove) {
+      slowWarning = `7g: ${v7} satış • İyi kâr ancak bıçak/eldiven Steam satışı birkaç gün uzayabilir`;
+    }
+  } else if (score >= 38 && (sp7 >= 3 || mv >= 25)) {
+    tier = 'C';
+    label = 'Orta Hız';
+    shortLabel = 'Orta';
+    pillCls = 'pill-amber';
+    extraSellDays = isKnifeOrGlove || steamUsd >= 180 ? 6 : 4;
+    slowWarning = isKnifeOrGlove
+      ? `7g: ${v7} satış • İyi kâr ancak bıçak/eldiven Steam satışı uzun sürebilir`
+      : `7g: ${v7} satış • Satış hızı orta, birkaç gün bekletebilir`;
+  } else {
+    tier = 'D';
+    label = 'Zor Satılır';
+    shortLabel = 'Tuzak';
+    pillCls = 'pill-crimson';
+    extraSellDays = 14;
+    slowWarning = `7g: ${v7} satış • Çok düşük talep, elinde kalma riski yüksek`;
+  }
+
+  // Estimated weekly Steam absorption capacity (Steam market typically moves ~5-12x Skinport volume)
+  const estWeeklyCap = Math.max(
+    4,
+    Math.round(sp7 * 6 + mv * 0.45 + (item.c === 'Case' && mv > 500 ? mv * 0.5 : 0))
+  );
+
+  // Clean concise telemetry string for UI chips
+  const volText =
+    v24 > 0
+      ? `24s: ${v24} • 7g: ${v7} satış`
+      : v7 > 0
+      ? `7g: ${v7} • 30g: ${v30} satış`
+      : mv > 0
+      ? `Hacim: ${mv} • 30g: ${v30}`
+      : 'Düşük hacim';
+
+  return {
+    tier,
+    score,
+    label,
+    shortLabel,
+    pillCls,
+    sold24h: v24,
+    sold7d: v7,
+    sold30d: v30,
+    mktVol: mv,
+    bidAskPct,
+    estWeeklyCap,
+    extraSellDays,
+    slowWarning,
+    volText,
+    isKnifeOrGlove
+  };
+}
+
 export function evaluateItemMetrics(item, opts) {
   const {
     marketplace = 'CSFLOAT',
@@ -123,10 +238,11 @@ export function evaluateItemMetrics(item, opts) {
   const m2 = steamUsd > 0 && netSell > 0 ? netSell / steamUsd : 0;
   const leg2LossPct = m2 > 0 ? (1 - m2) * 100 : 100;
 
-  // Stability ratio (24h vs 30d) to flag spiky/manipulated prices
   const steam30 = Number(item.s30) || steamUsd;
   const spikeRatio = steam30 > 0 ? (steamRaw - steam30) / steam30 : 0;
   const isSpiky = spikeRatio > 0.22 || spikeRatio < -0.22;
+
+  const velocity = computeVelocityProfile(item);
 
   return {
     steamUsd,
@@ -142,13 +258,11 @@ export function evaluateItemMetrics(item, opts) {
     leg2LossPct,
     spikeRatio,
     isSpiky,
+    velocity,
     hasValidMarket: marketBuyUsd > 0 && steamUsd > 0
   };
 }
 
-/**
- * Full 2-Leg Arbitrage + 12-Cycle Compounding Engine (all internal calculations in USD).
- */
 export function computeLoopMetrics(params) {
   const {
     capitalUsd = 200,
@@ -180,7 +294,6 @@ export function computeLoopMetrics(params) {
   const breakEvenLossLimitPct = m1 > 0 ? (1 - 1 / m1) * 100 : 0;
   const marginOfSafetyPct = breakEvenLossLimitPct - conversionLossPct;
 
-  // 12-Cycle Realistic Integer Wallet Simulation
   let cashWallet = cap0;
   let steamWallet = 0;
   const realisticCycles = [];
@@ -201,7 +314,6 @@ export function computeLoopMetrics(params) {
     const cashReturnM2 = q2 * netM2;
     cashWallet += cashReturnM2;
 
-    // TRUE Cash-Equivalent Portfolio: discounts remaining Steam balance by M2
     const steamCashEquiv = steamWallet * (m2 > 0 ? m2 : 0);
     const cashEquivPortfolio = cashWallet + steamCashEquiv;
     const nominalPortfolio = cashWallet + steamWallet;
@@ -260,11 +372,6 @@ export function computeLoopMetrics(params) {
   };
 }
 
-/**
- * 5x5 Sensitivity Heatmap: How Net Cycle ROI behaves if prices shift during the 7+7 day hold.
- * Rows = Leg 1 Steam Sale Price Shift (%)
- * Cols = Leg 2 External Sell Price Shift (%)
- */
 export function computeSensitivityMatrix(baseParams) {
   const shifts = [-8, -4, 0, 4, 8];
   const grid = [];
@@ -281,12 +388,7 @@ export function computeSensitivityMatrix(baseParams) {
       const m1 = effPM1 > 0 ? netS1 / effPM1 : 0;
       const m2 = baseParams.pS2Usd > 0 ? netM2 / baseParams.pS2Usd : 0;
       const roiPct = (m1 * m2 - 1) * 100;
-      row.push({
-        s1Shift,
-        m2Shift,
-        roiPct,
-        isCenter: s1Shift === 0 && m2Shift === 0
-      });
+      row.push({ s1Shift, m2Shift, roiPct, isCenter: s1Shift === 0 && m2Shift === 0 });
     }
     grid.push(row);
   }
@@ -294,87 +396,21 @@ export function computeSensitivityMatrix(baseParams) {
   return { shifts, grid };
 }
 
-/**
- * Auto-Pair Finder: Selects top liquid, non-manipulated Leg 1 + Leg 2 combinations.
- */
 export function findOptimalPairs(items, opts, capitalUsd = 200) {
-  const minQty = opts.marketplace === 'YOUPIN' ? 0 : 20;
-
-  const leg1Candidates = [];
-  const leg2Candidates = [];
-
-  for (const item of items) {
-    if (opts.marketplace === 'CSFLOAT' && (item.q || 0) < minQty) continue;
-    const m = evaluateItemMetrics(item, opts);
-    if (!m.hasValidMarket || m.isSpiky) continue;
-
-    // Leg 1: Affordable within capital, healthy liquidity, real positive gain (cap out absurd >65% data glitches)
-    if (
-      m.effBuy > 0.12 &&
-      m.effBuy <= Math.max(capitalUsd * 0.65, 25) &&
-      m.leg1ProfitPct >= 4 &&
-      m.leg1ProfitPct <= 65
-    ) {
-      leg1Candidates.push({ item, m });
-    }
-
-    // Leg 2: Liquid skin ($3 .. max capital*1.2) with low cashout loss (avoid negative-loss pricing anomalies < -4%)
-    if (
-      m.steamUsd >= 3 &&
-      m.steamUsd <= Math.max(capitalUsd * 1.15, 120) &&
-      m.leg2LossPct >= -4 &&
-      m.leg2LossPct <= 14
-    ) {
-      leg2Candidates.push({ item, m });
-    }
-  }
-
-  leg1Candidates.sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct);
-  leg2Candidates.sort((a, b) => a.m.leg2LossPct - b.m.leg2LossPct);
-
-  const topL1 = leg1Candidates.slice(0, 6);
-  const topL2 = leg2Candidates.slice(0, 6);
-
-  const pairs = [];
-  const usedL1 = new Set();
-
-  for (const l1 of topL1) {
-    for (const l2 of topL2) {
-      if (l1.item.n === l2.item.n) continue;
-      const mCycle = l1.m.m1 * l2.m.m2;
-      const roiPct = (mCycle - 1) * 100;
-      if (roiPct > 0) {
-        pairs.push({
-          leg1: l1,
-          leg2: l2,
-          mCycle,
-          roiPct
-        });
-      }
-    }
-  }
-
-  pairs.sort((a, b) => b.roiPct - a.roiPct);
-
-  // Pick 3 diverse pairs (distinct Leg 1 items where possible)
-  const diverse = [];
-  for (const p of pairs) {
-    if (diverse.length >= 3) break;
-    if (!usedL1.has(p.leg1.item.n) || pairs.length < 3) {
-      usedL1.add(p.leg1.item.n);
-      diverse.push(p);
-    }
-  }
-
-  return diverse;
+  const advisor = analyzeCapitalStrategies(items, opts, capitalUsd, {
+    style: 'ALL',
+    maxQty: 0,
+    minSpeed: 'FAST',
+    cleanOnly: true
+  });
+  return advisor.strategies.slice(0, 3).map((s) => ({
+    leg1: s.pair.leg1,
+    leg2: s.pair.leg2,
+    mCycle: s.pair.sim.mCycle,
+    roiPct: s.pair.c1.netRoiPct
+  }));
 }
 
-/**
- * Quant Capital Advisor Engine:
- * Evaluates thousands of real CS2 combinations specifically simulated at the user's
- * exact capital (integer Q1, Q2, leftover Steam trap, CS2 1,000-slot inventory limit,
- * liquidity depth, and volatility) to produce tailored, actionable strategies.
- */
 export function getCapitalTierInfo(capitalUsd) {
   const c = Math.max(0, Number(capitalUsd) || 0);
   if (c < 75) {
@@ -382,15 +418,14 @@ export function getCapitalTierInfo(capitalUsd) {
       id: 'MICRO',
       badge: 'Mikro Bütçe',
       rangeLabel: '< $75',
-      advice:
-        'Düşük sermayede pahalı dönüş skinleri Steam bakiyesini içeride kilitler. $0.35–$2.50 likit kasalar + $4–$18 hızlı skinler en verimli sonucu verir.',
-      maxL1Price: Math.max(c * 0.5, 4),
+      advice: 'Düşük bütçede hızlı satılan $0.40–$5 arası kasa/skinler + $4–$20 popüler skinlerle içeride bakiye bırakmadan dönün.',
       minL1Price: 0.28,
+      maxL1Price: Math.max(c * 0.85, 10),
       minL2Price: 2.5,
-      maxL2Price: Math.max(c * 0.65, 18),
-      maxQ1: 180,
+      maxL2Price: Math.max(c * 0.75, 22),
+      defaultMaxQ1: 120,
       splitPlan: [
-        { pct: 100, role: 'Tek Likit Çift', note: 'Sermayeyi bölmeden yüksek tam-sayı verimi.' }
+        { pct: 100, role: 'Tek Hızlı Likit Çift', note: 'Sermayeyi bölmeden yüksek tam-sayı verimi.' }
       ]
     };
   }
@@ -399,16 +434,15 @@ export function getCapitalTierInfo(capitalUsd) {
       id: 'STARTER',
       badge: 'Büyüme Bütçesi',
       rangeLabel: '$75 – $400',
-      advice:
-        'En akıcı aralık: yüksek makaslı kasalarla Steam bakiyesini büyütüp $15–$60 likit tüfek skinleriyle %92+ verimle nakde dönün.',
-      maxL1Price: Math.min(c * 0.28, 45),
+      advice: 'En akıcı aralık: ister 1–10 adet hızlı üst skinle düşük eforlu dönün, ister yüksek hacimli kasalarla Steam bakiyesini büyütün.',
       minL1Price: 0.4,
-      minL2Price: 10,
-      maxL2Price: Math.min(c * 0.45, 95),
-      maxQ1: 260,
+      maxL1Price: c,
+      minL2Price: 6,
+      maxL2Price: Math.min(c * 0.65, 140),
+      defaultMaxQ1: 180,
       splitPlan: [
-        { pct: 70, role: 'Ana Kasa / Yüksek Spread', note: 'Güçlü 1. Yön getirisi.' },
-        { pct: 30, role: 'İkinci Likit Eşya', note: '7G hold fiyat riskini dengeler.' }
+        { pct: 70, role: 'Ana Hızlı Spread Eşyası', note: 'Yüksek 7g satış hacmiyle hızlı Steam çıkışı.' },
+        { pct: 30, role: 'İkinci Likit Eşya', note: '7G hold fiyat oynaklık riskini dengeler.' }
       ]
     };
   }
@@ -417,17 +451,16 @@ export function getCapitalTierInfo(capitalUsd) {
       id: 'PRO',
       badge: 'Orta-Üst Bütçe',
       rangeLabel: '$400 – $1.500',
-      advice:
-        'Ucuz kasalardan yüzlerce almak satış süresini uzatır. $2+ birim fiyatlı likit eşyalar ve $45–$240 skinler 14–16 gün içinde rahatça döner.',
-      maxL1Price: Math.min(c * 0.25, 220),
-      minL1Price: Math.max(1.5, c / 220),
-      minL2Price: 25,
-      maxL2Price: Math.min(c * 0.4, 300),
-      maxQ1: 220,
+      advice: 'Yüzlerce ucuz eşya yerine $5+ hızlı satılan skinler ve $30–$220 likit tüfeklerle az işlemde 14–16 gün içinde temiz döngü kurun.',
+      minL1Price: Math.max(2, c / 160),
+      maxL1Price: c,
+      minL2Price: 18,
+      maxL2Price: Math.min(c * 0.5, 360),
+      defaultMaxQ1: 150,
       splitPlan: [
-        { pct: 50, role: 'Orta Bant Yüksek Spread', note: 'Düşük adetle hızlı listeleme.' },
-        { pct: 35, role: 'Likit Tüfek / AWP Hattı', note: 'Hızlı Steam likiditesi.' },
-        { pct: 15, role: 'Nakit Tampon', note: 'Fırsat ve küsurat tamamlama.' }
+        { pct: 50, role: 'Ana Likit Skin / Kasa', note: 'Düşük adetle hızlı listeleme.' },
+        { pct: 35, role: 'Popüler Tüfek / AWP Hattı', note: 'Yüksek CSFloat Bid/Ask ile anında nakit.' },
+        { pct: 15, role: 'Nakit Fırsat Tamponu', note: 'Küsurat tamamlama & anlık fırsatlar.' }
       ]
     };
   }
@@ -435,105 +468,102 @@ export function getCapitalTierInfo(capitalUsd) {
     id: 'WHALE',
     badge: 'Yüksek Sermaye',
     rangeLabel: '$1.500+',
-    advice:
-      'Yüksek bütçede binlerce ucuz kasa almak hem 1.000 slot sınırını aşar hem döngüyü haftalarca uzatır. $15+ yüksek hacimli skin, bıçak ve eldivenlerle düşük adetli çalışın.',
-    maxL1Price: Math.min(c * 0.25, 800),
-    minL1Price: Math.max(8, c / 120),
-    minL2Price: 70,
-    maxL2Price: Math.min(c * 0.35, 1100),
-    maxQ1: 120,
+    advice: 'Yüksek sermayede binlerce ucuz kasa 1.000 slot sınırını aşar. $20+ yüksek hacimli popüler skinler ve likit bıçaklarla az parça, temiz likidite çalışın.',
+    minL1Price: Math.max(10, c / 100),
+    maxL1Price: c,
+    minL2Price: 50,
+    maxL2Price: Math.min(c * 0.45, 1100),
+    defaultMaxQ1: 100,
     splitPlan: [
-      { pct: 45, role: 'Üst Bant Likit Skin ($15+)', note: 'Az işlem adedi, hızlı çıkış.' },
-      { pct: 40, role: 'Bıçak / Eldiven / Covert', note: 'Büyük bakiye taşıma kapasitesi.' },
-      { pct: 15, role: 'Buy-Order & Risk Tamponu', note: 'Volatilite ve anlık alım rezervi.' }
+      { pct: 45, role: 'Hızlı Üst Bant Skin ($20+)', note: 'Az parça, yüksek 7g satış hacmi.' },
+      { pct: 40, role: 'Likit Covert / Bıçak Hattı', note: 'Büyük bakiye taşıma gücü.' },
+      { pct: 15, role: 'Buy-Order & Risk Tamponu', note: 'Volatilite ve hızlı çıkış rezervi.' }
     ]
   };
 }
 
 /**
- * Estimates real-world execution feasibility, order-book absorption, inventory
- * slot burden, and realistic cycle duration (beyond ideal 14 days).
+ * Estimates real-world execution feasibility, sales velocity bottleneck,
+ * order-book absorption, inventory slot burden, and realistic cycle duration.
  */
 export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
   const c1 = metrics.firstCycle;
   const q1 = c1.q1 || 0;
   const q2 = c1.q2 || 0;
   const depth1 = Number(item1?.q) || 0;
-  const depth2 = Number(item2?.q) || 0;
   const isCSFloat = opts.marketplace !== 'YOUPIN';
 
+  const vel1 = computeVelocityProfile(item1);
+  const vel2 = computeVelocityProfile(item2);
+
   let extraBuyDays = 0;
-  let extraSellSteamDays = 0;
-  let extraCashoutDays = 0;
+  let extraSellSteamDays = vel1.extraSellDays;
+  let extraCashoutDays = opts.useBuyOrderForLeg2 ? 0 : vel2.extraSellDays;
   const reasons = [];
 
-  // 1. Extreme quantity / Steam 1,000-slot inventory & listing workload
+  // 1. Real Sales Velocity warnings (slow-selling items like Karambit or P2000 Turf)
+  if (item1 && (vel1.tier === 'D' || vel1.tier === 'C')) {
+    reasons.push(`1. Yön (${item1.n}): ${vel1.slowWarning || 'Satış hacmi düşük, Steam çıkışı uzayabilir.'}`);
+  }
+  if (item2 && (vel2.tier === 'D' || vel2.tier === 'C')) {
+    reasons.push(`2. Yön (${item2.n}): ${vel2.slowWarning || 'Nakit dönüş satışı yavaş olabilir.'}`);
+  }
+
+  // 2. Quantity vs Weekly Market Absorption
+  if (item1 && q1 > vel1.estWeeklyCap && q1 > 10) {
+    const weeksNeeded = Math.min(8, Math.ceil(q1 / Math.max(1, vel1.estWeeklyCap)));
+    extraSellSteamDays += weeksNeeded * 3;
+    reasons.push(
+      `1. Yönde ${q1.toLocaleString('tr-TR')} adet almak, bu eşyanın haftalık satış temposunun (~${vel1.estWeeklyCap} ad/hf) üzerinde; satış süresi uzar.`
+    );
+  }
+
+  // 3. Extreme quantity / Steam 1,000-slot inventory & listing workload
   const storageUnits = q1 > 1000 ? Math.ceil((q1 - 950) / 1000) : 0;
   if (q1 > 2000) {
     extraBuyDays += Math.min(14, Math.ceil(q1 / 600));
     extraSellSteamDays += Math.min(20, Math.ceil(q1 / 450));
     reasons.push(
-      `${q1.toLocaleString('tr-TR')} adet eşya tek seferde alınamaz/satılamaz: ${storageUnits} Storage Unit gerekir, emir defteri taşar ve döngü haftalarca uzar.`
+      `${q1.toLocaleString('tr-TR')} adet eşya tek seferde alınamaz/satılamaz: ${storageUnits} Storage Unit gerekir ve döngü haftalarca uzar.`
     );
   } else if (q1 > 950) {
     extraBuyDays += 3;
     extraSellSteamDays += 5;
     reasons.push(
-      `${q1.toLocaleString('tr-TR')} adet eşya CS2'nin 1.000 envanter slot sınırını aşıyor (${storageUnits} Storage Unit ve parçalı işlem gerekir).`
+      `${q1.toLocaleString('tr-TR')} adet CS2'nin 1.000 envanter slot sınırını aşıyor (${storageUnits} Storage Unit gerekir).`
     );
-  } else if (q1 > 350) {
+  } else if (q1 > 300) {
     extraBuyDays += 1;
     extraSellSteamDays += 2;
-    reasons.push(
-      `${q1.toLocaleString('tr-TR')} adet listeleme yüksek operasyon eforu gerektirir; satış süresi 2–3 gün uzayabilir.`
-    );
-  } else if (q1 > 120) {
-    extraSellSteamDays += 1;
   }
 
-  // 2. Market Order-Book Depth Absorption (Slippage & accumulation time)
+  // 4. CSFloat Order-Book Absorption
   let bookRatio1 = 0;
   if (isCSFloat && depth1 > 0 && q1 > 0) {
     bookRatio1 = (q1 / depth1) * 100;
     if (bookRatio1 > 100) {
-      extraBuyDays += Math.min(12, Math.ceil(q1 / Math.max(20, depth1)) * 2);
+      extraBuyDays += Math.min(10, Math.ceil(q1 / Math.max(20, depth1)) * 2);
       reasons.push(
-        `1. Yön adet (${q1.toLocaleString('tr-TR')}) mevcut CSFloat ilan derinliğinin (${depth1}) üzerinde! Taban fiyattan alım mümkün değil, fiyat kayması (slippage) yaşanır.`
+        `1. Yön adet (${q1.toLocaleString('tr-TR')}) mevcut CSFloat ilan derinliğinden (${depth1}) fazla — fiyat kayması (slippage) oluşur.`
       );
-    } else if (bookRatio1 > 40) {
+    } else if (bookRatio1 > 45) {
       extraBuyDays += 2;
-      reasons.push(
-        `1. Yönde mevcut ilanların %${bookRatio1.toFixed(0)}'ini süpürüyorsunuz; ortalama alış maliyetiniz yükselebilir.`
-      );
     }
   }
 
-  // 3. Leg 2 Exit Liquidity & Cashout Speed
-  if (opts.useBuyOrderForLeg2) {
-    extraCashoutDays += 0;
-  } else if (q2 > 25) {
-    extraCashoutDays += Math.min(6, Math.ceil(q2 / 15));
-    reasons.push(`2. Yönde ${q2} adet skinin nakit pazarda satılması birkaç gün ek süre gerektirebilir.`);
-  } else if (isCSFloat && depth2 > 0 && depth2 < 20) {
-    extraCashoutDays += 3;
-    reasons.push(`2. Yön eşyasının piyasa derinliği düşük (${depth2} ilan); nakde dönüş uzayabilir.`);
-  } else if (q2 > 0) {
-    extraCashoutDays += 1;
-  }
-
   const totalExtra = extraBuyDays + extraSellSteamDays + extraCashoutDays;
-  const minDays = 14 + Math.floor(totalExtra * 0.6);
+  const minDays = 14 + Math.floor(totalExtra * 0.55);
   const maxDays = 14 + Math.max(totalExtra, 1);
 
-  let level = 'smooth'; // 'smooth' | 'moderate' | 'slow' | 'impractical'
+  let level = 'smooth';
   let label = 'Akıcı (~14–15 Gün)';
   let pillCls = 'pill-mint';
 
-  if (q1 > 1500 || bookRatio1 > 120 || maxDays >= 28) {
+  if (q1 > 1500 || bookRatio1 > 120 || vel1.tier === 'D' || vel2.tier === 'D' || maxDays >= 28) {
     level = 'impractical';
     label = `Pratik Değil (~${minDays}–${maxDays}+ Gün)`;
     pillCls = 'pill-crimson';
-  } else if (q1 > 500 || bookRatio1 > 50 || maxDays >= 20) {
+  } else if (q1 > 400 || vel1.tier === 'C' || vel2.tier === 'C' || maxDays >= 19) {
     level = 'slow';
     label = `Süre Uzar (~${minDays}–${maxDays} Gün)`;
     pillCls = 'pill-amber';
@@ -552,90 +582,149 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
     extraDays: totalExtra,
     storageUnits,
     bookRatio1,
+    vel1,
+    vel2,
     reasons,
     needsUpperTierSuggestion: level === 'impractical' || level === 'slow'
   };
 }
 
-export function analyzeCapitalStrategies(items, opts, capitalUsd = 200) {
+/**
+ * Advanced Velocity-Aware, User-Filterable Multi-Strategy Capital Advisor
+ *
+ * filters:
+ *  - style: 'ALL' | 'LOW_QTY' | 'FAST' | 'CASES' | 'PATIENT'
+ *  - maxQty: 0 (auto) | 5 | 10 | 25 | 50 | 150
+ *  - minSpeed: 'ULTRA' (A) | 'FAST' (A+B) | 'MODERATE' (A+B+C)
+ *  - cleanOnly: true (exclude StatTrak, Souvenir, low-vol Capsules) | false
+ */
+export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters = {}) {
   const cap = Math.max(5, Number(capitalUsd) || 200);
   const tier = getCapitalTierInfo(cap);
   const isCSFloat = opts.marketplace === 'CSFLOAT';
+
+  const style = filters.style || 'ALL';
+  const cleanOnly = filters.cleanOnly !== false;
+  let minSpeed = filters.minSpeed || 'FAST';
+  if (style === 'FAST') minSpeed = 'ULTRA';
+  if (style === 'PATIENT') minSpeed = 'MODERATE';
+
+  const allowedTiers =
+    minSpeed === 'ULTRA'
+      ? new Set(['A'])
+      : minSpeed === 'MODERATE'
+      ? new Set(['A', 'B', 'C'])
+      : new Set(['A', 'B']);
+
+  const userMaxQty = Number(filters.maxQty) || 0;
+  const effectiveMaxQ1 =
+    style === 'LOW_QTY'
+      ? Math.min(userMaxQty > 0 ? userMaxQty : 10, 10)
+      : userMaxQty > 0
+      ? userMaxQty
+      : tier.defaultMaxQ1;
 
   const leg1Pool = [];
   const leg2Pool = [];
 
   for (const item of items) {
     const qty = Number(item.q) || 0;
-    if (isCSFloat && qty < 18) continue;
+    if (isCSFloat && qty < 12) continue;
+
+    // Clean liquid filter eliminates slow traps (StatTrak, Souvenir, dead collector Capsules)
+    if (cleanOnly) {
+      if (item.st || item.sv) continue;
+      if (item.c === 'Capsule' && (item.v7 || 0) < 35) continue;
+    }
 
     const m = evaluateItemMetrics(item, opts);
     if (!m.hasValidMarket || m.isSpiky) continue;
 
-    // Leg 1: strictly realistic executable quantities & order-book depth guard
+    const vel = m.velocity;
+    if (!allowedTiers.has(vel.tier)) continue;
+
+    // Leg 1 eligibility
+    const passCategoryL1 = style === 'CASES' ? item.c === 'Case' : true;
     if (
-      m.effBuy >= tier.minL1Price &&
-      m.effBuy <= Math.max(tier.maxL1Price, cap * 0.5) &&
-      m.leg1ProfitPct >= 2.5 &&
-      m.leg1ProfitPct <= 62
+      passCategoryL1 &&
+      m.effBuy >= 0.25 &&
+      m.effBuy <= cap &&
+      m.leg1ProfitPct >= 2.0 &&
+      m.leg1ProfitPct <= 60
     ) {
       const q1Est = Math.floor(cap / m.effBuy);
-      const bookOk = !isCSFloat || q1Est <= Math.max(15, qty * 0.55);
-      if (q1Est >= 1 && q1Est <= tier.maxQ1 && bookOk) {
-        leg1Pool.push({ item, m, qty, q1Est });
+      const bookOk = !isCSFloat || q1Est <= Math.max(8, qty * 0.6);
+      const velCapOk = q1Est <= Math.max(10, vel.estWeeklyCap * 1.4);
+      if (q1Est >= 1 && q1Est <= effectiveMaxQ1 && bookOk && velCapOk) {
+        leg1Pool.push({ item, m, vel, qty, q1Est });
       }
     }
 
-    // Leg 2: liquid exit skin matched to budget
+    // Leg 2 eligibility (cashout requires strong real velocity + healthy Bid/Ask + no illiquid price anomalies)
+    const bidAskOk = !isCSFloat || vel.bidAskPct === 0 || vel.bidAskPct >= 82;
+    const l2AllowedTier = minSpeed === 'MODERATE' ? allowedTiers.has(vel.tier) : vel.tier === 'A' || vel.tier === 'B';
+    const l2MinPrice = Math.max(tier.minL2Price, cap / 45);
+    const l2MinVol = minSpeed === 'MODERATE' || cap >= 1500 ? 15 : 45;
+    const maxL2Loss = cap >= 1500 || minSpeed === 'MODERATE' ? 24 : 16;
+    // Reject anomalous negative-loss items unless ultra-liquid (prevents low-volume trade-up float traps)
+    const l2NotAnomaly = m.leg2LossPct >= 0.8 || (vel.tier === 'A' && vel.mktVol >= 150);
     if (
-      m.steamUsd >= tier.minL2Price &&
-      m.steamUsd <= Math.max(tier.maxL2Price, cap * 0.95) &&
-      m.leg2LossPct >= -3 &&
-      m.leg2LossPct <= 14.5
+      l2AllowedTier &&
+      bidAskOk &&
+      l2NotAnomaly &&
+      vel.mktVol >= l2MinVol &&
+      m.steamUsd >= Math.min(l2MinPrice, cap * 0.45) &&
+      m.steamUsd <= Math.max(tier.maxL2Price, cap * 1.25, 1900) &&
+      m.leg2LossPct >= -1.5 &&
+      m.leg2LossPct <= maxL2Loss
     ) {
-      leg2Pool.push({ item, m, qty });
+      leg2Pool.push({ item, m, vel, qty });
     }
   }
 
-  // Graceful fallback if high budget has few narrow matches
-  if (leg1Pool.length < 3 || leg2Pool.length < 3) {
+  // Soft relaxation if user picked a strict filter (e.g., ULTRA + <= 5 qty on small budget)
+  if (leg1Pool.length < 2) {
     for (const item of items) {
-      const qty = Number(item.q) || 0;
-      if (isCSFloat && qty < 8) continue;
+      if (cleanOnly && (item.st || item.sv || item.c === 'Capsule')) continue;
+      if (style === 'CASES' && item.c !== 'Case') continue;
       const m = evaluateItemMetrics(item, opts);
       if (!m.hasValidMarket || m.isSpiky) continue;
+      if (m.velocity.tier === 'D') continue;
       const q1Est = m.effBuy > 0 ? Math.floor(cap / m.effBuy) : 0;
-      if (
-        leg1Pool.length < 12 &&
-        m.effBuy >= Math.max(0.25, cap / 450) &&
-        m.effBuy <= cap &&
-        q1Est >= 1 &&
-        q1Est <= 450 &&
-        m.leg1ProfitPct > 1 &&
-        m.leg1ProfitPct <= 65
-      ) {
+      if (q1Est >= 1 && q1Est <= effectiveMaxQ1 && m.leg1ProfitPct >= 0.5 && m.leg1ProfitPct <= 60) {
         if (!leg1Pool.some((x) => x.item.n === item.n)) {
-          leg1Pool.push({ item, m, qty, q1Est });
-        }
-      }
-      if (leg2Pool.length < 12 && m.steamUsd >= 1 && m.steamUsd <= cap * 1.1 && m.leg2LossPct <= 16) {
-        if (!leg2Pool.some((x) => x.item.n === item.n)) {
-          leg2Pool.push({ item, m, qty });
+          leg1Pool.push({ item, m, vel: m.velocity, qty: item.q || 0, q1Est });
         }
       }
     }
   }
 
-  leg1Pool.sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct);
-  leg2Pool.sort((a, b) => a.m.leg2LossPct - b.m.leg2LossPct);
+  if (leg2Pool.length < 3) {
+    for (const item of items) {
+      if (cleanOnly && (item.st || item.sv || item.c === 'Capsule')) continue;
+      const m = evaluateItemMetrics(item, opts);
+      if (!m.hasValidMarket || m.isSpiky || m.velocity.tier === 'D') continue;
+      if (m.steamUsd >= 1 && m.steamUsd <= cap * 1.35 && m.leg2LossPct <= 15.5) {
+        if (!leg2Pool.some((x) => x.item.n === item.n)) {
+          leg2Pool.push({ item, m, vel: m.velocity, qty: item.q || 0 });
+        }
+      }
+    }
+  }
 
-  const topL1 = leg1Pool.slice(0, 14);
-  const topL2 = leg2Pool.slice(0, 14);
-  const liquidL1 = [...leg1Pool].sort((a, b) => b.qty - a.qty).slice(0, 10);
-  const liquidL2 = [...leg2Pool].sort((a, b) => b.qty - a.qty).slice(0, 10);
+  // Diverse candidate selection: top profit, top velocity, AND low-quantity high-unit items!
+  const l1ByProfit = [...leg1Pool].sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 14);
+  const l1BySpeed = [...leg1Pool].sort((a, b) => b.vel.score - a.vel.score || b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 12);
+  const l1LowQty = [...leg1Pool].filter((x) => x.q1Est <= 10).sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 12);
+  const l1Cases = [...leg1Pool].filter((x) => x.item.c === 'Case').sort((a, b) => b.m.leg1ProfitPct - a.m.leg1ProfitPct).slice(0, 8);
 
-  const l1Candidates = Array.from(new Map([...topL1, ...liquidL1].map((x) => [x.item.n, x])).values());
-  const l2Candidates = Array.from(new Map([...topL2, ...liquidL2].map((x) => [x.item.n, x])).values());
+  const l2ByLoss = [...leg2Pool].sort((a, b) => a.m.leg2LossPct - b.m.leg2LossPct).slice(0, 14);
+  const l2BySpeed = [...leg2Pool].sort((a, b) => b.vel.score - a.vel.score || a.m.leg2LossPct - b.m.leg2LossPct).slice(0, 12);
+
+  const l1Candidates = Array.from(
+    new Map([...l1ByProfit, ...l1BySpeed, ...l1LowQty, ...l1Cases].map((x) => [x.item.n, x])).values()
+  );
+  const l2Candidates = Array.from(new Map([...l2ByLoss, ...l2BySpeed].map((x) => [x.item.n, x])).values());
 
   const evaluatedPairs = [];
 
@@ -659,12 +748,19 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200) {
       const c1 = sim.firstCycle;
       if (c1.q1 <= 0 || c1.q2 <= 0) continue;
 
+      // Enforce realistic Leg 2 cashout quantity limits (never buy 280x of an item that sells 15/wk!)
+      const maxRealisticQ2 = Math.min(
+        Math.max(20, Math.floor(l2.vel.estWeeklyCap * 1.2)),
+        isCSFloat && l2.qty > 0 ? Math.max(12, Math.floor(l2.qty * 0.8)) : 60,
+        style === 'LOW_QTY' ? Math.max(15, effectiveMaxQ1 * 2) : cap >= 1500 ? 60 : 35
+      );
+      if (c1.q2 > maxRealisticQ2) continue;
+
       const reality = estimateExecutionReality(sim, l1.item, l2.item, opts);
       const utilizedPct = c1.steamAfterLeg1 > 0 ? ((c1.steamAfterLeg1 - c1.steamWallet) / c1.steamAfterLeg1) * 100 : 0;
-      const minDepth = isCSFloat ? Math.min(l1.qty, l2.qty) : 80;
-      const liquidityScore = Math.min(100, Math.round(Math.log10(Math.max(10, minDepth)) * 36));
-      // Daily annualized speed metric: ROI normalized by realistic days!
+      const speedScore = Math.round((l1.vel.score + l2.vel.score) / 2);
       const roiPer14d = c1.netRoiPct * (14 / Math.max(14, reality.maxDays));
+      const hasSlowLeg = l1.vel.tier === 'C' || l2.vel.tier === 'C' || l1.vel.isKnifeOrGlove || l2.vel.isKnifeOrGlove;
 
       evaluatedPairs.push({
         leg1: l1,
@@ -673,98 +769,149 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200) {
         c1,
         reality,
         utilizedPct,
-        minDepth,
-        liquidityScore,
-        roiPer14d
+        speedScore,
+        roiPer14d,
+        hasSlowLeg
       });
     }
   }
 
-  const pickBest = (scorer, excludeNames = new Set()) => {
+  const usedL1 = new Set();
+  const usedL2Counts = new Map();
+  const usedPairs = new Set();
+  const strategies = [];
+
+  const pickBest = (predicate, scorer, requireUniqueL1 = true) => {
     let best = null;
     let bestScore = -Infinity;
     for (const p of evaluatedPairs) {
       if (p.c1.netProfit <= 0) continue;
-      const key = `${p.leg1.item.n}|${p.leg2.item.n}`;
-      if (excludeNames.has(key)) continue;
-      const score = scorer(p);
-      if (score > bestScore) {
-        bestScore = score;
+      if (!predicate(p)) continue;
+      const pk = `${p.leg1.item.n}|${p.leg2.item.n}`;
+      if (usedPairs.has(pk)) continue;
+      if (requireUniqueL1 && usedL1.has(p.leg1.item.n)) continue;
+      // Gently diversify Leg 2 across cards so user sees varied cashout skins
+      const l2RepeatPenalty = (usedL2Counts.get(p.leg2.item.n) || 0) * 4.5;
+      const sc = scorer(p) - l2RepeatPenalty;
+      if (sc > bestScore) {
+        bestScore = sc;
         best = p;
       }
+    }
+    if (!best && requireUniqueL1) {
+      return pickBest(predicate, scorer, false);
     }
     return best;
   };
 
-  const usedKeys = new Set();
-  const strategies = [];
-
-  // Strategy 1: Max Speed-Adjusted Realistic Net Profit
-  const maxProfit = pickBest(
-    (p) => p.roiPer14d + p.utilizedPct * 0.08 - (p.reality.level === 'impractical' ? 40 : 0),
-    usedKeys
-  );
-  if (maxProfit) {
-    usedKeys.add(`${maxProfit.leg1.item.n}|${maxProfit.leg2.item.n}`);
+  const addStrategy = (id, tag, tagCls, title, reasonFn, pair) => {
+    if (!pair) return;
+    usedL1.add(pair.leg1.item.n);
+    usedL2Counts.set(pair.leg2.item.n, (usedL2Counts.get(pair.leg2.item.n) || 0) + 1);
+    usedPairs.add(`${pair.leg1.item.n}|${pair.leg2.item.n}`);
+    const note = pair.leg1.vel.slowWarning || pair.leg2.vel.slowWarning || '';
     strategies.push({
-      id: 'MAX_PROFIT',
-      tag: 'MAKSİMUM KÂR',
-      tagCls: 'pill-mint',
-      title: 'En Yüksek Gerçekçi Getiri',
-      reason: `~${maxProfit.reality.minDays}–${maxProfit.reality.maxDays} günde ${maxProfit.c1.q1}x → ${maxProfit.c1.q2}x gerçekçi işlemle en yüksek net kâr.`,
-      pair: maxProfit
+      id,
+      tag,
+      tagCls,
+      title,
+      actionLine: `${pair.c1.q1}x al → Steam'de sat → ${pair.c1.q2}x ile nakde dön`,
+      reason: reasonFn(pair),
+      cautionNote: note,
+      pair
     });
-  }
+  };
 
-  // Strategy 2: Fast & Ultra-Liquid (Lowest Effort)
-  const fastSafe = pickBest(
+  // Archetype 1: Low-Qty Precision Strike (1-10 fast items!)
+  addStrategy(
+    'LOW_QTY_STRIKE',
+    'AZ PARÇA · HIZLI',
+    'pill-gold',
+    'Az Eşya, Zahmetsiz Döngü',
+    (p) => `Sadece ${p.c1.q1} adet alım + ${p.c1.q2} adet dönüşle hızlı ve pratik nakit akışı.`,
+    pickBest(
+      (p) => p.c1.q1 <= 10 && p.leg1.vel.tier !== 'D',
+      (p) => p.roiPer14d * 1.1 + p.speedScore * 0.25 + (p.c1.q1 <= 5 ? 6 : 0)
+    )
+  );
+
+  // Archetype 2: Max Realistic Profit (speed-adjusted)
+  addStrategy(
+    'MAX_PROFIT',
+    'MAKSİMUM KÂR',
+    'pill-mint',
+    'En Yüksek Gerçekçi Net Kâr',
+    (p) => `Hız ve komisyon sonrası ~${p.reality.minDays}–${p.reality.maxDays} günde en yüksek net getiri.`,
+    pickBest(
+      (p) => !p.hasSlowLeg || minSpeed === 'MODERATE',
+      (p) => p.roiPer14d + p.utilizedPct * 0.06
+    )
+  );
+
+  // Archetype 3: Ultra-Fast Liquid Flow
+  addStrategy(
+    'ULTRA_FAST',
+    'SÜPER LİKİT',
+    'pill-ice',
+    'En Hızlı Satılan Çift',
+    (p) => `Her iki bacakta da yüksek 7g satış temposu (${p.speedScore}/100 hız skoru).`,
+    pickBest(
+      (p) => p.speedScore >= 68,
+      (p) => p.speedScore * 0.8 + p.roiPer14d * 0.9 - p.reality.extraDays * 2
+    )
+  );
+
+  // Archetype 4: Highest Capital Utilization (No Trapped Steam)
+  addStrategy(
+    'MAX_EFF',
+    'YÜKSEK VERİM',
+    'pill-gold',
+    'En Az Atıl Steam Bakiyesi',
+    (p) => `Steam bakiyesinin %${p.utilizedPct.toFixed(1)}'i anında nakde döner.`,
+    pickBest(
+      (p) => p.utilizedPct >= 88,
+      (p) => p.utilizedPct * 1.3 + p.roiPer14d * 0.75 + p.speedScore * 0.15
+    )
+  );
+
+  // Archetype 5: Active Liquid Cases Engine
+  addStrategy(
+    'LIQUID_CASES',
+    'LİKİT KASA',
+    'pill-mint',
+    'Hızlı CS2 Kasa Motoru',
+    (p) => `Yüksek haftalık kasa hacmiyle (${p.leg1.vel.volText}) güçlü Steam bakiye büyümesi.`,
+    pickBest(
+      (p) => p.leg1.item.c === 'Case' && p.leg1.vel.score >= 65,
+      (p) => p.roiPer14d + p.leg1.vel.score * 0.2
+    )
+  );
+
+  // Archetype 6: Patient High-Margin (Knives / Mid-Speed / Alternative Top ROI)
+  addStrategy(
+    'ALT_TOP',
+    minSpeed === 'MODERATE' ? 'SABIRLI · YÜKSEK MARJ' : 'ALTERNATİF EN İYİ',
+    minSpeed === 'MODERATE' ? 'pill-amber' : 'pill-muted',
+    minSpeed === 'MODERATE' ? 'Yüksek Kâr (Satış Uzayabilir)' : 'Alternatif Dengeli Çift',
     (p) =>
-      p.liquidityScore * 0.5 +
-      p.roiPer14d * 0.85 -
-      p.reality.extraDays * 2.5 +
-      (p.c1.q1 <= 80 ? 14 : 0),
-    usedKeys
+      p.hasSlowLeg
+        ? `Yüksek kâr potansiyeli — satış hızı orta olduğu için ~${p.reality.minDays}–${p.reality.maxDays} gün sürebilir.`
+        : `Farklı eşya ile %${p.utilizedPct.toFixed(0)} verimli alternatif arbitraj hattı.`,
+    pickBest(
+      () => true,
+      (p) => (minSpeed === 'MODERATE' ? p.c1.netRoiPct : p.roiPer14d + p.speedScore * 0.2)
+    )
   );
-  if (fastSafe) {
-    usedKeys.add(`${fastSafe.leg1.item.n}|${fastSafe.leg2.item.n}`);
-    strategies.push({
-      id: 'FAST_SAFE',
-      tag: 'HIZLI & KOLAY',
-      tagCls: 'pill-ice',
-      title: 'En Az Efor & Yüksek Likidite',
-      reason: `Sadece ${fastSafe.c1.q1} adet alım + ${fastSafe.minDepth}+ ilan derinliği ile ~${fastSafe.reality.minDays}–${fastSafe.reality.maxDays} günde akıcı döngü.`,
-      pair: fastSafe
-    });
-  }
-
-  // Strategy 3: Highest Capital Efficiency (Minimal Steam Leftover)
-  const maxEff = pickBest(
-    (p) => p.utilizedPct * 1.45 + p.roiPer14d * 0.7 - p.reality.extraDays * 1.5,
-    usedKeys
-  );
-  if (maxEff) {
-    usedKeys.add(`${maxEff.leg1.item.n}|${maxEff.leg2.item.n}`);
-    strategies.push({
-      id: 'MAX_EFFICIENCY',
-      tag: 'YÜKSEK VERİM',
-      tagCls: 'pill-gold',
-      title: 'En Az Atıl Steam Bakiyesi',
-      reason: `Steam bakiyesinin %${maxEff.utilizedPct.toFixed(1)}'i anında nakde döner; içeride bakiye kilitlenmez.`,
-      pair: maxEff
-    });
-  }
 
   return {
     tier,
-    strategies,
-    bestBenchmark: maxProfit || fastSafe || maxEff || null
+    effectiveMaxQ1,
+    totalCandidates: evaluatedPairs.length,
+    strategies: strategies.slice(0, 6),
+    bestBenchmark: strategies[0]?.pair || null
   };
 }
 
-/**
- * Generates real-time operational & financial diagnostics comparing user's desk
- * setup against real execution limits, order-book depth, and budget optimal benchmark.
- */
 export function diagnoseCurrentSetup(metrics, advisorResult, reality) {
   const c1 = metrics.firstCycle;
   const alerts = [];
@@ -773,13 +920,13 @@ export function diagnoseCurrentSetup(metrics, advisorResult, reality) {
     return [
       {
         level: 'danger',
-        text: 'Başlangıç sermayesi 1 adet 1. yön eşyası almaya yetmiyor. Bütçene uygun stratejilerden birini tek tıkla uygula.'
+        text: 'Başlangıç sermayesi 1 adet 1. yön eşyası almaya yetmiyor. Aşağıdan bütçene uygun bir strateji seç.'
       }
     ];
   }
 
   if (reality && reality.reasons.length > 0) {
-    for (const reason of reality.reasons) {
+    for (const reason of reality.reasons.slice(0, 2)) {
       alerts.push({
         level: reality.level === 'impractical' ? 'danger' : 'warn',
         text: reason
@@ -796,28 +943,20 @@ export function diagnoseCurrentSetup(metrics, advisorResult, reality) {
   } else if (trappedSteamPct > 18) {
     alerts.push({
       level: 'warn',
-      text: `Steam bakiyenin %${trappedSteamPct.toFixed(1)}'i dönüş eşyasına yetmediği için içeride kalıyor. Birim fiyatı daha uygun bir 2. yön skini verimi artırır.`
+      text: `Steam bakiyenin %${trappedSteamPct.toFixed(1)}'i dönüş eşyasına yetmediği için içeride kalıyor.`
     });
   }
 
   if (metrics.netCycleRoiPct <= 0) {
     alerts.push({
       level: 'danger',
-      text: 'Mevcut komisyonlarla bu çift kâr üretmiyor (M₁ × M₂ ≤ 1.00). Önerilen stratejilerden birini seç.'
+      text: 'Bu eşleşme mevcut komisyonlarla kâr üretmiyor (M₁ × M₂ ≤ 1.00).'
     });
-  } else if (advisorResult?.bestBenchmark && alerts.length === 0) {
-    const diff = advisorResult.bestBenchmark.c1.netProfit - c1.netProfit;
-    if (diff > Math.max(2, metrics.capitalUsd * 0.035)) {
-      alerts.push({
-        level: 'info',
-        text: `Bütçe İpucu: "${advisorResult.bestBenchmark.leg1.item.n} → ${advisorResult.bestBenchmark.leg2.item.n}" ile aynı sermayede +$${diff.toFixed(2)} daha fazla gerçekçi kâr mümkün.`
-      });
-    } else {
-      alerts.push({
-        level: 'good',
-        text: `Gerçekçi & Optimize: %${(100 - trappedSteamPct).toFixed(1)} aktif sermaye verimi, tahmini süre ${reality?.minDays || 14}–${reality?.maxDays || 15} gün.`
-      });
-    }
+  } else if (alerts.length === 0) {
+    alerts.push({
+      level: 'good',
+      text: `Hızlı & Optimize: %${(100 - trappedSteamPct).toFixed(1)} aktif sermaye verimi • Tahmini süre ${reality?.minDays || 14}–${reality?.maxDays || 15} gün.`
+    });
   }
 
   return alerts;

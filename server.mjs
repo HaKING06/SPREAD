@@ -58,11 +58,19 @@ const SECURITY_HEADERS = {
 
 const cacheStore = {
   market: { expiresAt: 0, payload: null },
-  fx: { expiresAt: 0, payload: null }
+  fx: { expiresAt: 0, payload: null },
+  steamVerify: new Map()
 };
 
 function round2(n) {
   return Math.round(n * 100) / 100;
+}
+
+function parseSteamNumber(str) {
+  if (!str || typeof str !== 'string') return 0;
+  const cleaned = str.replace(/[^0-9.,]/g, '').replace(/,/g, '');
+  const v = parseFloat(cleaned);
+  return Number.isFinite(v) ? v : 0;
 }
 
 async function fetchJsonTimeout(url, ms = 12000) {
@@ -93,20 +101,26 @@ async function handleApiMarket(res, forceRefresh) {
   }
 
   try {
-    const catalogRaw = await fs.readFile(path.join(PUBLIC_DIR, 'data', 'catalog.json'), 'utf8');
+    const [catalogRaw, snapRaw] = await Promise.all([
+      fs.readFile(path.join(PUBLIC_DIR, 'data', 'catalog.json'), 'utf8'),
+      fs.readFile(path.join(PUBLIC_DIR, 'data', 'market-snapshot.json'), 'utf8')
+    ]);
     const catalog = JSON.parse(catalogRaw);
+    const baseSnap = JSON.parse(snapRaw);
 
-    const [cfLiveRes, cfOrdRes, steamRes, ypRes] = await Promise.allSettled([
+    const [cfLiveRes, cfOrdRes, steamRes, ypRes, mcsRes] = await Promise.allSettled([
       fetchJsonTimeout('https://csfloat.com/api/v1/listings/price-list', 15000),
       fetchJsonTimeout('https://prices.csgotrader.app/latest/csfloat.json', 15000),
       fetchJsonTimeout('https://prices.csgotrader.app/latest/steam.json', 15000),
-      fetchJsonTimeout('https://prices.csgotrader.app/latest/youpin.json', 15000)
+      fetchJsonTimeout('https://prices.csgotrader.app/latest/youpin.json', 15000),
+      fetchJsonTimeout('https://market.csgo.com/api/v2/prices/USD.json', 15000)
     ]);
 
     const cfLiveArr = cfLiveRes.status === 'fulfilled' && Array.isArray(cfLiveRes.value) ? cfLiveRes.value : [];
     const cfOrdObj = cfOrdRes.status === 'fulfilled' && cfOrdRes.value ? cfOrdRes.value : {};
     const steamObj = steamRes.status === 'fulfilled' && steamRes.value ? steamRes.value : {};
     const ypObj = ypRes.status === 'fulfilled' && ypRes.value ? ypRes.value : {};
+    const mcsItems = mcsRes.status === 'fulfilled' && Array.isArray(mcsRes.value?.items) ? mcsRes.value.items : [];
 
     const cfLiveMap = new Map();
     for (const row of cfLiveArr) {
@@ -118,11 +132,19 @@ async function handleApiMarket(res, forceRefresh) {
       }
     }
 
+    const mcsMap = new Map();
+    for (const row of mcsItems) {
+      if (row && typeof row.market_hash_name === 'string') {
+        mcsMap.set(row.market_hash_name, Number(row.volume) || 0);
+      }
+    }
+
     const prices = {};
     let liveCount = 0;
 
     for (const item of catalog.items || []) {
       const mhn = item.n;
+      const prev = baseSnap.prices?.[mhn] || {};
       const st = steamObj[mhn];
       const st24 = Number(st?.last_24h) || 0;
       const st7 = Number(st?.last_7d) || 0;
@@ -136,6 +158,7 @@ async function handleApiMarket(res, forceRefresh) {
       const cfQty = cfLive?.qty || 0;
       const cfBuyOrder = Number(cfOrd?.highest_order?.price) || 0;
       const ypPrice = Number(ypObj[mhn]) || 0;
+      const mv = mcsMap.has(mhn) ? mcsMap.get(mhn) : Number(prev.mv) || 0;
 
       if (steamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
         liveCount += 1;
@@ -147,7 +170,12 @@ async function handleApiMarket(res, forceRefresh) {
           cf: cfPrice > 0 ? round2(cfPrice) : 0,
           cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
           q: cfQty,
-          yp: ypPrice > 0 ? round2(ypPrice) : 0
+          yp: ypPrice > 0 ? round2(ypPrice) : 0,
+          v24: Number(prev.v24) || 0,
+          v7: Number(prev.v7) || 0,
+          v30: Number(prev.v30) || 0,
+          vm: Number(prev.vm) || 0,
+          mv
         };
       }
     }
@@ -160,7 +188,8 @@ async function handleApiMarket(res, forceRefresh) {
         csfloatLive: cfLiveRes.status === 'fulfilled',
         csfloatOrders: cfOrdRes.status === 'fulfilled',
         steam: steamRes.status === 'fulfilled',
-        youpin: ypRes.status === 'fulfilled'
+        youpin: ypRes.status === 'fulfilled',
+        marketVol: mcsRes.status === 'fulfilled'
       },
       count: liveCount,
       prices
@@ -218,6 +247,54 @@ async function handleApiFx(res) {
   }
 }
 
+async function handleSteamVerify(res, reqUrl) {
+  const names = (reqUrl.searchParams.get('names') || '')
+    .split('|')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && s.length <= 130)
+    .slice(0, 3);
+
+  if (names.length === 0) {
+    res.writeHead(400, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'names param required' }));
+    return;
+  }
+
+  const key = names.join('|');
+  const now = Date.now();
+  const cached = cacheStore.steamVerify.get(key);
+  if (cached && now < cached.expiresAt) {
+    res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(cached.payload);
+    return;
+  }
+
+  const results = {};
+  await Promise.allSettled(
+    names.map(async (name) => {
+      try {
+        const u = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${encodeURIComponent(name)}`;
+        const data = await fetchJsonTimeout(u, 5000);
+        if (data?.success) {
+          results[name] = {
+            live: true,
+            volume24h: Math.round(parseSteamNumber(data.volume)),
+            medianUsd: round2(parseSteamNumber(data.median_price)),
+            lowestUsd: round2(parseSteamNumber(data.lowest_price))
+          };
+        }
+      } catch {
+        // Skip silently
+      }
+    })
+  );
+
+  const payload = JSON.stringify({ ok: true, updatedAt: new Date().toISOString(), items: results });
+  cacheStore.steamVerify.set(key, { expiresAt: now + 15 * 60 * 1000, payload });
+  res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(payload);
+}
+
 const BLOCKED_PREFIXES = ['/scripts/', '/functions/', '/.git', '/.github/', '/server.mjs'];
 
 const server = http.createServer(async (req, res) => {
@@ -227,6 +304,11 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/market' && req.method === 'GET') {
       await handleApiMarket(res, reqUrl.searchParams.get('refresh') === '1');
+      return;
+    }
+
+    if (pathname === '/api/steam-verify' && req.method === 'GET') {
+      await handleSteamVerify(res, reqUrl);
       return;
     }
 
