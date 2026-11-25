@@ -255,20 +255,38 @@ async function handleApiFx(res) {
   }
 }
 
+function parseCsfloatGraph(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const now = new Date();
+  const utcDayFrac = (now.getUTCHours() + now.getUTCMinutes() / 60) / 24;
+  const todayCnt = Number(arr[0]?.count) || 0;
+  const ydayCnt = Number(arr[1]?.count) || 0;
+  const rolling24h = Math.max(todayCnt, Math.round(todayCnt + ydayCnt * Math.max(0, 1 - utcDayFrac)));
+  const s7 = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.count) || 0), 0);
+  const s30 = arr.slice(0, 30).reduce((a, x) => a + (Number(x?.count) || 0), 0);
+  const weightedSum = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.avg_price) || 0) * (Number(x?.count) || 0), 0);
+  const avg7Usd = s7 > 0 ? round2(weightedSum / s7 / 100) : 0;
+  return { live: true, sold24h: rolling24h, sold7d: s7, sold30d: s30, avg7Usd };
+}
+
 async function handleSteamVerify(res, reqUrl) {
-  const names = (reqUrl.searchParams.get('names') || '')
-    .split('|')
+  // CS2 skin names contain "|", so use repeated ?name= params (or ;; fallback)
+  const multiNames = reqUrl.searchParams.getAll('name');
+  const legacyNames = (reqUrl.searchParams.get('names') || '')
+    .split(';;')
     .map((s) => s.trim())
+    .filter(Boolean);
+  const names = Array.from(new Set([...multiNames, ...legacyNames].map((s) => s.trim())))
     .filter((s) => s.length > 0 && s.length <= 130)
-    .slice(0, 3);
+    .slice(0, 6);
 
   if (names.length === 0) {
     res.writeHead(400, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'names param required' }));
+    res.end(JSON.stringify({ ok: false, error: 'name param required' }));
     return;
   }
 
-  const key = names.join('|');
+  const key = names.join(';;');
   const now = Date.now();
   const cached = cacheStore.steamVerify.get(key);
   if (cached && now < cached.expiresAt) {
@@ -280,19 +298,24 @@ async function handleSteamVerify(res, reqUrl) {
   const results = {};
   await Promise.allSettled(
     names.map(async (name) => {
-      try {
-        const u = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${encodeURIComponent(name)}`;
-        const data = await fetchJsonTimeout(u, 5000);
-        if (data?.success) {
-          results[name] = {
-            live: true,
-            volume24h: Math.round(parseSteamNumber(data.volume)),
-            medianUsd: round2(parseSteamNumber(data.median_price)),
-            lowestUsd: round2(parseSteamNumber(data.lowest_price))
-          };
-        }
-      } catch {
-        // Skip silently
+      const enc = encodeURIComponent(name);
+      const [cfRes, stRes] = await Promise.allSettled([
+        fetchJsonTimeout(`https://csfloat.com/api/v1/history/${enc}/graph`, 5500),
+        fetchJsonTimeout(`https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${enc}`, 5000)
+      ]);
+      const entry = { live: false, volume24h: 0, medianUsd: 0, lowestUsd: 0, csfloat: null };
+      if (stRes.status === 'fulfilled' && stRes.value?.success) {
+        entry.live = true;
+        entry.volume24h = Math.round(parseSteamNumber(stRes.value.volume));
+        entry.medianUsd = round2(parseSteamNumber(stRes.value.median_price));
+        entry.lowestUsd = round2(parseSteamNumber(stRes.value.lowest_price));
+      }
+      if (cfRes.status === 'fulfilled') {
+        const parsedCf = parseCsfloatGraph(cfRes.value);
+        if (parsedCf) entry.csfloat = parsedCf;
+      }
+      if (entry.live || entry.csfloat?.live) {
+        results[name] = entry;
       }
     })
   );

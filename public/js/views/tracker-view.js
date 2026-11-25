@@ -231,12 +231,12 @@ export function initTrackerView(app) {
               el('span', { className: 'pill pill-muted' }, mkt.name),
               hasMultiBasket
                 ? el(
-                    'span',
-                    { className: 'pill pill-ice num' },
-                    tr
-                      ? `🔀 Sepet (${c.basketLeg1?.length || 1}→${c.basketLeg2?.length || 1})`
-                      : `🔀 Basket (${c.basketLeg1?.length || 1}→${c.basketLeg2?.length || 1})`
-                  )
+                  'span',
+                  { className: 'pill pill-ice num' },
+                  tr
+                    ? `🔀 Sepet (${c.basketLeg1?.length || 1}→${c.basketLeg2?.length || 1})`
+                    : `🔀 Basket (${c.basketLeg1?.length || 1}→${c.basketLeg2?.length || 1})`
+                )
                 : null,
               el('span', { className: 'txt-muted num', style: { fontSize: '11px' } }, `${tr ? 'Başlangıç' : 'Started'}: ${fmtShortDate(c.cycleStartedAt)}`)
             ),
@@ -265,11 +265,11 @@ export function initTrackerView(app) {
                 el('p', { className: 'txt-sec', style: { fontSize: '12px', marginTop: '2px' } }, subline),
                 hasMultiBasket
                   ? el(
-                      'div',
-                      { className: 'tracker-basket-box' },
-                      c.basketLeg1?.length ? renderBasketChips(c.basketLeg1, tr ? '1. ADIM ALIM' : 'STEP 1 BUY', 'txt-mint') : null,
-                      c.basketLeg2?.length ? renderBasketChips(c.basketLeg2, tr ? '2. ADIM ÇIKIŞ' : 'STEP 2 EXIT', 'txt-gold') : null
-                    )
+                    'div',
+                    { className: 'tracker-basket-box' },
+                    c.basketLeg1?.length ? renderBasketChips(c.basketLeg1, tr ? '1. ADIM ALIM' : 'STEP 1 BUY', 'txt-mint') : null,
+                    c.basketLeg2?.length ? renderBasketChips(c.basketLeg2, tr ? '2. ADIM ÇIKIŞ' : 'STEP 2 EXIT', 'txt-gold') : null
+                  )
                   : null
               )
             )
@@ -316,8 +316,8 @@ export function initTrackerView(app) {
                   ? `14 Günlük Döngü Tamamlandı (${fmtShortDate(c.completedAt || c.phaseStartedAt)})`
                   : `14-Day Cycle Completed (${fmtShortDate(c.completedAt || c.phaseStartedAt)})`
                 : phaseReady
-                ? tr ? '7G Kilidi Açıldı — Sonraki Faza Geçebilirsiniz' : '7D Hold Cleared — Ready for Next Phase'
-                : `${tr ? 'Kalan Süre' : 'Remaining'}: ${fmtCountdown(remainingMs)}`
+                  ? tr ? '7G Kilidi Açıldı — Sonraki Faza Geçebilirsiniz' : '7D Hold Cleared — Ready for Next Phase'
+                  : `${tr ? 'Kalan Süre' : 'Remaining'}: ${fmtCountdown(remainingMs)}`
             ),
             el(
               'span',
@@ -364,31 +364,31 @@ export function initTrackerView(app) {
             { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
             c.phase === 1
               ? el(
-                  'button',
-                  {
-                    type: 'button',
-                    className: 'btn btn-primary btn-sm',
-                    onClick: () => {
-                      c.phase = 2;
-                      c.phaseStartedAt = new Date().toISOString();
-                      app.saveCycles();
-                      render();
-                      app.toast(isTr() ? 'Faz 2 başlatıldı (7 günlük dönüş takas kilidi aktif).' : 'Phase 2 started (7-day return trade hold active).');
-                    }
-                  },
-                  tr ? 'Faz 2’ye Geç →' : 'Advance to Phase 2 →'
-                )
+                'button',
+                {
+                  type: 'button',
+                  className: 'btn btn-primary btn-sm',
+                  onClick: () => {
+                    c.phase = 2;
+                    c.phaseStartedAt = new Date().toISOString();
+                    app.saveCycles();
+                    render();
+                    app.toast(isTr() ? 'Faz 2 başlatıldı (7 günlük dönüş takas kilidi aktif).' : 'Phase 2 started (7-day return trade hold active).');
+                  }
+                },
+                tr ? 'Faz 2’ye Geç →' : 'Advance to Phase 2 →'
+              )
               : null,
             c.phase === 2
               ? el(
-                  'button',
-                  {
-                    type: 'button',
-                    className: 'btn btn-mint btn-sm',
-                    onClick: () => openCompleteModal(c)
-                  },
-                  tr ? '✓ Döngüyü Tamamla (Kâr İşle)' : '✓ Complete Cycle (Log P&L)'
-                )
+                'button',
+                {
+                  type: 'button',
+                  className: 'btn btn-mint btn-sm',
+                  onClick: () => openCompleteModal(c)
+                },
+                tr ? '✓ Döngüyü Tamamla (Kâr İşle)' : '✓ Complete Cycle (Log P&L)'
+              )
               : null,
             el(
               'button',

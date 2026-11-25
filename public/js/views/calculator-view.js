@@ -43,6 +43,7 @@ export function initCalculatorView(app) {
   let advisorTimer = null;
   let lastAdvisorResult = null;
   let lastSteamVerifyKey = '';
+  let lastAdvisorVerifyKey = '';
   let liveSteamMap = {};
 
   const advisorFilters = {
@@ -210,15 +211,18 @@ export function initCalculatorView(app) {
     );
 
     const tr = isTr();
-    const steamVolChip = liveSteam?.live
+    const liveCf = liveSteam?.csfloat?.live ? liveSteam.csfloat : null;
+    const primaryVolChip = liveCf
       ? el(
           'span',
           {
-            className: `pill ${liveSteam.volume24h >= 50 ? 'pill-mint' : liveSteam.volume24h >= 10 ? 'pill-ice' : 'pill-amber'}`,
+            className: `pill ${liveCf.sold7d >= 40 ? 'pill-mint' : liveCf.sold7d >= 12 ? 'pill-ice' : 'pill-amber'}`,
             style: { fontSize: '10px', padding: '1px 6px' },
-            title: tr ? 'Canlı Steam 24 saatlik satış adedi & medyan fiyat' : 'Live Steam 24h sold count & median price'
+            title: tr
+              ? `Gerçek canlı CSFloat satış geçmişi (24s: ${liveCf.sold24h} • 7g: ${liveCf.sold7d} • 30g: ${liveCf.sold30d})`
+              : `Real live CSFloat sales history (24h: ${liveCf.sold24h} • 7d: ${liveCf.sold7d} • 30d: ${liveCf.sold30d})`
           },
-          `Steam 24h: ${liveSteam.volume24h.toLocaleString(tr ? 'tr-TR' : 'en-US')} ${tr ? 'satış' : 'sold'}${liveSteam.medianUsd > 0 ? ` • Med ${fmtMoneyFromUsd(liveSteam.medianUsd, app.settings.currency, app.market.fxRates)}` : ''}`
+          `CSFloat • ${tr ? `24s: ${liveCf.sold24h} • 7g: ${liveCf.sold7d} satış` : `24h: ${liveCf.sold24h} • 7d: ${liveCf.sold7d} sold`}`
         )
       : found
       ? el(
@@ -226,9 +230,26 @@ export function initCalculatorView(app) {
           {
             className: `pill ${vel.pillCls}`,
             style: { fontSize: '10px', padding: '1px 6px' },
-            title: tr ? 'Son 7 günlük / 30 günlük gerçek satış temposu' : 'Real 7d / 30d sales velocity'
+            title:
+              vel.volSource === 'CSFLOAT'
+                ? tr ? 'Gerçek canlı CSFloat satış geçmişi' : 'Real live CSFloat sales history'
+                : tr
+                ? 'Katalog Skinport referans hacmidir — canlı CSFloat verisi otomatik çekiliyor'
+                : 'Catalog Skinport reference volume — live CSFloat sales loading automatically'
           },
           `${vel.shortLabel} • ${vel.volText}`
+        )
+      : null;
+
+    const steamVolChip = liveSteam?.live
+      ? el(
+          'span',
+          {
+            className: `pill ${liveSteam.volume24h >= 50 ? 'pill-mint' : liveSteam.volume24h >= 10 ? 'pill-ice' : 'pill-amber'}`,
+            style: { fontSize: '10px', padding: '1px 6px' },
+            title: tr ? 'Canlı Steam Topluluk Pazarı 24 saatlik satış adedi & medyan fiyat' : 'Live Steam Community Market 24h sold count & median price'
+          },
+          `Steam 24h: ${liveSteam.volume24h.toLocaleString(tr ? 'tr-TR' : 'en-US')}${liveSteam.medianUsd > 0 ? ` • Med ${fmtMoneyFromUsd(liveSteam.medianUsd, app.settings.currency, app.market.fxRates)}` : ''}`
         )
       : null;
 
@@ -236,6 +257,7 @@ export function initCalculatorView(app) {
       'div',
       { className: 'leg-preview-tags' },
       found?.w ? el('span', { className: `wear-tag wear-${found.w}` }, found.w) : null,
+      primaryVolChip,
       steamVolChip,
       found?.q ? el('span', { className: 'num' }, `${found.q} ${tr ? 'ilan' : 'listed'}`) : null,
       legNum === 1 && liveSteam?.live && liveSteam.medianUsd > 0 && liveSteam.medianUsd < app.settings.leg1.steamUsd * 0.96
@@ -491,6 +513,27 @@ export function initCalculatorView(app) {
       matchMeta.textContent = `${advisor.strategies.length} ${t('adv.stratsCount')} • ${t('adv.maxLabel')} ${advisor.effectiveMaxQ1}`;
     }
 
+    // Async live CSFloat + Steam volume hydration for top displayed advisor items (6 items max, 15m Edge cached)
+    const topAdvNames = [];
+    for (const st of advisor.strategies.slice(0, 3)) {
+      if (st?.pair?.leg1?.item?.n) topAdvNames.push(st.pair.leg1.item.n);
+      if (st?.pair?.leg2?.item?.n) topAdvNames.push(st.pair.leg2.item.n);
+    }
+    const uniqueTopAdv = Array.from(new Set(topAdvNames)).slice(0, 6);
+    const advVerifyKey = uniqueTopAdv.join('|');
+    if (advVerifyKey && advVerifyKey !== lastAdvisorVerifyKey && app.items.length > 0) {
+      lastAdvisorVerifyKey = advVerifyKey;
+      const missingCf = uniqueTopAdv.filter((n) => !liveSteamMap[n]?.csfloat?.live);
+      if (missingCf.length > 0) {
+        app.market.verifySteamLive(missingCf, app.items).then((res) => {
+          if (res && Object.keys(res).length > 0) {
+            liveSteamMap = { ...liveSteamMap, ...res };
+            renderAdvisorSection();
+          }
+        });
+      }
+    }
+
     // V6 Optional Multi-Item Split / Basket Portfolio Blueprint
     const basketHost = document.getElementById('basketBlueprintPanel');
     const splitActive = Boolean(s.splitMode);
@@ -535,6 +578,24 @@ export function initCalculatorView(app) {
           basketHost.classList.remove('hidden');
           const trB = isTr();
           const pl = basketRes.plan;
+
+          // Live CSFloat + Steam sales verification for all active basket items (non-blocking)
+          const bpNames = Array.from(
+            new Set([...pl.leg1Lines.map((l) => l.item.n), ...pl.leg2Lines.map((l) => l.item.n)])
+          ).slice(0, 6);
+          const bpMissing = bpNames.filter((n) => !liveSteamMap[n]?.csfloat?.live);
+          if (bpMissing.length > 0 && app.items.length > 0) {
+            const bpKey = `bp:${bpNames.join('|')}`;
+            if (bpKey !== lastAdvisorVerifyKey) {
+              lastAdvisorVerifyKey = bpKey;
+              app.market.verifySteamLive(bpMissing, app.items).then((res) => {
+                if (res && Object.keys(res).length > 0) {
+                  liveSteamMap = { ...liveSteamMap, ...res };
+                  renderAdvisorSection();
+                }
+              });
+            }
+          }
           const reqLabel =
             pl.k1Requested === 0 && pl.k2Requested === 0
               ? trB
@@ -594,7 +655,7 @@ export function initCalculatorView(app) {
                   el(
                     'span',
                     null,
-                    `${line.vel.shortLabel} • ${trB ? `7g: ${line.vel.sold7d}` : `7d: ${line.vel.sold7d}`} • ${
+                    `${line.vel.shortLabel} • ${line.vel.volText} • ${
                       line.fillDays <= 1
                         ? trB ? '~0–1G' : '~0–1d'
                         : trB ? `~${line.fillDays}G satış` : `~${line.fillDays}d fill`
@@ -1460,25 +1521,30 @@ export function initCalculatorView(app) {
       }
     }
 
-    // Preview wells + Pareto Leg 2 quick switcher + async live Steam 24h sold volume verification (Single Mode)
+    // Preview wells + Pareto Leg 2 quick switcher + live CSFloat/Steam volume verification (Single & Basket Mode!)
     if (!isBasketActive) {
       renderSkinPreview('leg1PreviewWell', s.leg1.name, 1);
       renderSkinPreview('leg2PreviewWell', s.leg2.name, 2);
       renderLeg2SmartExits(item1Obj);
+    }
 
-      const verifyKey = `${s.leg1.name}|${s.leg2.name}`;
-      if (verifyKey !== lastSteamVerifyKey && app.items.length > 0) {
-        lastSteamVerifyKey = verifyKey;
-        app.market.verifySteamLive([s.leg1.name, s.leg2.name]).then((res) => {
-          if (res && Object.keys(res).length > 0) {
-            liveSteamMap = { ...liveSteamMap, ...res };
-            if (!app.settings.activeBasket) {
-              renderSkinPreview('leg1PreviewWell', app.settings.leg1.name, 1);
-              renderSkinPreview('leg2PreviewWell', app.settings.leg2.name, 2);
-            }
+    const deskVerifyNames = isBasketActive
+      ? Array.from(new Set([...s.activeBasket.leg1.map((l) => l.name), ...s.activeBasket.leg2.map((l) => l.name)])).slice(0, 6)
+      : [s.leg1.name, s.leg2.name].filter(Boolean);
+    const verifyKey = deskVerifyNames.join('|');
+    if (verifyKey && verifyKey !== lastSteamVerifyKey && app.items.length > 0) {
+      lastSteamVerifyKey = verifyKey;
+      app.market.verifySteamLive(deskVerifyNames, app.items).then((res) => {
+        if (res && Object.keys(res).length > 0) {
+          liveSteamMap = { ...liveSteamMap, ...res };
+          if (app.settings.activeBasket) {
+            renderMetricsOnly(false, true);
+          } else {
+            renderSkinPreview('leg1PreviewWell', app.settings.leg1.name, 1);
+            renderSkinPreview('leg2PreviewWell', app.settings.leg2.name, 2);
           }
-        });
-      }
+        }
+      });
     }
 
     // Top Hero Strip

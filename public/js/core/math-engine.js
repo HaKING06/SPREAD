@@ -106,6 +106,10 @@ export function computeVelocityProfile(item) {
     };
   }
 
+  const hasLiveCf = (Number(item.cf7) || 0) > 0 || (Number(item.cf30) || 0) > 0;
+  const cf24 = Number(item.cf24) || 0;
+  const cf7 = Number(item.cf7) || 0;
+  const cf30 = Number(item.cf30) || 0;
   const v24 = Number(item.v24) || 0;
   const v7 = Number(item.v7) || 0;
   const v30 = Number(item.v30) || 0;
@@ -117,22 +121,32 @@ export function computeVelocityProfile(item) {
   const priceRef = Math.max(cf, steamUsd);
   const bidAskPct = cf > 0 && cfo > 0 ? (cfo / cf) * 100 : 0;
 
+  // V6.3 Dual-Source Sales Velocity:
+  // Uses REAL live CSFloat sales history (cf24/cf7/cf30) whenever verified; otherwise honest Skinport + Market.CSGO!
+  const disp24 = hasLiveCf ? cf24 : v24;
+  const disp7 = hasLiveCf ? cf7 : v7;
+  const disp30 = hasLiveCf ? cf30 : v30;
   const sp7 = Math.max(v7, Math.round(v30 / 4.3));
-  const weeklyUsd = Math.round(sp7 * priceRef);
+  const eff7 = hasLiveCf ? Math.max(cf7, sp7) : sp7;
+  const weeklyUsd = Math.round(eff7 * priceRef);
 
-  // V5.1 True Executed Daily Sales & Order-Book Turnover Rate:
-  // Raw unsold listing count (q) is SUPPLY OVERHANG, never fake daily sales!
-  const rate30 = v30 / 30;
-  const rate7 = v7 / 7;
-  const rate24Capped = Math.min(v24, Math.max(rate7, rate30, 0.5) * 1.65 + 1);
-  const spDaily = rate30 * 0.45 + rate7 * 0.40 + rate24Capped * 0.15;
+  const rate30 = (hasLiveCf ? cf30 : v30) / 30;
+  const rate7 = (hasLiveCf ? cf7 : v7) / 7;
+  const rate24Capped = Math.min(disp24, Math.max(rate7, rate30, 0.5) * 1.65 + 1);
+  const primaryDaily = rate30 * 0.45 + rate7 * 0.40 + rate24Capped * 0.15;
   const mcsDaily = mv / 14;
-  // Monthly order-book sell-through rate (higher % = cleaner queue, less undercut competition)
-  const turnover30Pct = q > 0 ? Math.round(((v30 + mv * 0.35) / Math.max(20, q)) * 1000) / 10 : 0;
+  // Monthly order-book sell-through rate: real CSFloat sales/q when live, else Skinport-scaled proxy
+  const turnover30Pct =
+    q > 0
+      ? Math.round((((hasLiveCf ? cf30 : v30 + mv * 0.35) / Math.max(20, q)) * 1000)) / 10
+      : 0;
   const bidAskBoost = bidAskPct >= 93 ? 1.15 : bidAskPct >= 90 ? 1.0 : bidAskPct > 0 && bidAskPct < 85 ? 0.72 : 0.9;
+  // Note: CSFloat typically does ~4x Skinport daily volume; when live CSFloat data is loaded, use 1.0x directly!
   const estDailySales = Math.max(
     0.08,
-    Math.round((spDaily * 2.35 + mcsDaily * 0.55) * bidAskBoost * 100) / 100
+    Math.round(
+      (hasLiveCf ? primaryDaily * 1.05 + mcsDaily * 0.25 : primaryDaily * 2.35 + mcsDaily * 0.55) * bidAskBoost * 100
+    ) / 100
   );
 
   const isKnifeOrGlove = item.c === 'Knives' || item.c === 'Gloves';
@@ -237,14 +251,16 @@ export function computeVelocityProfile(item) {
     Math.round(sp7 * 3.5 + mv * 0.45 + (item.c === 'Case' && mv > 500 ? mv * 0.5 : 0))
   );
 
-  const volText =
-    v24 > 0
-      ? bi(`24h: ${v24} • 7d: ${v7} sold`, `24s: ${v24} • 7g: ${v7} satış`)
-      : v7 > 0
-      ? bi(`7d: ${v7} • 30d: ${v30} sold`, `7g: ${v7} • 30g: ${v30} satış`)
-      : mv > 0
-      ? bi(`Vol: ${mv} • 30d: ${v30}`, `Hacim: ${mv} • 30g: ${v30}`)
-      : bi('Low volume', 'Düşük hacim');
+  const volSource = hasLiveCf ? 'CSFLOAT' : 'SKINPORT';
+  const volText = hasLiveCf
+    ? bi(`CSFloat 24h: ${cf24} • 7d: ${cf7}`, `CSFloat 24s: ${cf24} • 7g: ${cf7}`)
+    : v7 > 0
+    ? bi(`Skinport 7d: ${v7} • 30d: ${v30}`, `Skinport 7g: ${v7} • 30g: ${v30}`)
+    : v24 > 0
+    ? bi(`Skinport 24h: ${v24} • 7d: ${v7}`, `Skinport 24s: ${v24} • 7g: ${v7}`)
+    : mv > 0
+    ? bi(`Vol: ${mv} • 30d: ${v30}`, `Hacim: ${mv} • 30g: ${v30}`)
+    : bi('Low volume', 'Düşük hacim');
 
   return {
     tier,
@@ -252,9 +268,10 @@ export function computeVelocityProfile(item) {
     label,
     shortLabel,
     pillCls,
-    sold24h: v24,
-    sold7d: v7,
-    sold30d: v30,
+    sold24h: disp24,
+    sold7d: disp7,
+    sold30d: disp30,
+    volSource,
     mktVol: mv,
     weeklyUsd,
     estDailySales,

@@ -238,17 +238,17 @@ async function main() {
     });
   const exits800 = top800
     ? findBestExitsForLeg1(
-        mergedSample,
-        {
-          item: top800.leg1.item,
-          name: top800.leg1.item.n,
-          pM1Usd: top800.leg1.m.marketBuyUsd,
-          pS1Usd: top800.leg1.m.steamUsd
-        },
-        { marketplace: 'CSFLOAT', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true },
-        800,
-        3
-      )
+      mergedSample,
+      {
+        item: top800.leg1.item,
+        name: top800.leg1.item.n,
+        pM1Usd: top800.leg1.m.marketBuyUsd,
+        pS1Usd: top800.leg1.m.steamUsd
+      },
+      { marketplace: 'CSFLOAT', buyFeePct: 0, sellFeePct: 2, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true },
+      800,
+      3
+    )
     : [];
   const fastTurnoverExit800 = top800 && (top800.leg2.vel.tier === 'A' || top800.leg2.vel.sold7d >= 12);
   if (
@@ -387,10 +387,10 @@ async function main() {
         disabled: false,
         textContent: '',
         dataset: {},
-        style: { setProperty() {} },
+        style: { setProperty() { } },
         children: [],
         get firstChild() { return this.children[0] || null; },
-        classList: { toggle() {}, add() {}, remove() {} },
+        classList: { toggle() { }, add() { }, remove() { } },
         appendChild(ch) { this.children.push(ch); return ch; },
         removeChild(ch) {
           const i = this.children.indexOf(ch);
@@ -399,16 +399,16 @@ async function main() {
         },
         setAttribute(k, v) { if (k === 'id') this.id = v; },
         getAttribute() { return ''; },
-        addEventListener() {},
+        addEventListener() { },
         querySelector() { return null; },
         querySelectorAll() { return []; },
         getBoundingClientRect() { return { width: 400, height: 220, left: 0, top: 0 }; },
         getContext() {
           return {
-            setTransform() {}, clearRect() {}, beginPath() {}, moveTo() {}, lineTo() {},
-            stroke() {}, fill() {}, closePath() {}, arc() {}, fillText() {}, save() {},
-            restore() {}, setLineDash() {}, roundRect() {},
-            createLinearGradient() { return { addColorStop() {} }; }
+            setTransform() { }, clearRect() { }, beginPath() { }, moveTo() { }, lineTo() { },
+            stroke() { }, fill() { }, closePath() { }, arc() { }, fillText() { }, save() { },
+            restore() { }, setLineDash() { }, roundRect() { },
+            createLinearGradient() { return { addColorStop() { } }; }
           };
         }
       };
@@ -417,7 +417,7 @@ async function main() {
     };
 
     for (const id of htmlIds) makeFakeNode('div', id);
-    globalThis.Node = class FakeNode {};
+    globalThis.Node = class FakeNode { };
     globalThis.requestAnimationFrame = (cb) => cb();
     globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#f0b90b' });
     globalThis.window = {
@@ -425,12 +425,12 @@ async function main() {
       innerWidth: 1280,
       innerHeight: 800,
       location: { pathname: '/', search: '', hostname: 'spread.haking.tr', origin: 'https://spread.haking.tr' },
-      history: { replaceState() {}, pushState() {} },
-      addEventListener() {},
-      scrollTo() {}
+      history: { replaceState() { }, pushState() { } },
+      addEventListener() { },
+      scrollTo() { }
     };
     globalThis.document = {
-      documentElement: { setAttribute() {}, getAttribute: () => 'dark', style: {} },
+      documentElement: { setAttribute() { }, getAttribute: () => 'dark', style: {} },
       body: makeFakeNode('body'),
       title: '',
       createElement: (tag) => {
@@ -446,7 +446,7 @@ async function main() {
       getElementById: (id) => idMap.get(id) || null,
       querySelector: () => null,
       querySelectorAll: () => [],
-      addEventListener() {}
+      addEventListener() { }
     };
 
     const { renderLiveTicker } = await import('../public/js/views/header-ticker.js');
@@ -478,7 +478,7 @@ async function main() {
         leg2: { name: 'AK-47 | Redline (Field-Tested)', steamUsd: 22, marketUsd: 20.1 }
       },
       findItemByName: (n) => mergedSample.find((x) => x.n.toLowerCase() === String(n).toLowerCase()) || null,
-      switchTab() {}, saveSettings() {}, saveCycles() {}, toast() {}, openCommandPalette() {}, applyItemToLeg() {}, applyPair() {}, toggleWatchlist() {}
+      switchTab() { }, saveSettings() { }, saveCycles() { }, toast() { }, openCommandPalette() { }, applyItemToLeg() { }, applyPair() { }, toggleWatchlist() { }
     };
 
     const scannerView = initScannerView(mockApp);
@@ -499,13 +499,17 @@ async function main() {
         academyView.render();
         aboutView.render();
         tour.start();
+        const tourCount = tour.getStepCount();
+        for (let ti = 0; ti < tourCount; ti++) {
+          tour.goToStep(ti);
+        }
         tour.stop(false);
         const scannerRows = idMap.get('scannerTableBody')?.children?.length || 0;
         const tickerChips = idMap.get('tickerTrack')?.children?.length || 0;
         const stratCards = idMap.get('advisorStrategiesGrid')?.children?.length || 0;
         const agentChildren = idMap.get('spreadAgentCard')?.children?.length || 0;
-        if (scannerRows < 20 || tickerChips < 4 || stratCards < 2 || agentChildren < 2) {
-          fail(`Runtime render [${lang}] insufficient DOM nodes: scannerRows=${scannerRows}, tickerChips=${tickerChips}, stratCards=${stratCards}, agent=${agentChildren}`);
+        if (scannerRows < 20 || tickerChips < 4 || stratCards < 2 || agentChildren < 2 || tourCount < 8) {
+          fail(`Runtime render [${lang}] insufficient DOM nodes: scannerRows=${scannerRows}, tickerChips=${tickerChips}, stratCards=${stratCards}, agent=${agentChildren}, tourSteps=${tourCount}`);
           runtimeOk = false;
         }
       } catch (err) {
@@ -566,7 +570,7 @@ async function main() {
         ['/data/catalog.json', 200],
         ['/api/fx', 200],
         ['/api/market', 200],
-        ['/api/steam-verify?names=Revolution%20Case', 200],
+        ['/api/steam-verify?name=Desert%20Eagle%20%7C%20Conspiracy%20(Factory%20New)', 200],
         ['/server.mjs', 403],
         ['/scripts/sync-catalog.mjs', 403]
       ];
@@ -598,6 +602,16 @@ async function main() {
             pass(`Live /api/fx -> 1 USD = ${j.rates.TRY} TRY | ${j.rates.CNY} CNY | ${j.rates.EUR} EUR`);
           } else {
             fail('Live /api/fx invalid payload');
+          }
+        } else if (ep.startsWith('/api/steam-verify')) {
+          const j = await res.json();
+          const rec = j.items?.['Desert Eagle | Conspiracy (Factory New)'];
+          if (j.ok && rec?.csfloat?.live && rec.csfloat.sold7d >= 20) {
+            pass(
+              `Live /api/steam-verify -> CSFloat 24h:${rec.csfloat.sold24h}, 7d:${rec.csfloat.sold7d}, 30d:${rec.csfloat.sold30d} | Steam 24h:${rec.volume24h || 'n/a'}`
+            );
+          } else {
+            fail(`Live /api/steam-verify missing real CSFloat sales: ${JSON.stringify(j).slice(0, 180)}`);
           }
         } else {
           pass(`HTTP ${res.status} ${ep}`);

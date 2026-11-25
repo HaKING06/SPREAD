@@ -72,6 +72,10 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       v30: Number(p.v30) || 0,
       vm: Number(p.vm) || 0,
       mv: Number(p.mv) || 0,
+      cf24: Number(p.cf24) || 0,
+      cf7: Number(p.cf7) || 0,
+      cf30: Number(p.cf30) || 0,
+      cfAvg7: Number(p.cfAvg7) || 0,
       isCustom: false
     });
   }
@@ -153,27 +157,49 @@ export class MarketService {
   }
 
   /**
-   * Fetches real-time Steam Market 24h sold volume & median price for up to 2 active items.
+   * Fetches real-time CSFloat Sales History (24h/7d/30d) AND Steam Market 24h Volume & Median
+   * for up to 6 active desk / basket / top strategy items.
    */
-  async verifySteamLive(names = []) {
-    const unique = Array.from(new Set(names.filter(Boolean))).slice(0, 2);
+  async verifySteamLive(names = [], liveItemsRef = null) {
+    const unique = Array.from(new Set(names.filter(Boolean))).slice(0, 6);
     const missing = unique.filter((n) => !this.steamLiveCache.has(n));
     if (missing.length > 0) {
       try {
-        const q = encodeURIComponent(missing.join('|'));
-        const res = await fetchJsonSafe(`/api/steam-verify?names=${q}`, 7000);
+        const q = missing.map((n) => `name=${encodeURIComponent(n)}`).join('&');
+        const res = await fetchJsonSafe(`/api/steam-verify?${q}`, 8000);
         if (res?.ok && res.items) {
           for (const [k, v] of Object.entries(res.items)) {
             this.steamLiveCache.set(k, v);
           }
         }
       } catch {
-        // Silent fallback — item still has v24/v7/v30/mv velocity data
+        // Silent fallback — item still has Skinport + Market.CSGO baseline data
       }
     }
     const out = {};
     for (const n of unique) {
-      if (this.steamLiveCache.has(n)) out[n] = this.steamLiveCache.get(n);
+      const rec = this.steamLiveCache.get(n);
+      if (rec) {
+        out[n] = rec;
+        // Hydrate live CSFloat sales directly onto the in-memory item & priceMap!
+        if (rec.csfloat?.live) {
+          if (this.priceMap[n]) {
+            this.priceMap[n].cf24 = rec.csfloat.sold24h;
+            this.priceMap[n].cf7 = rec.csfloat.sold7d;
+            this.priceMap[n].cf30 = rec.csfloat.sold30d;
+            this.priceMap[n].cfAvg7 = rec.csfloat.avg7Usd;
+          }
+          if (Array.isArray(liveItemsRef)) {
+            const it = liveItemsRef.find((x) => x.n === n);
+            if (it) {
+              it.cf24 = rec.csfloat.sold24h;
+              it.cf7 = rec.csfloat.sold7d;
+              it.cf30 = rec.csfloat.sold30d;
+              it.cfAvg7 = rec.csfloat.avg7Usd;
+            }
+          }
+        }
+      }
     }
     return out;
   }
