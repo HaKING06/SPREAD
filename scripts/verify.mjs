@@ -295,13 +295,16 @@ async function main() {
     globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#f0b90b' });
     globalThis.window = {
       devicePixelRatio: 1,
+      innerWidth: 1280,
+      innerHeight: 800,
       location: { pathname: '/', search: '', hostname: 'spread.haking.tr', origin: 'https://spread.haking.tr' },
       history: { replaceState() {}, pushState() {} },
       addEventListener() {},
       scrollTo() {}
     };
     globalThis.document = {
-      documentElement: { setAttribute() {}, getAttribute: () => 'dark' },
+      documentElement: { setAttribute() {}, getAttribute: () => 'dark', style: {} },
+      body: makeFakeNode('body'),
       title: '',
       createElement: (tag) => {
         const n = makeFakeNode(tag);
@@ -314,7 +317,9 @@ async function main() {
         return n;
       },
       getElementById: (id) => idMap.get(id) || null,
-      querySelectorAll: () => []
+      querySelector: () => null,
+      querySelectorAll: () => [],
+      addEventListener() {}
     };
 
     const { renderLiveTicker } = await import('../public/js/views/header-ticker.js');
@@ -323,6 +328,7 @@ async function main() {
     const { initTrackerView } = await import('../public/js/views/tracker-view.js');
     const { initAcademyView } = await import('../public/js/views/academy-view.js');
     const { initAboutView } = await import('../public/js/views/about-view.js');
+    const { initInteractiveTour } = await import('../public/js/views/tour-guide.js');
 
     const mockApp = {
       activeTab: 'scanner',
@@ -334,7 +340,7 @@ async function main() {
         sourceMode: 'live-edge',
         updatedAt: new Date().toISOString(),
         fxRates: { USD: 1, TRY: 50.67, CNY: 6.68, EUR: 0.91 },
-        feeds: { csfloatLive: true, steam: true, youpin: true },
+        feeds: { csfloatLive: true, buff163: true, steam: true, youpin: true },
         verifySteamLive: async () => ({})
       },
       settings: {
@@ -345,7 +351,7 @@ async function main() {
         leg2: { name: 'AK-47 | Redline (Field-Tested)', steamUsd: 22, marketUsd: 20.1 }
       },
       findItemByName: (n) => mergedSample.find((x) => x.n.toLowerCase() === String(n).toLowerCase()) || null,
-      saveSettings() {}, saveCycles() {}, toast() {}, openCommandPalette() {}, applyItemToLeg() {}, applyPair() {}, toggleWatchlist() {}
+      switchTab() {}, saveSettings() {}, saveCycles() {}, toast() {}, openCommandPalette() {}, applyItemToLeg() {}, applyPair() {}, toggleWatchlist() {}
     };
 
     const scannerView = initScannerView(mockApp);
@@ -353,6 +359,7 @@ async function main() {
     const trackerView = initTrackerView(mockApp);
     const academyView = initAcademyView();
     const aboutView = initAboutView(mockApp);
+    const tour = initInteractiveTour(mockApp);
 
     let runtimeOk = true;
     for (const lang of ['en', 'tr']) {
@@ -364,11 +371,14 @@ async function main() {
         trackerView.render();
         academyView.render();
         aboutView.render();
+        tour.start();
+        tour.stop(false);
         const scannerRows = idMap.get('scannerTableBody')?.children?.length || 0;
         const tickerChips = idMap.get('tickerTrack')?.children?.length || 0;
         const stratCards = idMap.get('advisorStrategiesGrid')?.children?.length || 0;
-        if (scannerRows < 20 || tickerChips < 4 || stratCards < 2) {
-          fail(`Runtime render [${lang}] insufficient DOM nodes: scannerRows=${scannerRows}, tickerChips=${tickerChips}, stratCards=${stratCards}`);
+        const agentChildren = idMap.get('spreadAgentCard')?.children?.length || 0;
+        if (scannerRows < 20 || tickerChips < 4 || stratCards < 2 || agentChildren < 2) {
+          fail(`Runtime render [${lang}] insufficient DOM nodes: scannerRows=${scannerRows}, tickerChips=${tickerChips}, stratCards=${stratCards}, agent=${agentChildren}`);
           runtimeOk = false;
         }
       } catch (err) {
@@ -377,10 +387,15 @@ async function main() {
       }
     }
     setLang('en', false);
-    if (runtimeOk) {
+    const buffCount = mergedSample.filter((x) => (x.b || 0) > 0).length;
+    if (runtimeOk && buffCount > 2000 && indexHtml.includes('name="color-scheme" content="dark"')) {
       const rowsCount = idMap.get('scannerTableBody')?.children?.length || 0;
       const tickerCount = idMap.get('tickerTrack')?.children?.length || 0;
-      pass(`Runtime DOM render audit (EN & TR) passed with 0 errors: Scanner rendered ${rowsCount} rows/page, Ticker ${tickerCount} live chips.`);
+      pass(
+        `Runtime DOM render & SPREAD Agent V4 audit (EN & TR) passed: Scanner ${rowsCount} rows, Ticker ${tickerCount} chips, Buff163 ${buffCount} items, Tour OK, Dark-Default OK.`
+      );
+    } else if (runtimeOk) {
+      fail(`V4 check failed: buffCount=${buffCount}`);
     }
   }
 

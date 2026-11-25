@@ -72,7 +72,11 @@ export function initCalculatorView(app) {
     } catch {
       // ignore
     }
-    onboardingEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (app.tour) {
+      app.tour.start();
+    } else {
+      onboardingEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   });
 
   function renderCapitalPresets() {
@@ -360,6 +364,76 @@ export function initCalculatorView(app) {
       matchMeta.textContent = `${advisor.strategies.length} ${t('adv.stratsCount')} • ${t('adv.maxLabel')} ${advisor.effectiveMaxQ1}`;
     }
 
+    // SPREAD AGENT Executive Recommendation Card
+    const agentHost = document.getElementById('spreadAgentCard');
+    if (agentHost) {
+      clearNode(agentHost);
+      const brief = advisor.agentBrief;
+      if (!brief) {
+        agentHost.classList.add('hidden');
+      } else {
+        agentHost.classList.remove('hidden');
+        const trA = isTr();
+        const ap = brief.pair;
+        const isActivePick =
+          s.leg1.name.toLowerCase() === ap.leg1.item.n.toLowerCase() &&
+          s.leg2.name.toLowerCase() === ap.leg2.item.n.toLowerCase();
+
+        agentHost.appendChild(
+          el(
+            'div',
+            { className: 'agent-main-col' },
+            el(
+              'div',
+              { className: 'agent-head' },
+              el('span', { className: 'agent-badge' }, el('span', { className: 'agent-pulse' }), 'SPREAD AGENT'),
+              el(
+                'span',
+                { className: 'txt-muted num', style: { fontSize: '11px' } },
+                trA ? `6 kaynak • ${app.items.length.toLocaleString('tr-TR')} skin tarandı` : `6 feeds • ${app.items.length.toLocaleString('en-US')} skins scanned`
+              ),
+              el(
+                'span',
+                { className: `pill ${ap.confidenceScore >= 80 ? 'pill-mint' : 'pill-gold'}` },
+                `${t('adv.conf')} ${trA ? '%' : ''}${ap.confidenceScore}${trA ? '' : '%'}`
+              )
+            ),
+            el('div', { className: 'agent-headline' }, brief.headline),
+            el(
+              'div',
+              { className: 'agent-reasons' },
+              brief.reasons.map((r) => el('span', { className: 'agent-chip num' }, r))
+            ),
+            brief.splitHint ? el('div', { className: 'agent-split-note' }, brief.splitHint) : null
+          )
+        );
+
+        agentHost.appendChild(
+          el(
+            'div',
+            { className: 'agent-cta-col' },
+            el(
+              'div',
+              { className: 'agent-profit-big num txt-mint' },
+              `${money(ap.c1.netProfit, true)} `,
+              el('small', null, `(${fmtPct(ap.c1.netRoiPct, true)})`)
+            ),
+            el(
+              'button',
+              {
+                type: 'button',
+                className: `btn btn-sm ${isActivePick ? 'btn-mint' : 'btn-primary'}`,
+                onClick: () => app.applyPair(ap.leg1.item, ap.leg2.item, ap.leg1.m, ap.leg2.m)
+              },
+              isActivePick
+                ? trA ? '✓ Agent Önerisi Aktif' : '✓ Agent Pick Active'
+                : trA ? '⚡ Agent Teklifini Uygula' : '⚡ Apply Agent Pick'
+            )
+          )
+        );
+      }
+    }
+
     // Live Diagnostics on current selection
     if (diagHost && app.latestMetrics) {
       clearNode(diagHost);
@@ -476,7 +550,9 @@ export function initCalculatorView(app) {
             'div',
             { className: 'strategy-meta-strip num' },
             el('span', null, `~${p.reality.minDays}–${p.reality.maxDays}${tr ? 'G' : 'D'}`),
-            el('span', null, `${t('adv.eff')} ${tr ? '%' : ''}${p.utilizedPct.toFixed(0)}${tr ? '' : '%'}`),
+            p.leg1.m.vsBuffPct !== null && p.leg1.m.vsBuffPct <= 2.5
+              ? el('span', { className: 'txt-mint', title: tr ? 'Buff163 küresel nakit fiyatına göre fark' : 'vs Buff163 global cash benchmark' }, `Buff ${p.leg1.m.vsBuffPct <= 0 ? '' : '+'}${p.leg1.m.vsBuffPct.toFixed(1)}%`)
+              : el('span', null, `${t('adv.eff')} ${tr ? '%' : ''}${p.utilizedPct.toFixed(0)}${tr ? '' : '%'}`),
             el('span', { className: confCls }, `${t('adv.conf')} ${tr ? '%' : ''}${p.confidenceScore}${tr ? '' : '%'}`)
           ),
           el(

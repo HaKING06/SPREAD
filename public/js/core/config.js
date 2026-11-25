@@ -44,7 +44,8 @@ export const STORAGE_KEYS = {
   CYCLES: 'spread_haking_tr_v1_cycles',
   CUSTOM_ITEMS: 'spread_haking_tr_v1_custom_items',
   WATCHLIST: 'spread_haking_tr_v1_watchlist',
-  ONBOARDING_HIDDEN: 'spread_haking_tr_v1_onboarding_hidden'
+  ONBOARDING_HIDDEN: 'spread_haking_tr_v1_onboarding_hidden',
+  TOUR_DONE: 'spread_haking_tr_v1_tour_done'
 };
 
 export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;

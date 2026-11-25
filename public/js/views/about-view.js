@@ -29,6 +29,11 @@ export function initAboutView(app) {
         sub: tr ? 'Tarihsel fiyat + canlı /api/steam-verify 24s hacim' : 'Historical averages + live /api/steam-verify 24h volume'
       },
       {
+        title: 'Buff163 Global Cash Anchor',
+        status: isLive ? (feeds.buff163 !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
+        sub: tr ? 'Küresel nakit referans fiyatı & iskontolu giriş sinyali' : 'Global cash benchmark & undervalued entry signal'
+      },
+      {
         title: 'Youpin898 + Open ER-API FX',
         status: isLive ? (feeds.youpin !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
         sub: `1 USD = ₺${app.market.fxRates.TRY.toFixed(2)} | ¥${app.market.fxRates.CNY.toFixed(2)} | €${app.market.fxRates.EUR.toFixed(2)}`

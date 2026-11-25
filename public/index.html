@@ -10,6 +10,7 @@
   <meta name="keywords"
     content="CS2 arbitrage, CS2 arbitrage calculator, Steam arbitrage, CSFloat to Steam arbitrage, Youpin898 Steam arbitrage, CS2 spread scanner, Steam market fee calculator, what is CS2 arbitrage, CS2 skin trading profit, Valve 7 day trade protection" />
   <meta name="robots" content="index, follow" />
+  <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#08090c" />
 
   <!-- Canonical & Multilingual Hreflang SEO -->
@@ -330,32 +331,28 @@
     <!-- ================================================================= -->
     <section id="view-calculator" class="view-panel">
 
-      <!-- Crystal-Clear Newcomer Welcome Strip (Dismissible) -->
+      <!-- Crystal-Clear Newcomer Welcome Strip + Interactive Tour -->
       <div id="onboardingGuideCard" class="panel onboarding-card">
         <div class="onboarding-top">
           <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <span class="pill pill-gold" data-i18n="onboard.badge">HOW IT WORKS</span>
             <p class="onboarding-pitch" data-i18n="onboard.pitch">
-              Buy discounted CS2 skins/cases on CSFloat → sell higher on Steam → cash out via fast liquid skins for real
-              profit in a 14-day loop.
+              Buy discounted CS2 skins on CSFloat → sell higher on Steam → cash out via liquid skins in a 14-day profit loop.
             </p>
           </div>
           <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-            <a href="/academy" class="btn btn-sm btn-ghost" data-tab="academy" data-i18n="onboard.guide"
-              style="text-decoration: none;">Full Guide →</a>
+            <button id="startInteractiveTourBtn" type="button" class="btn btn-sm btn-tour" data-i18n="onboard.tourBtn">▶ Interactive Tour</button>
+            <a href="/academy" class="btn btn-sm btn-ghost" data-tab="academy" data-i18n="onboard.guide" style="text-decoration: none;">Guide →</a>
             <button id="dismissOnboardingBtn" type="button" class="btn btn-sm btn-ghost" title="Dismiss">✕</button>
           </div>
         </div>
         <div class="onboarding-bar">
           <div class="onboarding-pills">
-            <span class="onboard-pill"><span class="onboard-num">1</span> <span data-i18n="onboard.s1">Enter your budget
-                below</span></span>
+            <span class="onboard-pill"><span class="onboard-num">1</span> <span data-i18n="onboard.s1">Enter your budget</span></span>
             <span class="txt-muted">→</span>
-            <span class="onboard-pill"><span class="onboard-num">2</span> <span data-i18n="onboard.s2">Pick a ready
-                strategy card</span></span>
+            <span class="onboard-pill"><span class="onboard-num">2</span> <span data-i18n="onboard.s2">Apply SPREAD Agent pick</span></span>
             <span class="txt-muted">→</span>
-            <span class="onboard-pill"><span class="onboard-num">3</span> <span data-i18n="onboard.s3">Track your 14-day
-                cycle</span></span>
+            <span class="onboard-pill"><span class="onboard-num">3</span> <span data-i18n="onboard.s3">Track 14-day cycle</span></span>
           </div>
         </div>
       </div>
@@ -507,6 +504,7 @@
         </div>
 
         <div class="advisor-body">
+          <div id="spreadAgentCard" class="spread-agent-card hidden"></div>
           <div id="advisorDiagnosticsHost" class="diagnostics-stack"></div>
           <div id="advisorStrategiesGrid" class="strategies-grid"></div>
           <div class="split-plan-box">
@@ -1419,8 +1417,8 @@
         <div class="arch-pipeline" style="margin-top: 14px;">
           <div class="arch-node is-gold">
             <span class="arch-tag">STAGE 1 • PUBLIC FEEDS</span>
-            <strong>5 Independent Sources</strong>
-            <span class="txt-muted" style="font-size: 11px;">CSFloat • Steam • Youpin • Skinport • Market.CSGO</span>
+            <strong>6 Independent Sources</strong>
+            <span class="txt-muted" style="font-size: 11px;">CSFloat • Buff163 • Steam • Youpin • Skinport • M.CSGO</span>
           </div>
           <div class="arch-arrow">→</div>
           <div class="arch-node is-ice">

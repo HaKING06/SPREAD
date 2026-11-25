@@ -22,6 +22,7 @@ import { initAcademyView } from './views/academy-view.js';
 import { initAboutView } from './views/about-view.js';
 import { initVaultModal } from './views/vault-modal.js';
 import { initShareAndSupportModals } from './views/share-support-modals.js';
+import { initInteractiveTour } from './views/tour-guide.js';
 
 class SpreadApp {
   constructor() {
@@ -39,6 +40,7 @@ class SpreadApp {
     this.cmdPalette = null;
     this.vaultModal = null;
     this.shareSupport = null;
+    this.tour = null;
   }
 
   toast(message, kind = 'ok') {
@@ -81,6 +83,7 @@ class SpreadApp {
   reloadFromVault() {
     const theme = Vault.loadTheme();
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.colorScheme = theme;
     this.settings = Vault.loadSettings();
     this.cycles = Vault.loadCycles();
     this.customItems = Vault.loadCustomItems();
@@ -364,6 +367,7 @@ class SpreadApp {
         this.syncHeaderControls();
         syncUrlForTab(this.activeTab, true);
         this.renderAll();
+        this.tour?.refresh();
         this.toast(nextLang === 'tr' ? 'Dil Türkçe olarak kaydedildi.' : 'Language saved as English.');
       });
     });
@@ -484,11 +488,12 @@ class SpreadApp {
       this.toast(isTr() ? `Steam kesinti modu: ${labels[next]}` : `Steam fee mode: ${labels[next]}`);
     });
 
-    // Theme toggle
+    // Theme toggle (Always Dark by default; Light ONLY when explicitly chosen by user)
     document.getElementById('themeToggleBtn')?.addEventListener('click', () => {
       const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
       const next = current === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', next);
+      document.documentElement.style.colorScheme = next;
       Vault.saveTheme(next);
       this.views.calculator?.render();
     });
@@ -633,6 +638,7 @@ class SpreadApp {
     this.cmdPalette = initCommandPalette(this);
     this.vaultModal = initVaultModal(this);
     this.shareSupport = initShareAndSupportModals(this);
+    this.tour = initInteractiveTour(this);
     this.views.calculator = initCalculatorView(this);
     this.views.scanner = initScannerView(this);
     this.views.tracker = initTrackerView(this);

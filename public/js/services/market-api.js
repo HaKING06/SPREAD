@@ -65,6 +65,8 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       cfo: Number(p.cfo) || 0,
       q: Number(p.q) || 0,
       yp: Number(p.yp) || 0,
+      b: Number(p.b) || 0,
+      bo: Number(p.bo) || 0,
       v24: Number(p.v24) || 0,
       v7: Number(p.v7) || 0,
       v30: Number(p.v30) || 0,
@@ -120,6 +122,8 @@ export class MarketService {
         mergedPrices[k] = {
           ...prev,
           ...val,
+          b: val.b || prev.b || 0,
+          bo: val.bo || prev.bo || 0,
           v24: val.v24 || prev.v24 || 0,
           v7: val.v7 || prev.v7 || 0,
           v30: val.v30 || prev.v30 || 0,

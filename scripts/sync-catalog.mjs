@@ -28,6 +28,7 @@ const ENDPOINTS = {
   agents: 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/agents.json',
   csfloatLive: 'https://csfloat.com/api/v1/listings/price-list',
   csfloatOrders: 'https://prices.csgotrader.app/latest/csfloat.json',
+  buff163: 'https://prices.csgotrader.app/latest/buff163.json',
   steamPrices: 'https://prices.csgotrader.app/latest/steam.json',
   youpinPrices: 'https://prices.csgotrader.app/latest/youpin.json',
   skinportSales: 'https://api.skinport.com/v1/sales/history?app_id=730&currency=USD',
@@ -85,6 +86,7 @@ async function main() {
     agents,
     csfloatLive,
     csfloatOrders,
+    buff163Prices,
     steamPrices,
     youpinPrices,
     skinportSales,
@@ -96,6 +98,7 @@ async function main() {
     fetchJson('ByMykel agents.json', ENDPOINTS.agents),
     fetchJson('CSFloat Live Price List', ENDPOINTS.csfloatLive),
     fetchJson('CSGOTrader CSFloat Orders', ENDPOINTS.csfloatOrders),
+    fetchJson('Buff163 Global Benchmark', ENDPOINTS.buff163),
     fetchJson('CSGOTrader Steam Prices', ENDPOINTS.steamPrices),
     fetchJson('CSGOTrader Youpin898 Prices', ENDPOINTS.youpinPrices),
     fetchJson('Skinport Sales History (24h/7d/30d)', ENDPOINTS.skinportSales),
@@ -203,6 +206,9 @@ async function main() {
     const cfQty = cfLive?.qty || 0;
     const cfBuyOrder = Number(cfOrd?.highest_order?.price) || 0;
     const ypPrice = Number(youpinPrices[mhn]) || 0;
+    const b163Obj = buff163Prices?.[mhn];
+    const b163Price = Number(b163Obj?.starting_at?.price) || 0;
+    const b163Order = Number(b163Obj?.highest_order?.price) || 0;
 
     const sp = spMap.get(mhn) || { v24: 0, v7: 0, v30: 0, vm: 0 };
     const mv = mcsMap.get(mhn) || 0;
@@ -223,6 +229,8 @@ async function main() {
       cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
       q: cfQty,
       yp: ypPrice > 0 ? round2(ypPrice) : 0,
+      b: b163Price > 0 ? round2(b163Price) : 0,
+      bo: b163Order > 0 ? round2(b163Order) : 0,
       v24: sp.v24,
       v7: sp.v7,
       v30: sp.v30,

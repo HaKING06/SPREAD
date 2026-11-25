@@ -40,11 +40,12 @@ export const DICT = {
 
     // Onboarding & Banners
     'onboard.badge': 'HOW IT WORKS',
-    'onboard.pitch': 'Buy discounted CS2 skins/cases on CSFloat → sell higher on Steam → cash out via fast liquid skins for real profit in a 14-day loop.',
-    'onboard.s1': 'Enter your budget below',
-    'onboard.s2': 'Pick a ready strategy card',
-    'onboard.s3': 'Track your 14-day cycle',
-    'onboard.guide': 'Full Guide →',
+    'onboard.pitch': 'Buy discounted CS2 skins on CSFloat → sell higher on Steam → cash out via liquid skins in a 14-day profit loop.',
+    'onboard.s1': 'Enter your budget',
+    'onboard.s2': 'Apply SPREAD Agent pick',
+    'onboard.s3': 'Track 14-day cycle',
+    'onboard.tourBtn': '▶ Interactive Tour',
+    'onboard.guide': 'Guide →',
     'shared.banner': 'Shared Arbitrage Setup Loaded: Your friend’s exact loop configuration is now active on the desk.',
     'shared.clear': 'Clear URL',
 
@@ -73,7 +74,7 @@ export const DICT = {
     'calc.pts': 'pts',
 
     // Strategy Advisor
-    'adv.title': '⚡ Smart Capital Strategy Advisor',
+    'adv.title': '⚡ SPREAD Agent — Smart Strategy Advisor',
     'adv.allItems': 'Browse All 4,500+ Skins →',
     'adv.howFilters': 'ⓘ Filter Guide',
     'adv.style.ALL': 'Best Mix',
@@ -352,11 +353,12 @@ export const DICT = {
 
     // Onboarding & Banners
     'onboard.badge': 'NASIL ÇALIŞIR?',
-    'onboard.pitch': 'CSFloat’tan ucuza CS2 skin/kasa al → Steam’de kârlı sat → Hızlı satılan skinle tekrar nakde dönerek 14 günde gerçek kâr elde et.',
-    'onboard.s1': 'Aşağıya bütçeni yaz',
-    'onboard.s2': 'Hazır strateji kartından seç',
-    'onboard.s3': '14 günlük döngünü takip et',
-    'onboard.guide': 'Detaylı Rehber →',
+    'onboard.pitch': 'CSFloat’tan ucuza skin/kasa al → Steam’de kârlı sat → Hızlı satılan skinle tekrar nakde dön (14 günde net kâr).',
+    'onboard.s1': 'Bütçeni yaz',
+    'onboard.s2': 'SPREAD Agent önerisini seç',
+    'onboard.s3': '14 günlük döngüyü takip et',
+    'onboard.tourBtn': '▶ İnteraktif Tur',
+    'onboard.guide': 'Rehber →',
     'shared.banner': 'Paylaşılan Arbitraj Kurulumu Yüklendi: Arkadaşının gönderdiği döngü senaryosu masaya aktarıldı.',
     'shared.clear': 'URL Temizle',
 
@@ -385,7 +387,7 @@ export const DICT = {
     'calc.pts': 'puan',
 
     // Strategy Advisor
-    'adv.title': '⚡ Bütçene Özel Strateji Danışmanı',
+    'adv.title': '⚡ SPREAD Agent — Akıllı Strateji Danışmanı',
     'adv.allItems': 'Tüm 4.500+ Skini Gör →',
     'adv.howFilters': 'ⓘ Filtre Rehberi',
     'adv.style.ALL': 'Karma (Önerilen)',

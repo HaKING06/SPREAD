@@ -270,8 +270,9 @@ export function evaluateItemMetrics(item, opts) {
   const steamRaw = Number(item.s) || 0;
   const steam7 = Number(item.s7) || steamRaw;
   const steam30 = Number(item.s30) || steam7;
+  const steam90 = Number(item.s90) || steam30;
 
-  // V3 Anti-Manipulation Price Guard: min(24h, 7d, 30d * 1.12) eliminates artificial spikes
+  // V4 Anti-Manipulation Price Guard: min(24h, 7d, 30d * 1.12) eliminates artificial spikes
   let steamUsd = steamRaw;
   if (conservativeSteamPrice) {
     const candidates = [steamRaw];
@@ -287,6 +288,25 @@ export function evaluateItemMetrics(item, opts) {
       : useBuyOrderForLeg2 && item.cfo > 0
       ? Number(item.cfo)
       : Number(item.cf) || 0;
+
+  // Buff163 Global Cash Anchor (undervalued vs global benchmark detection)
+  const buff163Usd = Number(item.b) || 0;
+  const buff163OrderUsd = Number(item.bo) || 0;
+  const vsBuffPct = buff163Usd > 0 && marketBuyUsd > 0 ? ((marketBuyUsd - buff163Usd) / buff163Usd) * 100 : null;
+  const isBelowBuff = vsBuffPct !== null && vsBuffPct <= 2.5;
+  const isOverBuff = vsBuffPct !== null && vsBuffPct > 12;
+
+  // 90d -> 30d -> 7d Trend Momentum & Crash-Trap Shield
+  const trendPct30 = steam30 > 0 ? ((steam7 - steam30) / steam30) * 100 : 0;
+  const trendPct90 = steam90 > 0 ? ((steam30 - steam90) / steam90) * 100 : 0;
+  let trendStatus = 'STABLE';
+  if (trendPct30 < -11 || (trendPct30 < -7 && trendPct90 < -14)) {
+    trendStatus = 'FALLING';
+  } else if (trendPct30 > 20) {
+    trendStatus = 'SPIKING';
+  } else if (trendPct30 > 7) {
+    trendStatus = 'RISING';
+  }
 
   const effBuy = calcEffectiveBuyUsd(marketBuyUsd, buyFeePct);
   const netSteam = calcNetSteamUsd(steamUsd, steamFeeMode, steamCustomFeePct);
@@ -319,6 +339,13 @@ export function evaluateItemMetrics(item, opts) {
     steamRaw,
     marketBuyUsd,
     marketSellUsd,
+    buff163Usd,
+    buff163OrderUsd,
+    vsBuffPct,
+    isBelowBuff,
+    isOverBuff,
+    trendPct30,
+    trendStatus,
     effBuy,
     netSteam,
     netSell,
@@ -742,8 +769,13 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
 function computePairConfidence(l1, l2, c1, reality) {
   let conf = 94;
 
-  // Bonuses for institutional-grade depth & 30d stability
+  // Bonuses for institutional-grade depth, Buff163 fair value, trend safety & 30d stability
   if (l1.m.stability30 <= 0.07) conf += 3;
+  if (l1.m.isBelowBuff) conf += 4;
+  if (l1.m.isOverBuff) conf -= 7;
+  if (l1.m.trendStatus === 'FALLING') conf -= 9;
+  else if (l1.m.trendStatus === 'STABLE' || l1.m.trendStatus === 'RISING') conf += 2;
+  if (l2.m.trendStatus === 'FALLING') conf -= 6;
   if (l1.vel.bidAskPct >= 91) conf += 2;
   if (l2.vel.bidAskPct >= 91) conf += 2;
   if (l1.vel.tier === 'A' && l2.vel.tier === 'A') conf += 3;
@@ -932,6 +964,7 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       const speedScore = Math.round((l1.vel.score + l2.vel.score) / 2);
       const avgDays = (reality.minDays + reality.maxDays) / 2;
       const roiPer14d = c1.netRoiPct * (14 / Math.max(14, avgDays));
+      const roiPerDay = c1.netRoiPct / Math.max(14, avgDays);
       // Quantity-aware slow check: 1-3x liquid Tier B knife/glove (~1+ sale/day) is NOT slow!
       const slowDayLimit = cap >= 1500 ? 27 : 21;
       const hasSlowLeg =
@@ -941,6 +974,9 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
         (l2.vel.isKnifeOrGlove && (l2.vel.tier !== 'B' || c1.q2 > 5)) ||
         reality.maxDays >= slowDayLimit;
       const confidenceScore = computePairConfidence(l1, l2, c1, reality);
+      const buffBonus = l1.m.isBelowBuff ? 3.5 : l1.m.isOverBuff ? -4 : 0;
+      const trendBonus = l1.m.trendStatus === 'FALLING' ? -6 : l1.m.trendStatus === 'STABLE' ? 1.5 : 0;
+      const agentScore = Math.round((roiPer14d * 1.4 + confidenceScore * 0.28 + utilizedPct * 0.08 + buffBonus + trendBonus) * 10) / 10;
 
       evaluatedPairs.push({
         leg1: l1,
@@ -950,9 +986,12 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
         reality,
         utilizedPct,
         speedScore,
+        avgDays,
         roiPer14d,
+        roiPerDay,
         hasSlowLeg,
-        confidenceScore
+        confidenceScore,
+        agentScore
       });
     }
   }
@@ -1084,12 +1123,80 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
     )
   );
 
+  const finalStrategies = strategies.slice(0, 6);
+
+  // SPREAD Agent Executive Briefing: picks the sharpest risk-adjusted play + clear reasoning pills
+  let agentBrief = null;
+  if (finalStrategies.length > 0) {
+    const ranked = [...finalStrategies].sort((a, b) => (b.pair.agentScore || 0) - (a.pair.agentScore || 0));
+    const topStrat = ranked[0];
+    const p = topStrat.pair;
+    const altFast = finalStrategies.find((s) => s !== topStrat && (s.id === 'ULTRA_FAST' || s.id === 'LIQUID_CASES' || s.pair.leg1.vel.tier === 'A'));
+    const reasons = [];
+
+    reasons.push(
+      bi(
+        `+${p.roiPerDay.toFixed(2)}%/day yield (~${p.reality.minDays}–${p.reality.maxDays}d)`,
+        `Günde +%${p.roiPerDay.toFixed(2)} getiri (~${p.reality.minDays}–${p.reality.maxDays}g)`
+      )
+    );
+
+    if (p.leg1.m.vsBuffPct !== null) {
+      if (p.leg1.m.vsBuffPct <= 0) {
+        reasons.push(
+          bi(
+            `${Math.abs(p.leg1.m.vsBuffPct).toFixed(1)}% below Buff163`,
+            `Buff163'ten %${Math.abs(p.leg1.m.vsBuffPct).toFixed(1)} daha ucuz`
+          )
+        );
+      } else if (p.leg1.m.vsBuffPct <= 3.5) {
+        reasons.push(bi('Matches Buff163 cash price', 'Buff163 küresel fiyatında'));
+      }
+    }
+
+    if (p.leg1.m.trendStatus === 'FALLING') {
+      reasons.push(bi('Caution: 30d downtrend', 'Dikkat: 30g düşüş trendi'));
+    } else if (p.leg1.m.trendStatus === 'STABLE') {
+      reasons.push(bi('Stable 30d price', 'Stabil 30g fiyat'));
+    } else if (p.leg1.m.trendStatus === 'RISING') {
+      reasons.push(bi('Healthy upward trend', 'Sağlıklı yükseliş trendi'));
+    }
+
+    if (p.c1.q1 <= 5) {
+      reasons.push(bi(`Low effort (${p.c1.q1}x buy)`, `Zahmetsiz (${p.c1.q1} adet alım)`));
+    } else {
+      reasons.push(bi(`${p.leg1.vel.sold7d}+ sold/7d`, `7g'de ${p.leg1.vel.sold7d}+ satış`));
+    }
+
+    let splitHint = '';
+    if (cap >= 350 && altFast && altFast.pair.leg1.item.n !== p.leg1.item.n) {
+      const a1Pct = 65;
+      const a2Pct = 35;
+      splitHint = bi(
+        `Pro Split: ${a1Pct}% in ${p.leg1.item.n} (top profit) + ${a2Pct}% in ${altFast.pair.leg1.item.n} (instant liquidity).`,
+        `Akıllı Dağılım: %${a1Pct} ${p.leg1.item.n} (yüksek kâr) + %${a2Pct} ${altFast.pair.leg1.item.n} (anında likidite).`
+      );
+    }
+
+    agentBrief = {
+      strategy: topStrat,
+      pair: p,
+      headline: bi(
+        `Buy ${p.c1.q1}x ${p.leg1.item.n} → cash out via ${p.c1.q2}x ${p.leg2.item.n}`,
+        `${p.c1.q1}x ${p.leg1.item.n} al → Steam'de sat → ${p.c1.q2}x ${p.leg2.item.n} ile nakde dön`
+      ),
+      reasons: reasons.slice(0, 4),
+      splitHint
+    };
+  }
+
   return {
     tier,
     effectiveMaxQ1,
     totalCandidates: evaluatedPairs.length,
-    strategies: strategies.slice(0, 6),
-    bestBenchmark: strategies[0]?.pair || null
+    strategies: finalStrategies,
+    agentBrief,
+    bestBenchmark: agentBrief?.pair || finalStrategies[0]?.pair || null
   };
 }
 

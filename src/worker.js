@@ -15,6 +15,7 @@ const FX_CACHE_TTL = 3600;    // 1 hour
 const UPSTREAM = {
   csfloatLive: 'https://csfloat.com/api/v1/listings/price-list',
   csfloatOrders: 'https://prices.csgotrader.app/latest/csfloat.json',
+  buff163: 'https://prices.csgotrader.app/latest/buff163.json',
   steam: 'https://prices.csgotrader.app/latest/steam.json',
   youpin: 'https://prices.csgotrader.app/latest/youpin.json',
   marketCsgo: 'https://market.csgo.com/api/v2/prices/USD.json',
@@ -51,7 +52,7 @@ async function handleApiMarket(request, env, ctx) {
   const url = new URL(request.url);
   const forceRefresh = url.searchParams.get('refresh') === '1';
   const cache = caches.default;
-  const cacheKey = new Request(url.origin + '/api/market?v=2', { method: 'GET' });
+  const cacheKey = new Request(url.origin + '/api/market?v=3', { method: 'GET' });
 
   if (!forceRefresh) {
     try {
@@ -70,11 +71,12 @@ async function handleApiMarket(request, env, ctx) {
     const catalogReq = new Request(url.origin + '/data/catalog.json');
     const snapReq = new Request(url.origin + '/data/market-snapshot.json');
 
-    const [catalogRes, snapRes, cfLiveRes, cfOrdRes, steamRes, ypRes, mcsRes] = await Promise.allSettled([
+    const [catalogRes, snapRes, cfLiveRes, cfOrdRes, buffRes, steamRes, ypRes, mcsRes] = await Promise.allSettled([
       env.ASSETS.fetch(catalogReq),
       env.ASSETS.fetch(snapReq),
       fetchJsonWithTimeout(UPSTREAM.csfloatLive, 12000),
       fetchJsonWithTimeout(UPSTREAM.csfloatOrders, 12000),
+      fetchJsonWithTimeout(UPSTREAM.buff163, 12000),
       fetchJsonWithTimeout(UPSTREAM.steam, 12000),
       fetchJsonWithTimeout(UPSTREAM.youpin, 12000),
       fetchJsonWithTimeout(UPSTREAM.marketCsgo, 12000)
@@ -88,6 +90,7 @@ async function handleApiMarket(request, env, ctx) {
     const baseSnap = snapRes.status === 'fulfilled' && snapRes.value.ok ? await snapRes.value.json() : { prices: {} };
     const cfLiveArr = cfLiveRes.status === 'fulfilled' && Array.isArray(cfLiveRes.value) ? cfLiveRes.value : [];
     const cfOrdObj = cfOrdRes.status === 'fulfilled' && cfOrdRes.value ? cfOrdRes.value : {};
+    const buffObj = buffRes.status === 'fulfilled' && buffRes.value ? buffRes.value : {};
     const steamObj = steamRes.status === 'fulfilled' && steamRes.value ? steamRes.value : {};
     const ypObj = ypRes.status === 'fulfilled' && ypRes.value ? ypRes.value : {};
     const mcsItems = mcsRes.status === 'fulfilled' && Array.isArray(mcsRes.value?.items) ? mcsRes.value.items : [];
@@ -128,6 +131,9 @@ async function handleApiMarket(request, env, ctx) {
       const cfQty = cfLive?.qty || 0;
       const cfBuyOrder = Number(cfOrd?.highest_order?.price) || 0;
       const ypPrice = Number(ypObj[mhn]) || 0;
+      const bObj = buffObj[mhn];
+      const bPrice = Number(bObj?.starting_at?.price) || Number(prev.b) || 0;
+      const bOrder = Number(bObj?.highest_order?.price) || Number(prev.bo) || 0;
       const mv = mcsMap.has(mhn) ? mcsMap.get(mhn) : Number(prev.mv) || 0;
 
       if (steamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
@@ -141,6 +147,8 @@ async function handleApiMarket(request, env, ctx) {
           cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
           q: cfQty,
           yp: ypPrice > 0 ? round2(ypPrice) : 0,
+          b: bPrice > 0 ? round2(bPrice) : 0,
+          bo: bOrder > 0 ? round2(bOrder) : 0,
           v24: Number(prev.v24) || 0,
           v7: Number(prev.v7) || 0,
           v30: Number(prev.v30) || 0,
@@ -157,6 +165,7 @@ async function handleApiMarket(request, env, ctx) {
       feeds: {
         csfloatLive: cfLiveRes.status === 'fulfilled',
         csfloatOrders: cfOrdRes.status === 'fulfilled',
+        buff163: buffRes.status === 'fulfilled',
         steam: steamRes.status === 'fulfilled',
         youpin: ypRes.status === 'fulfilled',
         marketVol: mcsRes.status === 'fulfilled'
