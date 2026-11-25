@@ -503,7 +503,44 @@
           </div>
         </div>
 
+        <!-- V6 Optional Multi-Item Split / Basket Portfolio Mode Bar -->
+        <div class="basket-control-bar">
+          <div class="basket-toggle-wrap">
+            <label class="basket-switch" data-i18n-title="split.toggle.tip"
+              title="Splits large budgets across multiple buy &amp; parallel cashout skins instead of dumping 30x of a single skin.">
+              <input id="splitModeToggle" type="checkbox" />
+              <span class="basket-switch-track"></span>
+              <span class="basket-switch-label" data-i18n="split.toggle">🔀 Multi-Item Split Mode</span>
+            </label>
+            <span class="tip-badge" tabindex="0" data-i18n-tip="split.toggle.tip"
+              data-tip="Splits large budgets across multiple buy &amp; parallel cashout skins instead of dumping 30x of a single skin — faster sells, less slippage &amp; lower 7D risk.">?</span>
+          </div>
+
+          <div id="splitModeSelectors" class="basket-selectors hidden">
+            <label class="fee-chip">
+              <span data-i18n="split.buyLbl">Step 1 Buy Items:</span>
+              <select id="splitBuyCountSelect" class="advisor-mini-sel">
+                <option value="0" data-i18n="split.auto">Auto (Agent)</option>
+                <option value="1" data-i18n="split.item1">1 Item</option>
+                <option value="2" data-i18n="split.item2">2 Items</option>
+                <option value="3" data-i18n="split.item3">3 Items</option>
+              </select>
+            </label>
+            <label class="fee-chip">
+              <span data-i18n="split.sellLbl">Step 2 Sell Items:</span>
+              <select id="splitSellCountSelect" class="advisor-mini-sel">
+                <option value="0" data-i18n="split.auto">Auto (Agent)</option>
+                <option value="1" data-i18n="split.item1">1 Item</option>
+                <option value="2" data-i18n="split.item2">2 Items</option>
+                <option value="3" data-i18n="split.item3">3 Items</option>
+                <option value="4" data-i18n="split.item4">4 Items</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
         <div class="advisor-body">
+          <div id="basketBlueprintPanel" class="basket-blueprint hidden"></div>
           <div id="spreadAgentCard" class="spread-agent-card hidden"></div>
           <div id="advisorDiagnosticsHost" class="diagnostics-stack"></div>
           <div id="advisorStrategiesGrid" class="strategies-grid"></div>

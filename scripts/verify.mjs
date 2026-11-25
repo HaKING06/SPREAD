@@ -14,6 +14,7 @@ import {
   estimateExecutionReality,
   findBestExitsForLeg1
 } from '../public/js/core/math-engine.js';
+import { optimizeMultiItemBasket } from '../public/js/core/basket-optimizer.js';
 import { DICT, setLang, t } from '../public/js/core/i18n.js';
 import { parseSharedSetupFromUrl } from '../public/js/core/router-share.js';
 
@@ -297,6 +298,39 @@ async function main() {
     pass('Shareable Deep-Link parser verified cleanly.');
   } else {
     fail('Shareable Deep-Link parser failed validation.');
+  }
+
+  // 5b-V6. Multi-Item Split / Basket Portfolio Optimizer & Risk Engine Verification
+  {
+    const opts800 = {
+      marketplace: 'CSFLOAT',
+      buyFeePct: 0,
+      sellFeePct: 2,
+      withdrawFeePct: 0,
+      steamFeeMode: 'EXACT_VALVE',
+      conservativeSteamPrice: true
+    };
+    const autoBasket800 = optimizeMultiItemBasket(mergedSample, opts800, 800, { buyCount: 0, sellCount: 0 });
+    const split1x3 = optimizeMultiItemBasket(mergedSample, opts800, 800, { buyCount: 1, sellCount: 3 });
+    const autoOk =
+      autoBasket800?.plan &&
+      autoBasket800.plan.netProfitUsd > 200 &&
+      autoBasket800.plan.risk.popPct >= 90 &&
+      autoBasket800.plan.deployedCashPct >= 90;
+    const split1x3Ok =
+      split1x3?.plan &&
+      split1x3.plan.k1 === 1 &&
+      split1x3.plan.k2 === 3 &&
+      split1x3.plan.netProfitUsd > 190 &&
+      split1x3.baseline11 &&
+      split1x3.plan.risk.sigma14dPct < split1x3.baseline11.risk.sigma14dPct;
+    if (autoOk && split1x3Ok) {
+      pass(
+        `SPREAD Agent V6 Multi-Item Basket Optimizer verified: $800 Auto (${autoBasket800.plan.k1}→${autoBasket800.plan.k2}, +$${autoBasket800.plan.netProfitUsd.toFixed(2)}, PoP ${autoBasket800.plan.risk.popPct}%, ${autoBasket800.plan.deployedCashPct}% deployed) | 1→3 Split (+$${split1x3.plan.netProfitUsd.toFixed(2)}, σ ${split1x3.plan.risk.sigma14dPct}% < ${split1x3.baseline11.risk.sigma14dPct}%).`
+      );
+    } else {
+      fail(`SPREAD Agent V6 Basket Optimizer failed: autoOk=${autoOk}, split1x3Ok=${split1x3Ok}`);
+    }
   }
 
   // 5c. Runtime View Render Test (DOM Shim — catches TDZ, ReferenceError, empty scanner table in BOTH EN & TR!)

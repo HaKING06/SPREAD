@@ -241,6 +241,47 @@ class SpreadApp {
     this.toast(isTr() ? 'Döngü Faz 1 (Gün 0–7) olarak takibe alındı.' : 'Cycle added to Tracker (Phase 1 • Day 0–7).');
   }
 
+  createTrackedBasketCycle(plan) {
+    if (!plan || !plan.leg1Lines?.length || !plan.leg2Lines?.length) return;
+    const s = this.settings;
+    const nowIso = new Date().toISOString();
+    const l1Summary = plan.leg1Lines.map((l) => `${l.qty}x ${l.item.n}`).join(' + ');
+    const l2Summary = plan.leg2Lines.map((l) => `${l.qty}x ${l.item.n}`).join(' + ');
+    const tr = isTr();
+
+    this.cycles.unshift({
+      id: `cyc-basket-${Date.now()}`,
+      marketplace: s.marketplace,
+      capitalUsd: Math.round(s.capitalUsd * 100) / 100,
+      item1Name: plan.k1 === 1 ? plan.leg1Lines[0].item.n : `${tr ? 'Sepet' : 'Basket'} (${plan.k1}): ${l1Summary}`,
+      item1Img: plan.leg1Lines[0].item.img || '',
+      qty1: plan.totalQ1,
+      item2Name: plan.k2 === 1 ? plan.leg2Lines[0].item.n : `${tr ? 'Paralel Çıkış' : 'Split Exit'} (${plan.k2}): ${l2Summary}`,
+      item2Img: plan.leg2Lines[0].item.img || '',
+      qty2: plan.totalQ2,
+      expectedEndUsd: Math.round(plan.endCashEquivUsd * 100) / 100,
+      expectedProfitUsd: Math.round(plan.netProfitUsd * 100) / 100,
+      expectedRoiPct: Math.round(plan.netRoiPct * 100) / 100,
+      actualEndUsd: null,
+      actualProfitUsd: null,
+      note: tr
+        ? `Sepet Planı (${plan.k1} Al → ${plan.k2} Sat) • PoP %${plan.risk.popPct} • Taban +$${plan.instantFloorProfitUsd.toFixed(0)}`
+        : `Basket Plan (${plan.k1} Buy → ${plan.k2} Sell) • PoP ${plan.risk.popPct}% • Floor +$${plan.instantFloorProfitUsd.toFixed(0)}`,
+      phase: 1,
+      phaseStartedAt: nowIso,
+      cycleStartedAt: nowIso,
+      completedAt: null
+    });
+
+    this.saveCycles();
+    this.switchTab('tracker');
+    this.toast(
+      tr
+        ? `Akıllı Sepet (${plan.k1} Al → ${plan.k2} Sat) Faz 1 olarak takibe alındı.`
+        : `Smart Basket (${plan.k1} Buy → ${plan.k2} Sell) added to Cycle Tracker.`
+    );
+  }
+
   loadSampleCycles() {
     const now = Date.now();
     const hour = 3600 * 1000;

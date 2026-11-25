@@ -99,6 +99,9 @@ export const DEFAULT_SETTINGS = {
   conservativeSteamPrice: true, // Use min(24h, 7d) to guard against manipulated spikes
   capitalUsd: 200,
   compoundMode: 'REALISTIC',    // 'REALISTIC' | 'PROPORTIONAL'
+  splitMode: false,             // V6 Multi-Item Split / Basket Mode toggle
+  splitBuyCount: 0,             // 0 = Auto (Agent), 1 | 2 | 3
+  splitSellCount: 0,            // 0 = Auto (Agent), 1 | 2 | 3 | 4
   leg1: {
     name: 'Revolution Case',
     marketUsd: 0,
