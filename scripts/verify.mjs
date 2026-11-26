@@ -102,6 +102,21 @@ async function main() {
     pass('Strict CSP audit: zero inline executable <script> tags in public/index.html (JSON-LD SEO verified).');
   }
 
+  // 2a-HTML. Structural HTML Integrity Audit (tag balance + zero duplicate nav badges + zero stale V9 tooltips)
+  const tagImbalances = [];
+  for (const tag of ['div', 'section', 'span', 'p', 'strong', 'button', 'a', 'label', 'select']) {
+    const opens = (indexHtml.match(new RegExp(`<${tag}(?:\\s|>)`, 'gi')) || []).length;
+    const closes = (indexHtml.match(new RegExp(`</${tag}>`, 'gi')) || []).length;
+    if (opens !== closes) tagImbalances.push(`<${tag}>(${opens}/${closes})`);
+  }
+  const hasDupNavBadge = /<span class="nav-badge">[^<]+<\/span>\s*<span class="nav-badge">/i.test(indexHtml);
+  const hasStaleAgentV9 = /SPREAD AGENT V(?:8|9|10)\b|SPREAD Agent V(?:8|9|10)\b/i.test(indexHtml);
+  if (tagImbalances.length === 0 && !hasDupNavBadge && !hasStaleAgentV9) {
+    pass('HTML structural audit: 100% balanced tags, zero duplicate nav badges, zero stale V8-V10 labels.');
+  } else {
+    fail(`HTML structural audit failed: tagImbalances=[${tagImbalances.join(',')}], dupBadge=${hasDupNavBadge}, staleV9=${hasStaleAgentV9}`);
+  }
+
   // 2a. Global SEO & i18n Dictionary Integrity Check
   const enKeys = Object.keys(DICT.en);
   const trKeys = Object.keys(DICT.tr);

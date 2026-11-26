@@ -726,7 +726,7 @@ export function initCalculatorView(app) {
           target: '_blank',
           rel: 'noopener noreferrer',
           className: 'btn btn-sm btn-ghost',
-          title: 'Steam Topluluk Pazarı'
+          title: isTr() ? 'Steam Topluluk Pazarı' : 'Steam Community Market'
         },
         'Steam ↗'
       ),
@@ -737,7 +737,7 @@ export function initCalculatorView(app) {
           target: '_blank',
           rel: 'noopener noreferrer',
           className: 'btn btn-sm btn-ghost',
-          title: `${mkt.name} Pazar Sayfası`
+          title: isTr() ? `${mkt.name} Pazar Sayfası` : `${mkt.name} Market Page`
         },
         `${mkt.shortName} ↗`
       )
@@ -1301,6 +1301,17 @@ export function initCalculatorView(app) {
       if (modeVerdict.togglePill) {
         modePillEl.textContent = modeVerdict.togglePill;
         modePillEl.className = `mode-agent-pill num ${modeVerdict.togglePillCls}`;
+        modePillEl.title = trNow
+          ? modeVerdict.verdict === 'PREFER_SINGLE'
+            ? 'SPREAD Agent V11 Tekli vs. Sepet Kararı — Tekli Mod önde, tıklayıp geçebilirsin'
+            : modeVerdict.verdict === 'PREFER_BASKET'
+              ? 'SPREAD Agent V11 Tekli vs. Sepet Kararı — Sepet Modu önde, tıklayıp açabilirsin'
+              : 'SPREAD Agent V11 Tekli vs. Sepet Kararı — tıklayıp mod değiştir'
+          : modeVerdict.verdict === 'PREFER_SINGLE'
+            ? 'SPREAD Agent V11 Single vs. Basket Verdict — Single Mode leads, click to switch'
+            : modeVerdict.verdict === 'PREFER_BASKET'
+              ? 'SPREAD Agent V11 Single vs. Basket Verdict — Basket Mode leads, click to open'
+              : 'SPREAD Agent V11 Single vs. Basket Verdict — click to toggle mode';
         modePillEl.onclick = () => {
           if (modeVerdict.verdict === 'PREFER_SINGLE') {
             if (app.settings.splitMode) switchSplitMode(false, false);
@@ -1919,7 +1930,7 @@ export function initCalculatorView(app) {
                   className: 'btn btn-sm',
                   onClick: () => {
                     const linesTxt = [
-                      `SPREAD Agent V9 Single Plan (${money(s.capitalUsd)} • 1 -> 1)`,
+                      `SPREAD Agent V11 Single Plan (${money(s.capitalUsd)} • 1 -> 1)`,
                       `Est. Profit: ${money(ap.c1.netProfit, true)} (${fmtPct(ap.c1.netRoiPct, true)}) | Floor: ${money(ap.instantFloorProfit, true)} | PoP: ${singleMc.popPct}%`,
                       '',
                       `[1] BUY (${mkt.name} -> Steam):`,

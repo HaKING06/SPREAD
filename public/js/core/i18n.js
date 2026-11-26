@@ -13,7 +13,7 @@ export const DICT = {
   en: {
     // Meta & Routes
     'route.calculator.title': 'SPREAD — CS2 Arbitrage Calculator & Live Spread Terminal | spread.haking.tr',
-    'route.scanner.title': 'Live CS2 Skin Arbitrage Scanner (5,500+ Items) — SPREAD',
+    'route.scanner.title': 'Live CS2 Skin Arbitrage Scanner (6,000+ Items) — SPREAD',
     'route.tracker.title': '14-Day CS2 Trade Hold Cycle Tracker — SPREAD',
     'route.academy.title': 'What is CS2 Steam Arbitrage? Complete Guide & Fee Lab — SPREAD',
     'route.about.title': 'About SPREAD — Architecture, Live Data & Zero-Login Security',
@@ -75,7 +75,7 @@ export const DICT = {
 
     // Strategy Advisor
     'adv.title': '⚡ SPREAD Agent — Smart Strategy Advisor',
-    'adv.allItems': 'Browse All 5,500+ Skins →',
+    'adv.allItems': 'Browse All 6,000+ Skins →',
     'adv.howFilters': 'ⓘ Filter Guide',
     'adv.style.ALL': 'Best Mix',
     'adv.style.LOW_QTY': 'Few Items (≤10)',
@@ -274,7 +274,7 @@ export const DICT = {
     'about.t4.t': 'Real Sales Velocity & Anomaly Guard',
     'about.t4.d': 'Unlike naive spread tables that push dead capsules or manipulated floats, SPREAD cross-checks 24h/7d/30d sales volume, Bid/Ask depth, and Steam price history.',
     'about.pipeTitle': 'Live Multi-Source Data Pipeline (Cloudflare Edge)',
-    'about.pipeDesc': 'Every 5 minutes, our open-source Cloudflare Worker aggregates 7 independent public feeds into a normalized 5,500-item quant matrix, plus 20,000+ global live lookup and real CSFloat sales graph verification:',
+    'about.pipeDesc': 'Every 5 minutes, our open-source Cloudflare Worker aggregates 7 independent public feeds into a normalized 6,000+ item quant matrix (including 354+ Doppler phases), plus 20,000+ global live lookup and real Steam 7d/30d & CSFloat sales verification:',
     'about.mathTitle': 'Quantitative Engine Highlights',
 
     // Filter Guide Modal
@@ -346,13 +346,37 @@ export const DICT = {
     'custom.steamPrice': 'Steam Price',
     'custom.save': 'Save Item',
     'bulk.fillSample': 'Fill Sample CSV',
-    'bulk.importBtn': 'Import Items'
+    'bulk.importBtn': 'Import Items',
+
+    // Hover Tooltips (Localized Title Attributes)
+    'tip.search': 'Search 20,000+ CS2 Skins & Price Ranges (Ctrl+K)',
+    'tip.refresh': 'Refresh CSFloat, Steam, Youpin898 & FX Rates',
+    'tip.vault': 'Local JSON Backup & Restore',
+    'tip.support': 'Support SPREAD & Contact',
+    'tip.guide': 'Toggle Quick Start Bar',
+    'tip.theme': 'Dark / Light Theme',
+    'tip.buyFee': 'External Marketplace Buy Fee (CSFloat/Youpin default 0%)',
+    'tip.sellFee': 'External Marketplace Sell Fee (CSFloat 2% / Youpin 1%)',
+    'tip.withdrawFee': 'Optional Cashout / Bank / Crypto Withdrawal Fee (CSFloat 0.5%–2.5%)',
+    'tip.steamFee': 'Steam Community Market Fee Model',
+    'tip.steamFeeMode': 'Toggle Valve Cent / ÷1.15 / Custom %',
+    'tip.dismiss': 'Dismiss',
+    'tip.bestStrat': 'Automatically apply the highest-ranked strategy for your budget',
+    'tip.share': 'Share this arbitrage configuration via URL',
+    'tip.maxQty': 'Maximum units to purchase in Step 1',
+    'tip.speed': 'How fast recommended skins sell in real trading',
+    'tip.modeVerdict': 'SPREAD Agent V11 Single vs. Basket Head-to-Head Verdict',
+    'tip.leg1Mult': 'Leg 1 Steam Balance Multiplier',
+    'tip.leg2Mult': 'Leg 2 Cashout Multiplier',
+    'tip.antiManip': 'Uses realistic Steam sales history + min(24h, 7d, 30d) to filter artificial Steam spikes',
+    'tip.buyOrderLeg2': 'Evaluate Leg 2 using highest instant Buy Order instead of lowest listing',
+    'tip.resetFilters': 'Reset Filters'
   },
 
   tr: {
     // Meta & Routes
     'route.calculator.title': 'SPREAD — CS2 Arbitraj Hesaplayıcı ve Canlı Spread Terminali | spread.haking.tr',
-    'route.scanner.title': 'Canlı CS2 Skin Arbitraj Tarayıcısı (5.500+ Eşya) — SPREAD',
+    'route.scanner.title': 'Canlı CS2 Skin Arbitraj Tarayıcısı (6.000+ Eşya) — SPREAD',
     'route.tracker.title': '14 Günlük CS2 Aktif Döngü Takibi — SPREAD',
     'route.academy.title': 'CS2 Steam Arbitraj Nedir? Kapsamlı Rehber ve Komisyon Laboratuvarı — SPREAD',
     'route.about.title': 'Hakkında — SPREAD Sistem Mimarisi, Canlı Veriler ve Güvenlik',
@@ -414,7 +438,7 @@ export const DICT = {
 
     // Strategy Advisor
     'adv.title': '⚡ SPREAD Agent — Akıllı Strateji Danışmanı',
-    'adv.allItems': 'Tüm 5.500+ Skini Gör →',
+    'adv.allItems': 'Tüm 6.000+ Skini Gör →',
     'adv.howFilters': 'ⓘ Filtre Rehberi',
     'adv.style.ALL': 'Karma (Önerilen)',
     'adv.style.LOW_QTY': 'Az İşlem (≤10)',
@@ -613,7 +637,7 @@ export const DICT = {
     'about.t4.t': 'Gerçek Satış Hızı & Anomali Koruması',
     'about.t4.d': 'Ölü kapsül veya manipüle edilmiş fiyatları öneren basit tabloların aksine 24s/7g/30g satış hacmini, Bid/Ask derinliğini ve 90g fiyat geçmişini çapraz doğrular.',
     'about.pipeTitle': 'Canlı Çok Kaynaklı Veri Hattı (Cloudflare Edge)',
-    'about.pipeDesc': 'Açık kaynaklı Cloudflare Worker\'ımız 5 dakikada bir 7 bağımsız genel piyasa kaynağını 5.500 eşyalık matriste birleştirir; 20.000+ canlı global arama ve gerçek CSFloat satış grafiği doğrulaması yapar:',
+    'about.pipeDesc': 'Açık kaynaklı Cloudflare Worker\'ımız 5 dakikada bir 7 bağımsız genel piyasa kaynağını 6.000+ eşyalık matriste (354+ Doppler fazı dahil) birleştirir; 20.000+ canlı global arama ve gerçek Steam 7g/30g + CSFloat satış geçmişi doğrulaması yapar:',
     'about.mathTitle': 'Kantitatif Motor Özellikleri',
 
     // Filter Guide Modal
@@ -685,7 +709,31 @@ export const DICT = {
     'custom.steamPrice': 'Steam Fiyatı',
     'custom.save': 'Kaydet',
     'bulk.fillSample': 'Örnek CSV Doldur',
-    'bulk.importBtn': 'Listeye Aktar'
+    'bulk.importBtn': 'Listeye Aktar',
+
+    // Hover Tooltips (Yerelleştirilmiş Title İpuçları)
+    'tip.search': '20.000+ CS2 Skini ve Fiyat Aralığı Ara (Ctrl+K)',
+    'tip.refresh': 'CSFloat, Steam, Youpin898 ve Döviz Kurlarını Yenile',
+    'tip.vault': 'Yerel JSON Yedekleme ve Geri Yükleme',
+    'tip.support': 'SPREAD\'i Destekle ve İletişim',
+    'tip.guide': 'Hızlı Başlangıç Çubuğunu Aç/Kapat',
+    'tip.theme': 'Karanlık / Aydınlık Tema',
+    'tip.buyFee': 'Harici Pazar Alış Komisyonu (CSFloat/Youpin varsayılan %0)',
+    'tip.sellFee': 'Harici Pazar Satış Komisyonu (CSFloat %2 / Youpin %1)',
+    'tip.withdrawFee': 'Opsiyonel Çekim / Banka / Kripto Komisyonu (CSFloat %0,5–%2,5)',
+    'tip.steamFee': 'Steam Topluluk Pazarı Komisyon Modeli',
+    'tip.steamFeeMode': 'Valve Cent / ÷1.15 / Özel % Modunu Değiştir',
+    'tip.dismiss': 'Kapat',
+    'tip.bestStrat': 'Bütçene göre en yüksek puanlı stratejiyi masaya otomatik uygula',
+    'tip.share': 'Bu arbitraj kurulumunu URL ile paylaş',
+    'tip.maxQty': '1. Adımda alınacak maksimum eşya adedi',
+    'tip.speed': 'Önerilen skinlerin gerçek piyasada ne kadar hızlı satıldığı',
+    'tip.modeVerdict': 'SPREAD Agent V11 Tekli vs. Sepet Kararı',
+    'tip.leg1Mult': '1. Adım Steam Bakiye Çarpanı',
+    'tip.leg2Mult': '2. Adım Nakit Dönüş Çarpanı',
+    'tip.antiManip': 'Yapay Steam fiyat sıçramalarını elemek için gerçek Steam satış geçmişi + min(24s, 7g, 30g) kullanır',
+    'tip.buyOrderLeg2': '2. Adımı en düşük ilan yerine anında alış (Buy Order) fiyatıyla hesapla',
+    'tip.resetFilters': 'Filtreleri Sıfırla'
   }
 };
 

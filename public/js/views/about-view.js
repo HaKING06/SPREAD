@@ -19,21 +19,21 @@ export function initAboutView(app) {
 
     const nodes = [
       {
-        title: 'CSFloat Live + Real Sales Graph',
+        title: tr ? 'CSFloat Canlı + Gerçek Satış Grafiği' : 'CSFloat Live + Real Sales Graph',
         status: isLive ? (feeds.csfloatLive !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
         sub: tr
           ? 'Anlık taban fiyat, buy-order, ilan derinliği + canlı 24s/7g/30g CSFloat satış geçmişi'
           : 'Live min ask, buy orders, depth + real live 24h/7d/30d CSFloat sales history'
       },
       {
-        title: 'Steam Market Live Sales History + Order Book',
+        title: tr ? 'Steam Pazarı Canlı Satış Geçmişi + Emir Defteri' : 'Steam Market Live Sales History + Order Book',
         status: isLive ? (feeds.steam !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
         sub: tr
-            ? '1. Adım için gerçek Steam 24s/7g/30g satış geçmişi, son gerçekleşen satış fiyatı, gerçekçi satış hesabı ve anında Steam Buy-Order histogramı'
-            : 'Step 1 real Steam 24h/7d/30d sales history, last actual sale price, realistic clearing-price engine & instant Steam Buy-Order histogram'
+          ? '1. Adım için gerçek Steam 24s/7g/30g satış geçmişi, son gerçekleşen satış fiyatı, gerçekçi satış hesabı ve anında Steam Buy-Order histogramı'
+          : 'Step 1 real Steam 24h/7d/30d sales history, last actual sale price, realistic clearing-price engine & instant Steam Buy-Order histogram'
       },
       {
-        title: 'Buff163 Global Cash Anchor',
+        title: tr ? 'Buff163 Küresel Nakit Referansı' : 'Buff163 Global Cash Anchor',
         status: isLive ? (feeds.buff163 !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
         sub: tr ? 'Küresel nakit referans fiyatı & ortalama dönüş (drift) sinyali' : 'Global cash benchmark & mean-reversion drift signal'
       },
@@ -45,14 +45,14 @@ export function initAboutView(app) {
           : `${app.items.length.toLocaleString('en-US')} bundled skins + on-demand live lookup for rare knives & Dopplers`
       },
       {
-        title: 'SPREAD Agent V11 • Clearing-Price & Doppler Phases',
+        title: tr ? 'SPREAD Agent V11 • Gerçek Satış & Doppler Fazları' : 'SPREAD Agent V11 • Clearing-Price & Doppler Phases',
         status: 'OK',
         sub: tr
-            ? 'Gerçek Steam son satışa dayalı fiyatlama (hayali ilan koruması), 350+ canlı Doppler/Gamma Doppler fazı, Tekli vs. Sepet Meta-Hakem ve 500 sim. Monte Carlo CVaR'
-            : 'Real Steam recent-sales clearing engine (phantom ask guard), 350+ live Doppler/Gamma Doppler phases, Single vs. Basket Meta-Arbitrator & 500-sim Monte Carlo CVaR'
+          ? 'Gerçek Steam son satışa dayalı fiyatlama (hayali ilan koruması), 354+ canlı Doppler/Gamma Doppler fazı, Tekli vs. Sepet Meta-Hakem ve 500 sim. Monte Carlo CVaR'
+          : 'Real Steam recent-sales clearing engine (phantom ask guard), 354+ live Doppler/Gamma Doppler phases, Single vs. Basket Meta-Arbitrator & 500-sim Monte Carlo CVaR'
       },
       {
-        title: 'Youpin898 Live Order Book + Direct IDs',
+        title: tr ? 'Youpin898 Canlı Emir Defteri + Direkt ID' : 'Youpin898 Live Order Book + Direct IDs',
         status: isLive ? (feeds.youpin !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
         sub: tr
           ? `Canlı Youpin898 Ask + Alım Emri (Buy-Order), direkt skin linkleri (templateId) • 1 USD = ₺${app.market.fxRates.TRY.toFixed(2)} | ¥${app.market.fxRates.CNY.toFixed(2)}`

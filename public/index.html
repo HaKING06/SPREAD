@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>SPREAD — CS2 Arbitrage Calculator &amp; Live Spread Terminal | spread.haking.tr</title>
   <meta name="description"
-    content="Free, zero-login CS2 Steam arbitrage calculator &amp; live spread scanner for CSFloat, Youpin898, and Steam Community Market. Exact Valve cent fees, 5,500+ skins with 20,000+ global live lookup, real CSFloat sales velocity, 500-trial Monte Carlo risk engine, and 14-day trade-hold cycle tracker." />
+    content="Free, zero-login CS2 Steam arbitrage calculator &amp; live spread scanner for CSFloat, Youpin898, and Steam Community Market. Exact Valve cent fees, 6,000+ skins (354+ Doppler phases) with 20,000+ global live lookup, real Steam 7d/30d &amp; CSFloat sales velocity, 500-trial Monte Carlo risk engine, and 14-day trade-hold cycle tracker." />
   <meta name="keywords"
     content="CS2 arbitrage, CS2 arbitrage calculator, Steam arbitrage, CSFloat to Steam arbitrage, Youpin898 Steam arbitrage, CS2 spread scanner, Steam market fee calculator, what is CS2 arbitrage, CS2 skin trading profit, Valve 7 day trade protection" />
   <meta name="robots" content="index, follow" />
@@ -58,10 +58,10 @@
             "price": "0",
             "priceCurrency": "USD"
           },
-          "description": "Zero-login, open-source CS2 two-way arbitrage calculator and live spread scanner comparing CSFloat and Youpin898 against the Steam Community Market with real 24h/7d sales velocity and exact Valve cent fee math.",
+          "description": "Zero-login, open-source CS2 two-way arbitrage calculator and live spread scanner comparing CSFloat and Youpin898 against the Steam Community Market with real 24h/7d/30d sales velocity and exact Valve cent fee math.",
           "featureList": [
-            "Live CSFloat, Youpin898 and Steam spread scanner across 5,500+ bundled & 20,000+ live-searchable CS2 skins & cases",
-            "Smart Capital Strategy Advisor with Confidence Scores and real 24h/7d sales velocity",
+            "Live CSFloat, Youpin898 and Steam spread scanner across 6,000+ bundled (including 354+ Doppler phases) & 20,000+ live-searchable CS2 skins & cases",
+            "SPREAD Agent V11 Smart Capital Strategy Advisor with real Steam 7d/30d clearing prices, Monte Carlo risk engine & Single vs Basket Meta-Arbitrator",
             "Exact Valve $0.01 + $0.01 minimum Steam fee solver",
             "14-day two-phase trade-hold cycle tracker with local SHA-256 JSON backup vault",
             "Zero Steam login, zero API keys, strict CSP client-side security"
@@ -222,7 +222,7 @@
 
           <!-- Quick Command Search -->
           <button id="openCmdSearchBtn" type="button" class="cmd-search-btn"
-            title="Search 20,000+ CS2 Skins & Price Ranges (Ctrl+K)">
+            data-i18n-title="tip.search" title="Search 20,000+ CS2 Skins &amp; Price Ranges (Ctrl+K)">
             <span>⌕</span>
             <span class="cmd-search-text" data-i18n="hdr.search">Search skins...</span>
             <kbd>Ctrl+K</kbd>
@@ -230,32 +230,32 @@
 
           <!-- Live Sync -->
           <button id="syncLiveBtn" type="button" class="btn btn-sm" data-i18n="hdr.refresh"
-            title="Refresh CSFloat, Steam, Youpin898 & FX Rates">
+            data-i18n-title="tip.refresh" title="Refresh CSFloat, Steam, Youpin898 &amp; FX Rates">
             ↻ Refresh Live
           </button>
 
           <!-- Local JSON Vault -->
           <button id="openVaultBtn" type="button" class="btn btn-sm" data-i18n="hdr.vault"
-            title="Local JSON Backup & Restore">
+            data-i18n-title="tip.vault" title="Local JSON Backup &amp; Restore">
             ⛁ Vault / JSON
           </button>
 
           <!-- Support & Contact -->
           <button id="openSupportBtn" type="button" class="btn btn-sm"
             style="border-color: var(--gold-border); color: var(--gold);" data-i18n="hdr.support"
-            title="Support SPREAD & Contact">
+            data-i18n-title="tip.support" title="Support SPREAD &amp; Contact">
             ☕ Support
           </button>
 
           <!-- Quick Guide Toggle -->
           <button id="showGuideQuickBtn" type="button" class="btn btn-icon" aria-label="Quick Start Guide"
-            title="Toggle Quick Start Bar">
+            data-i18n-title="tip.guide" title="Toggle Quick Start Bar">
             ?
           </button>
 
           <!-- Theme Toggle -->
           <button id="themeToggleBtn" type="button" class="btn btn-icon" aria-label="Toggle Theme"
-            title="Dark / Light Theme">
+            data-i18n-title="tip.theme" title="Dark / Light Theme">
             ◐
           </button>
         </div>
@@ -270,7 +270,6 @@
           </a>
           <a href="/scanner" class="nav-tab" data-tab="scanner" style="text-decoration: none;">
             <span data-i18n="nav.scanner">Live Scanner</span>
-            <span class="nav-badge">5,500+</span>
             <span class="nav-badge">6,000+</span>
           </a>
           <a href="/tracker" class="nav-tab" data-tab="tracker" style="text-decoration: none;">
@@ -286,27 +285,27 @@
         </nav>
 
         <div class="fee-strip" aria-label="Fee Parameters">
-          <label class="fee-chip" title="External Marketplace Buy Fee (CSFloat/Youpin default 0%)">
+          <label class="fee-chip" data-i18n-title="tip.buyFee" title="External Marketplace Buy Fee (CSFloat/Youpin default 0%)">
             <span data-i18n="hdr.buyFee">Buy:</span>
             <input id="buyFeeInput" type="number" step="0.1" min="0" max="50" value="0" />
             <span>%</span>
           </label>
-          <label class="fee-chip" title="External Marketplace Sell Fee (CSFloat 2% / Youpin 1%)">
+          <label class="fee-chip" data-i18n-title="tip.sellFee" title="External Marketplace Sell Fee (CSFloat 2% / Youpin 1%)">
             <span data-i18n="hdr.sellFee">Sell:</span>
             <input id="sellFeeInput" type="number" step="0.1" min="0" max="50" value="2" />
             <span>%</span>
           </label>
-          <label class="fee-chip" title="Optional Cashout / Bank / Crypto Withdrawal Fee (CSFloat 0.5%–2.5%)">
+          <label class="fee-chip" data-i18n-title="tip.withdrawFee" title="Optional Cashout / Bank / Crypto Withdrawal Fee (CSFloat 0.5%–2.5%)">
             <span data-i18n="hdr.withdrawFee">Payout:</span>
             <input id="withdrawFeeInput" type="number" step="0.1" min="0" max="30" value="0" />
             <span>%</span>
           </label>
-          <div class="fee-chip" title="Steam Community Market Fee Model">
+          <div class="fee-chip" data-i18n-title="tip.steamFee" title="Steam Community Market Fee Model">
             <span data-i18n="hdr.steamFee">Steam:</span>
             <input id="steamFeeCustomInput" type="number" step="0.01" min="0" max="50" value="13.04" />
             <span>%</span>
             <button id="steamFeeModeBtn" type="button" class="fee-mode-pill"
-              title="Toggle Valve Cent / ÷1.15 / Custom %">
+              data-i18n-title="tip.steamFeeMode" title="Toggle Valve Cent / ÷1.15 / Custom %">
               Valve Cent
             </button>
           </div>
@@ -348,7 +347,7 @@
               Interactive Tour</button>
             <a href="/academy" class="btn btn-sm btn-ghost" data-tab="academy" data-i18n="onboard.guide"
               style="text-decoration: none;">Guide →</a>
-            <button id="dismissOnboardingBtn" type="button" class="btn btn-sm btn-ghost" title="Dismiss">✕</button>
+            <button id="dismissOnboardingBtn" type="button" class="btn btn-sm btn-ghost" data-i18n-title="tip.dismiss" title="Dismiss">✕</button>
           </div>
         </div>
         <div class="onboarding-bar">
@@ -435,11 +434,11 @@
           </button>
           <div style="display: flex; gap: 6px;">
             <button id="autoBestPairBtn" type="button" class="btn btn-sm" style="flex: 1;" data-i18n="calc.bestBtn"
-              title="Automatically apply the highest-ranked strategy for your budget">
+              data-i18n-title="tip.bestStrat" title="Automatically apply the highest-ranked strategy for your budget">
               ⚡ Best Strategy
             </button>
             <button id="openShareModalBtn" type="button" class="btn btn-sm" data-i18n="calc.shareBtn"
-              title="Share this arbitrage configuration via URL">
+              data-i18n-title="tip.share" title="Share this arbitrage configuration via URL">
               ↗ Share
             </button>
           </div>
@@ -463,7 +462,7 @@
             </button>
             <a href="/scanner" class="btn btn-sm" data-tab="scanner" data-i18n="adv.allItems"
               style="text-decoration: none;">
-              All 5,500+ Items →
+              All 6,000+ Items →
             </a>
           </div>
         </div>
@@ -482,7 +481,7 @@
           </div>
 
           <div class="advisor-controls-right">
-            <label class="fee-chip" title="Maximum units to purchase in Step 1">
+            <label class="fee-chip" data-i18n-title="tip.maxQty" title="Maximum units to purchase in Step 1">
               <span data-i18n="adv.maxQty">Max Items:</span>
               <select id="advisorMaxQtySelect" class="advisor-mini-sel num">
                 <option value="0" data-i18n="adv.auto">Auto</option>
@@ -494,7 +493,7 @@
               </select>
             </label>
 
-            <label class="fee-chip" title="How fast recommended skins sell in real trading">
+            <label class="fee-chip" data-i18n-title="tip.speed" title="How fast recommended skins sell in real trading">
               <span data-i18n="adv.speed">Sell Speed:</span>
               <select id="advisorSpeedSelect" class="advisor-mini-sel">
                 <option value="ULTRA" data-i18n="adv.speed.ULTRA">Sells Instantly</option>
@@ -511,7 +510,7 @@
           </div>
         </div>
 
-        <!-- V6/V9 Optional Multi-Item Split / Basket Portfolio Mode Bar -->
+        <!-- V11 Optional Multi-Item Split / Basket Portfolio Mode Bar -->
         <div class="basket-control-bar">
           <div class="basket-toggle-wrap">
             <label class="basket-switch" data-i18n-title="split.toggle.tip"
@@ -523,7 +522,7 @@
             <span class="tip-badge" tabindex="0" data-i18n-tip="split.toggle.tip"
               data-tip="Splits large budgets across multiple buy &amp; parallel cashout skins instead of dumping 30x of a single skin — faster sells, less slippage &amp; lower 7D risk.">?</span>
             <button id="splitModeAgentPill" type="button" class="mode-agent-pill hidden"
-              title="SPREAD Agent V9 Single vs Basket Head-to-Head Verdict"></button>
+              data-i18n-title="tip.modeVerdict" title="SPREAD Agent V11 Single vs. Basket Head-to-Head Verdict"></button>
           </div>
 
           <div id="splitModeSelectors" class="basket-selectors hidden">
@@ -643,7 +642,7 @@
                 <div class="leg-step-badge txt-mint" data-i18n="leg1.badge">LEG 1 • BALANCE BOOST</div>
                 <h2><span class="mkt-name">CSFloat</span> <span data-i18n="leg1.title">Buy → Steam Sell</span></h2>
               </div>
-              <span id="leg1MultBadge" class="pill pill-mint" title="Leg 1 Steam Balance Multiplier">M₁ = 1.0000x</span>
+              <span id="leg1MultBadge" class="pill pill-mint" data-i18n-title="tip.leg1Mult" title="Leg 1 Steam Balance Multiplier">M₁ = 1.0000x</span>
             </div>
 
             <div class="leg-action-strip">
@@ -715,7 +714,7 @@
                 <div class="leg-step-badge txt-gold" data-i18n="leg2.badge">LEG 2 • LIQUID CASHOUT</div>
                 <h2><span data-i18n="leg2.title">Steam Buy → Sell</span> (<span class="mkt-name">CSFloat</span>)</h2>
               </div>
-              <span id="leg2MultBadge" class="pill pill-gold" title="Leg 2 Cashout Multiplier">M₂ = 0.0000x</span>
+              <span id="leg2MultBadge" class="pill pill-gold" data-i18n-title="tip.leg2Mult" title="Leg 2 Cashout Multiplier">M₂ = 0.0000x</span>
             </div>
 
             <div id="leg2BasketDeskHost" class="desk-basket-host hidden"></div>
@@ -863,7 +862,7 @@
     </section>
 
     <!-- ================================================================= -->
-    <!-- VIEW 2: LIVE SCANNER (4,500+ CS2 SKINS & CASES)                   -->
+    <!-- VIEW 2: LIVE SCANNER (6,000+ CS2 SKINS & CASES)                   -->
     <!-- ================================================================= -->
     <section id="view-scanner" class="view-panel hidden">
 
@@ -898,12 +897,12 @@
 
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <label class="fee-chip" style="cursor: pointer;"
-                title="Uses min(24h, 7d, 30d×1.12) to filter artificial Steam spikes">
+                data-i18n-title="tip.antiManip" title="Uses realistic Steam sales history + min(24h, 7d, 30d) to filter artificial Steam spikes">
                 <input id="toggleConservativeSteam" type="checkbox" checked style="width: auto;" />
                 <span data-i18n="scan.antiManip">Anti-Manipulation (24h/7d)</span>
               </label>
               <label class="fee-chip" style="cursor: pointer;"
-                title="Evaluate Leg 2 using CSFloat highest Buy Order instead of lowest listing">
+                data-i18n-title="tip.buyOrderLeg2" title="Evaluate Leg 2 using highest instant Buy Order instead of lowest listing">
                 <input id="toggleBuyOrderLeg2" type="checkbox" style="width: auto;" />
                 <span data-i18n="scan.buyOrder">Leg 2 Buy Order</span>
               </label>
@@ -1492,7 +1491,8 @@
           (Cloudflare Edge)</h3>
         <p class="txt-sec" style="font-size: 12.5px; margin-top: 4px;" data-i18n="about.pipeDesc">
           Every 5 minutes, our open-source Cloudflare Worker aggregates 7 independent public feeds into a normalized
-          5,500-item quant matrix, plus 20,000+ global live lookup &amp; real CSFloat sales graph verification:
+          6,000-item quant matrix (incl. 354+ Doppler phases), plus 20,000+ global live lookup &amp; real Steam 7d/30d
+          sales verification:
         </p>
 
         <!-- Visual 4-Stage Pipeline Schematic -->
@@ -1506,19 +1506,16 @@
           <div class="arch-arrow">→</div>
           <div class="arch-node is-ice">
             <span class="arch-tag">STAGE 2 • CLOUDFLARE WORKER</span>
-            <strong>5,500+ Matrix + 20k Live Lookup</strong>
+            <strong>6,000+ Matrix + 20k Live Lookup</strong>
             <span class="txt-muted" style="font-size: 11px;">Edge Cache • Global /api/item-lookup • Zero User Data
               Logged</span>
           </div>
           <div class="arch-arrow">→</div>
           <div class="arch-node is-mint">
-            <span class="arch-tag">STAGE 3 • SPREAD AGENT V8 (CLIENT)</span>
-            <strong>Directional Quant &amp; Monte Carlo</strong>
-            <span class="txt-muted" style="font-size: 11px;">Leg-1 Steam Histogram • Leg-2 Cash Velocity • 500-Trial
-              <span class="arch-tag">STAGE 3 • SPREAD AGENT V11 (CLIENT)</span>
-              <strong>Real Steam Clearing &amp; Monte Carlo</strong>
-              <span class="txt-muted" style="font-size: 11px;">Real Steam 7d/30d Sales • Clearing Price • 500-Trial
-                CVaR</span>
+            <span class="arch-tag">STAGE 3 • SPREAD AGENT V11 (CLIENT)</span>
+            <strong>Real Steam Clearing &amp; Monte Carlo</strong>
+            <span class="txt-muted" style="font-size: 11px;">Real Steam 7d/30d Sales • Clearing Price • 500-Trial
+              CVaR</span>
           </div>
           <div class="arch-arrow">→</div>
           <div class="arch-node is-gold">
@@ -1534,62 +1531,39 @@
 
       <!-- Quantitative Engine Deep-Dive -->
       <div class="panel panel-pad">
-        <span class="pill pill-gold">SPREAD AGENT V9 • META-ARBITRATOR &amp; DIRECTIONAL QUANT</span>
-        <span class="pill pill-gold">SPREAD AGENT V10 • DOPPLER PHASES &amp; META-ARBITRATOR</span>
         <span class="pill pill-gold">SPREAD AGENT V11 • REAL STEAM SALES ENGINE &amp; DOPPLER PHASES</span>
         <h3 style="margin-top: 8px; font-size: 17px;" data-i18n="about.mathTitle">Quantitative Engine Highlights</h3>
 
         <div class="quant-cards-grid" data-lang-only="en" style="margin-top: 12px;">
           <div class="quant-card">
-            <strong>1. Single vs. Basket Head-to-Head Meta-Arbitrator</strong>
-            <p>Evaluates <strong>both Single Mode (1→1) and Multi-Item Basket Mode</strong> simultaneously across
-              profit, 500-trial EV, CVaR 5% crash floor &amp; order-book volume absorption — advising honestly when to
-              open Basket Mode or close it for higher profit.</p>
-            <strong>1. Full Doppler &amp; Gamma Doppler Phase Library (350+ Phases)</strong>
             <strong>1. Real Steam 7d/30d Sales History &amp; Clearing-Price Engine (V11)</strong>
             <p>Reads <strong>actual wear-matched Steam sales transactions</strong> (24h/7d/30d counts, last actual sale
               price, 7d weighted average) instead of trusting phantom lowest asks. Auto-prices Step 1 at realistic
-              clearing value with 1-click switchers for Realistic Sell, Last Sale, Lowest Ask &amp; Instant Buy-Order.
-            </p>
+              clearing value with 1-click switchers for Realistic Sell, Last Sale, Lowest Ask &amp; Instant Buy-Order.</p>
           </div>
           <div class="quant-card">
-            <strong>2. Full Doppler &amp; Gamma Doppler Phase Library (350+ Phases)</strong>
+            <strong>2. Full Doppler &amp; Gamma Doppler Phase Library (354+ Phases)</strong>
             <p>Splits every Doppler &amp; Gamma Doppler knife/skin into exact <strong>Phase 1–4, Ruby, Sapphire, Emerald
                 &amp; Black Pearl</strong> with unique phase icons, exact CSFloat/Youpin/Buff163 phase pricing, direct
-              <code>def_index + paint_index</code> CSFloat deep-links, and Leg-2 gem overpay guards.
-            </p>
+              <code>def_index + paint_index</code> CSFloat deep-links, and Leg-2 gem overpay guards.</p>
           </div>
           <div class="quant-card">
-            <strong>2. Directional Leg-1 Steam &amp; Leg-2 Cash Physics</strong>
-            <p>Step 1 sells on Steam — showing <strong>live Steam 24h sales, active Steam sell wall &amp; instant Steam
-                Buy-Order histograms</strong>. Step 2 sells on CSFloat or Youpin898 — showing strictly that market’s
-              real liquidity &amp; instant buy order.</p>
             <strong>3. Single vs. Basket Head-to-Head Meta-Arbitrator</strong>
             <p>Evaluates <strong>both Single Mode (1→1) and Multi-Item Basket Mode</strong> simultaneously across
               profit, 500-trial EV, CVaR 5% crash floor &amp; order-book volume absorption — advising honestly when to
               open Basket Mode or close it for higher profit.</p>
           </div>
           <div class="quant-card">
-            <strong>3. Live Youpin898 Ask + Buy-Order &amp; 20,000+ Lookup</strong>
             <strong>4. Live Youpin898 Ask + Buy-Order &amp; 20,000+ Lookup</strong>
             <p>Ingests 41,000+ live Youpin898 Ask &amp; Highest Buy-Order records with direct <code>templateId</code>
               links, real CSFloat sales history graphs, and on-demand <code>/api/item-lookup</code> for rare knives
               &amp; Dopplers.</p>
           </div>
           <div class="quant-card">
-            <strong>4. 500-Trial Fat-Tail Monte Carlo &amp; Steam Ask Guard</strong>
             <strong>5. 500-Trial Fat-Tail Monte Carlo &amp; Auto-Rebalancer</strong>
             <p>Simulates 500 correlated 7+7D trajectories for Profit Probability (<code>PoP %</code>), Expected Value
-              (<code>EV</code>), Worst-5% Crash (<code>CVaR</code>), Half-Kelly sizing, and flags 0-Steam-sale ask
-              illusions plus Step 2 Steam Buy-Order discounts.</p>
-            (<code>EV</code>), Worst-5% Crash (<code>CVaR</code>), Half-Kelly sizing, and flags thin Steam 7d sales
-            or Ask-over-Last-Sale illusions while auto-rebalancing desk baskets on add/remove.</p>
-          </div>
-          <div class="quant-card">
-            <strong>5. Multi-Item Parallel Basket &amp; Auto-Rebalancer</strong>
-            <p>Splits high budgets across 2–3 parallel order books using Almgren-Chriss marginal utility. Removing or
-              adding a skin (e.g. <code>3 → 2</code>) immediately re-balances remaining quantities to fill freed Steam
-              credit.</p>
+              (<code>EV</code>), Worst-5% Crash (<code>CVaR</code>), Half-Kelly sizing, and flags thin Steam 7d sales
+              or Ask-over-Last-Sale illusions while auto-rebalancing desk baskets on add/remove.</p>
           </div>
           <div class="quant-card">
             <strong>6. Owned Skin Optimizer &amp; Exact Valve Cent Math</strong>
@@ -1600,11 +1574,6 @@
 
         <div class="quant-cards-grid hidden" data-lang-only="tr" style="margin-top: 12px;">
           <div class="quant-card">
-            <strong>1. Tekli vs. Sepet Kafa Kafaya Meta-Hakem (Agent V9)</strong>
-            <p><strong>Tekli Mod (1→1) ile Çoklu Sepet Modu'nu</strong> her bütçede aynı anda kâr, 500 senaryolu EV,
-              CVaR %5 ve piyasa hacmi erime gününe göre kıyaslar; çıkış eşyası haftada 100+ satılan popüler skinse
-              sepeti kapatıp yüksek kâr almanı, tıkanma varsa sepeti açmanı tek tıkla önerir.</p>
-            <strong>1. Tam Doppler &amp; Gamma Doppler Faz Kütüphanesi (350+ Faz)</strong>
             <strong>1. Gerçek Steam 7g/30g Satış Geçmişi &amp; Gerçekçi Satış Motoru (V11)</strong>
             <p>Hayali en düşük Steam ilanına kanmak yerine <strong>Steam'in gerçek aşınma-eşleşmeli satış
                 işlemlerini</strong> (gerçek 24s/7g/30g satış adedi, son gerçekleşen satış fiyatı, 7g ağırlıklı
@@ -1612,52 +1581,33 @@
               Düşük İlan / Anında Sat arasında geçiş sunar.</p>
           </div>
           <div class="quant-card">
-            <strong>2. Tam Doppler &amp; Gamma Doppler Faz Kütüphanesi (350+ Faz)</strong>
+            <strong>2. Tam Doppler &amp; Gamma Doppler Faz Kütüphanesi (354+ Faz)</strong>
             <p>Her Doppler bıçağını ve Glock-18 Gamma Doppler'ı <strong>Phase 1–4, Ruby, Sapphire, Emerald &amp; Black
                 Pearl</strong> olarak ayrı ikon, ayrı CSFloat/Youpin/Buff163 faz fiyatı, direkt
-              <code>def_index + paint_index</code> CSFloat linki ve 2. adım gem korumasıyla modeller; Tekli vs. Sepet
-              Meta-Hakem ile kafa kafaya kıyaslar.
-            </p>
-            <code>def_index + paint_index</code> CSFloat linki ve 2. adım gem korumasıyla modeller.</p>
+              <code>def_index + paint_index</code> CSFloat linki ve 2. adım gem korumasıyla modeller.</p>
           </div>
           <div class="quant-card">
-            <strong>2. Yönlü Likidite: 1. Adım Steam • 2. Adım Nakit Pazar</strong>
-            <p>1. adımda Steam'de sattığın için <strong>canlı Steam 24s satış adedi, aktif Steam ilan duvarı ve anında
-                Steam Buy-Order histogramı</strong> gösterilir. 2. adımda yalnızca seçili nakit pazarın (CSFloat veya
-              Youpin898) gerçek satış hızı ve alım emri kullanılır.</p>
             <strong>3. Tekli vs. Sepet Kafa Kafaya Meta-Hakem</strong>
             <p><strong>Tekli Mod (1→1) ile Çoklu Sepet Modu'nu</strong> her bütçede aynı anda kâr, 500 senaryolu EV,
               CVaR %5 ve piyasa hacmi erime gününe göre kıyaslar; çıkış eşyası haftada 100+ satılan popüler skinse
               sepeti kapatıp yüksek kâr almanı, tıkanma varsa sepeti açmanı tek tıkla önerir.</p>
           </div>
           <div class="quant-card">
-            <strong>3. Canlı Youpin898 Emir Defteri &amp; 20.000+ Global Arama</strong>
             <strong>4. Canlı Youpin898 Emir Defteri &amp; 20.000+ Global Arama</strong>
             <p>41.000+ canlı Youpin898 Ask + Alım Emri (<code>ypo</code>) ve direkt <code>templateId</code> skin
               linkleri, gerçek CSFloat satış grafiği ve nadir Doppler/bıçaklar için anlık <code>/api/item-lookup</code>
               sorgusu sunar.</p>
           </div>
           <div class="quant-card">
-            <strong>4. 500 Senaryolu Monte Carlo &amp; Steam Emir Fırsatı</strong>
             <strong>5. 500 Senaryolu Monte Carlo &amp; Otomatik Sepet Dengeleyici</strong>
             <p>7+7G takas kilidi boyunca 500 senaryoda <code>PoP %</code>, <code>EV</code>, <code>CVaR %5</code> ve
-              Half-Kelly hesaplar; Steam 24s=0 ilan tuzaklarını uyarır ve 2. adımda <strong>Steam Emirle Al</strong>
-              fırsatını tek tıkla sunar.</p>
-            Half-Kelly hesaplar; zayıf 7g Steam hacmi ve ilan-son satış makasını uyarır, masada eşya çıkarınca
-            (<code>3 → 2</code>) kalan adetleri otomatik yeniden dengeler.</p>
-          </div>
-          <div class="quant-card">
-            <strong>5. Paralel Çoklu Sepet &amp; Otomatik Adet Dengeleyici</strong>
-            <p>Yüksek bütçeleri 2–3 paralel emir defterine böler. Masada bir eşya çıkardığınızda (<code>3 → 2</code>)
-              veya eklediğinizde boşta kalan Steam bakiyesini kalan skinlere otomatik olarak en kârlı adetle dağıtır.
-            </p>
+              Half-Kelly hesaplar; zayıf 7g Steam hacmi ve ilan-son satış makasını uyarır, masada eşya çıkarınca
+              (<code>3 → 2</code>) kalan adetleri otomatik yeniden dengeler.</p>
           </div>
           <div class="quant-card">
             <strong>6. Kendi Skinin İçin Plan &amp; Valve Cent Matematiği</strong>
             <p>Elindeki herhangi bir skini 1. adıma koyduğunda doğrudan nakit pazar satışı ile Steam arbitrajını
-              kıyaslar;
-              gerçek Valve cent komisyonu ve <code>M₂</code> bakiye iskontosuyla dürüst net kâr sunar.</p>
-            kıyaslar; gerçek Valve cent komisyonu ve <code>M₂</code> bakiye iskontosuyla dürüst net kâr sunar.</p>
+              kıyaslar; gerçek Valve cent komisyonu ve <code>M₂</code> bakiye iskontosuyla dürüst net kâr sunar.</p>
           </div>
         </div>
 
@@ -1779,7 +1729,7 @@
             <option value="PRICE_DESC" data-i18n="sort.PRICE_DESC">Price: High → Low</option>
           </select>
           <button id="cmdClearFiltersBtn" type="button" class="btn btn-sm btn-ghost" data-i18n="cmd.reset"
-            title="Reset Filters">Reset</button>
+            data-i18n-title="tip.resetFilters" title="Reset Filters">Reset</button>
         </div>
 
         <!-- Quick Price Range Chips -->

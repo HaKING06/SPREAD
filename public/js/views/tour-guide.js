@@ -40,11 +40,11 @@ function getTourSteps(app) {
     {
       id: 'split',
       selectors: ['.basket-control-bar'],
-      badge: tr ? 'YENİ • V6.2' : 'NEW • V6.2',
-      title: tr ? '3. 🔀 Sepet / Bölme Modu' : '3. 🔀 Multi-Item Split Mode',
+      badge: tr ? 'YENİ • V11' : 'NEW • V11',
+      title: tr ? '3. 🔀 Sepet / Bölme Modu & Meta-Hakem' : '3. 🔀 Multi-Item Split Mode & Meta-Arbitrator',
       body: tr
-        ? 'Yüksek bütçede tek skinin 30 adetini satmak yerine bu modu aç! Kaç farklı eşya alıp (1–3) kaç farklı eşyayla paralel çıkış yapacağını (1–4) seç ya da "Oto (Agent)" bırak — SPREAD Agent hız, kayma ve 7G fiyat riskine göre en verimli dağılımı kurar.'
-        : 'Instead of dumping 30x of a single skin on larger budgets, toggle Split Mode! Pick how many skins to buy (1–3) and cash out in parallel (1–4), or leave it on Auto (Agent) for optimal speed, slippage & 7D risk control.',
+        ? 'Yüksek bütçede tek skinin 30 adetini satmak yerine bu modu aç! SPREAD Agent V11 Tekli Mod ile Sepet Modunu kafa kafaya kıyaslar; hangisi daha hızlı ve daha kârlıysa sağdaki butonla anında önerir.'
+        : 'Instead of dumping 30x of a single skin on larger budgets, toggle Split Mode! SPREAD Agent V11 compares Single vs. Basket head-to-head and highlights the faster, higher-profit mode right next to this toggle.',
       demoAction: {
         label: splitOn
           ? tr ? '✓ Sepet Modu Açık (Kapat)' : '✓ Split Mode Active (Turn Off)'
@@ -64,11 +64,11 @@ function getTourSteps(app) {
     {
       id: 'agent',
       selectors: ['#basketBlueprintPanel', '#spreadAgentCard'],
-      badge: 'SPREAD AGENT',
-      title: tr ? '4. SPREAD Agent Canlı Teklifi & Sepet Planı' : '4. SPREAD Agent Live Pick & Basket Plan',
+      badge: 'SPREAD AGENT V11',
+      title: tr ? '4. SPREAD Agent V11 Canlı Teklifi & Gerçek Steam Satışları' : '4. SPREAD Agent V11 Live Pick & Real Steam Sales',
       body: tr
-        ? 'SPREAD Agent 6 canlı kaynağı (CSFloat, Buff163, Steam, Skinport, Market.CSGO, Youpin) tarar; Kâr İhtimali (PoP %), Anında Satış Tabanı ve paralel satış süresini hesaplar. Tek tıkla tüm sepeti masaya yükleyebilir veya takibe alabilirsin.'
-        : 'SPREAD Agent scans 6 live feeds (CSFloat, Buff163, Steam, Skinport, Market.CSGO, Youpin) to compute Profit Probability (PoP %), Instant Buy-Order Floor, and parallel exit days. Load the full basket to the desk or track it in one click.'
+        ? 'SPREAD Agent V11 7 canlı kaynağı (gerçek Steam 7g/30g satış geçmişi, CSFloat, Buff163, Youpin898, Skinport, Market.CSGO) ve 354+ Doppler fazını tarar; hayali ilan yerine gerçekçi satış fiyatından 500 senaryolu Monte Carlo CVaR hesaplar.'
+        : 'SPREAD Agent V11 scans 7 live feeds (including real Steam 7d/30d sales history, CSFloat, Buff163, Youpin898, Skinport, Market.CSGO) plus 354+ Doppler phases, pricing Step 1 at realistic clearing value with 500-trial Monte Carlo CVaR.'
     },
     {
       id: 'desk',
@@ -76,8 +76,8 @@ function getTourSteps(app) {
       badge: tr ? 'DÖNGÜ MASASI' : 'TRADE DESK',
       title: tr ? '5. 1. Adım & 2. Adım Canlı Masası' : '5. Live Step 1 & Step 2 Trade Desk',
       body: tr
-        ? 'Tekli modda en iyi 3 çıkış skinini tek tıkla kıyaslayabilir; Sepet yüklediğinde ise tüm eşyaları ayrı ayrı masada görüp adet/fiyat düzenleyebilir ve "+ Eşya Ekle" ile özelleştirebilirsin.'
-        : 'In single mode, swap among the top 3 Pareto cashout skins in 1 click. When a multi-item basket is loaded, all buy & exit items appear live on the desk with editable quantities, prices, and "+ Add Skin".',
+        ? '1. adımda gerçek son Steam satışlarını, tek tıkla Gerçekçi Satış / Son Satış / En Düşük İlan / Anında Sat butonlarını görürsün. Sepet yüklediğinde eşya ekleyip çıkarınca kalan adetler otomatik yeniden dengelenir.'
+        : 'Step 1 displays actual recent Steam sales with 1-click Realistic Sell / Last Sale / Lowest Ask / Instant Buy-Order presets. In Basket Mode, adding or removing any skin automatically rebalances remaining quantities.',
       tallFocus: true
     },
     {
@@ -93,10 +93,10 @@ function getTourSteps(app) {
       id: 'controls',
       selectors: ['.header-controls'],
       badge: tr ? 'ARAÇLAR' : 'TOOLS',
-      title: tr ? '7. Pazar, Kur, Fiyat Arama & Kasa' : '7. Market, Currency, Search & Local Vault',
+      title: tr ? '7. Pazar, Kur, 20.000+ Skin Arama & Kasa' : '7. Market, Currency, 20,000+ Search & Local Vault',
       body: tr
-        ? 'CSFloat / Youpin898 geçişi, para birimi ($/₺/¥/€), dil (EN/TR), fiyat aralıklı hızlı skin araması (Ctrl+K) ve SHA-256 yerel JSON yedeği her zaman üst çubuktadır.'
-        : 'Switch CSFloat / Youpin898, currency ($/₺/¥/€), language (EN/TR), price-range skin search (Ctrl+K), or SHA-256 local JSON backup anytime from the top bar.',
+        ? 'CSFloat / Youpin898 geçişi, para birimi ($/₺/¥/€), dil (EN/TR), 20.000+ skin & Doppler faz araması (Ctrl+K) ve SHA-256 yerel JSON yedeği her zaman üst çubuktadır.'
+        : 'Switch CSFloat / Youpin898, currency ($/₺/¥/€), language (EN/TR), 20,000+ skin & Doppler phase search (Ctrl+K), or SHA-256 local JSON backup anytime from the top bar.',
       isStickyHeader: true
     },
     {
@@ -105,8 +105,8 @@ function getTourSteps(app) {
       badge: tr ? 'SEKMELER' : 'VIEWS',
       title: tr ? '8. Canlı Tarayıcı, Rehber & Güven' : '8. Live Scanner, Guide & Trust',
       body: tr
-        ? 'Canlı Tarayıcıda 4.500+ skini filtrele, Arbitraj Rehberinde Valve’ın $0.01 komisyon laboratuvarını test et, Hakkında & Güven sekmesinde canlı 6 kaynak durumunu incele.'
-        : 'Filter 4,500+ skins in Live Scanner, test Valve’s $0.01 minimum fee lab in Arbitrage Guide, and inspect live 6-feed telemetry in About & Trust.',
+        ? 'Canlı Tarayıcıda 6.000+ skini (354+ Doppler fazı dahil) filtrele, Arbitraj Rehberinde Valve’ın $0.01 komisyon laboratuvarını test et, Hakkında & Güven sekmesinde canlı 7 kaynak durumunu incele.'
+        : 'Filter 6,000+ skins (incl. 354+ Doppler phases) in Live Scanner, test Valve’s $0.01 minimum fee lab in Arbitrage Guide, and inspect live 7-feed telemetry in About & Trust.',
       isStickyHeader: true
     }
   ];
