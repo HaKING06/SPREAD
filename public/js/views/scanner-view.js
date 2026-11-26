@@ -275,7 +275,7 @@ export function initScannerView(app) {
               className: 'txt-muted',
               title: tr ? `${mkt.name} anında satış (en yüksek alım emri)` : `${mkt.name} instant sell (highest buy order)`
             },
-            `${tr ? 'Anlık' : 'Bid'}: ${money(activeBidUsd)}`
+              `${tr ? 'Anlık' : 'Bid'}: ${money(activeBidUsd)}`
           )
           : null
       );
@@ -340,7 +340,7 @@ export function initScannerView(app) {
                 el('span', null, '/'),
                 el(
                   'a',
-                  { href: mkt.searchUrl(item.n), target: '_blank', rel: 'noopener noreferrer', className: 'txt-muted' },
+                  { href: mkt.searchUrl(item.n, item), target: '_blank', rel: 'noopener noreferrer', className: 'txt-muted' },
                   mkt.shortName
                 )
               )
@@ -359,7 +359,7 @@ export function initScannerView(app) {
           el(
             'div',
             { style: { fontSize: '10px', marginTop: '2px' }, className: 'txt-muted' },
-            `${m.velocity.volText}${s.marketplace === 'CSFLOAT' && item.q > 0 ? ` • ${item.q} ${tr ? 'ilan' : 'listed'}` : ''}`
+              `${m.velocity.volText}${s.marketplace === 'CSFLOAT' && item.q > 0 ? ` • ${item.q} ${tr ? 'ilan' : 'listed'}` : ''}`
           )
         ),
         // Market price

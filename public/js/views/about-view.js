@@ -26,9 +26,11 @@ export function initAboutView(app) {
           : 'Live min ask, buy orders, depth + real live 24h/7d/30d CSFloat sales history'
       },
       {
-        title: 'Steam Market (24h/7d/30d/90d)',
+        title: 'Steam Market Live Order Book + 24h',
         status: isLive ? (feeds.steam !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
-        sub: tr ? 'Tarihsel fiyat + canlı 24s hacim & medyan doğrulama' : 'Historical averages + live 24h sold volume & median'
+        sub: tr
+          ? '1. Adım için canlı Steam 24s satış adedi, aktif Steam ilan duvarı ve anında Steam Buy-Order (itemordershistogram)'
+          : 'Step 1 live Steam 24h sold count, active Steam sell wall & instant Steam Buy-Order histogram'
       },
       {
         title: 'Buff163 Global Cash Anchor',
@@ -43,18 +45,18 @@ export function initAboutView(app) {
           : `${app.items.length.toLocaleString('en-US')} bundled skins + on-demand live lookup for rare knives & Dopplers`
       },
       {
-        title: 'SPREAD Agent V7 • Monte Carlo & CVaR',
+        title: 'SPREAD Agent V8 • Directional Quant',
         status: 'OK',
         sub: tr
-            ? '500 senaryolu kalın-kuyruklu risk simülasyonu, Kâr İhtimali (PoP %) ve paralel sepet oto-dengeleme'
-            : '500-scenario fat-tail risk simulation, Profit Probability (PoP %) & parallel basket auto-rebalancing'
+          ? 'Yönlü likidite (1. Adım Steam / 2. Adım Nakit Pazar), 500 senaryolu Monte Carlo CVaR ve paralel sepet oto-dengeleme'
+          : 'Directional liquidity (Step 1 Steam / Step 2 Cash Market), 500-trial Monte Carlo CVaR & parallel basket auto-rebalancer'
       },
       {
-        title: 'Youpin898 Live Order Book + FX',
+        title: 'Youpin898 Live Order Book + Direct IDs',
         status: isLive ? (feeds.youpin !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
         sub: tr
-          ? `Canlı Youpin898 Ask + Alım Emri (Buy-Order) & Bid/Ask derinliği • 1 USD = ₺${app.market.fxRates.TRY.toFixed(2)} | ¥${app.market.fxRates.CNY.toFixed(2)}`
-          : `Live Youpin898 Ask + Highest Buy-Order & Bid/Ask tightness • 1 USD = ₺${app.market.fxRates.TRY.toFixed(2)} | ¥${app.market.fxRates.CNY.toFixed(2)}`
+          ? `Canlı Youpin898 Ask + Alım Emri (Buy-Order), direkt skin linkleri (templateId) • 1 USD = ₺${app.market.fxRates.TRY.toFixed(2)} | ¥${app.market.fxRates.CNY.toFixed(2)}`
+          : `Live Youpin898 Ask + Highest Buy-Order, direct skin deep-links (templateId) • 1 USD = ₺${app.market.fxRates.TRY.toFixed(2)} | ¥${app.market.fxRates.CNY.toFixed(2)}`
       },
       {
         title: tr ? 'Skinport + Market.CSGO + ByMykel' : 'Skinport + Market.CSGO + ByMykel',

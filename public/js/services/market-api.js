@@ -79,7 +79,11 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       cf30: Number(p.cf30) || 0,
       cfAvg7: Number(p.cfAvg7) || 0,
       st24: Number(p.st24) || 0,
+      st24Checked: Boolean(p.st24Checked),
       stMed: Number(p.stMed) || 0,
+      stBuyOrd: Number(p.stBuyOrd) || 0,
+      stSellCnt: Number(p.stSellCnt) || 0,
+      stBuyCnt: Number(p.stBuyCnt) || 0,
       isCustom: false
     });
   }
@@ -161,7 +165,8 @@ export class MarketService {
   }
 
   /**
-   * Fetches real-time Steam Market 24h Volume & Median (+ CSFloat Sales History ONLY in CSFLOAT mode!)
+   * Fetches real-time Steam Market 24h Volume & Median + Steam Order-Book Histogram
+   * (Highest Buy Order + Active Sell Wall!) AND CSFloat Sales History (in CSFLOAT mode only)
    * for up to 6 active desk / basket / top strategy items.
    */
   async verifySteamLive(names = [], liveItemsRef = null, marketplace = 'CSFLOAT') {
@@ -171,8 +176,13 @@ export class MarketService {
     const missing = unique.filter((n) => !this.steamLiveCache.has(cacheKeyOf(n)));
     if (missing.length > 0) {
       try {
-        const q = missing.map((n) => `name=${encodeURIComponent(n)}`).join('&');
-        const res = await fetchJsonSafe(`/api/steam-verify?mkt=${mkt}&${q}`, 8000);
+        const params = [];
+        for (const n of missing) {
+          const refIt = Array.isArray(liveItemsRef) ? liveItemsRef.find((x) => x.n === n) : null;
+          params.push(`name=${encodeURIComponent(n)}`);
+          params.push(`nid=${Number(refIt?.nid) || 0}`);
+        }
+        const res = await fetchJsonSafe(`/api/steam-verify?mkt=${mkt}&${params.join('&')}`, 9000);
         if (res?.ok && res.items) {
           for (const [k, v] of Object.entries(res.items)) {
             this.steamLiveCache.set(cacheKeyOf(k), v);
@@ -188,15 +198,16 @@ export class MarketService {
       if (rec) {
         out[n] = rec;
         const it = Array.isArray(liveItemsRef) ? liveItemsRef.find((x) => x.n === n) : null;
-        if (rec.live && rec.volume24h > 0) {
-          if (this.priceMap[n]) {
-            this.priceMap[n].st24 = rec.volume24h;
-            this.priceMap[n].stMed = rec.medianUsd;
-          }
-          if (it) {
-            it.st24 = rec.volume24h;
-            it.stMed = rec.medianUsd;
-          }
+        if (rec.live) {
+          const patch = {
+            ...(rec.sold24hChecked ? { st24: rec.volume24h, st24Checked: true } : {}),
+            ...(rec.medianUsd > 0 ? { stMed: rec.medianUsd } : {}),
+            ...(rec.steamBuyOrderUsd > 0 ? { stBuyOrd: rec.steamBuyOrderUsd } : {}),
+            ...(rec.steamSellCount > 0 ? { stSellCnt: rec.steamSellCount } : {}),
+            ...(rec.steamBuyCount > 0 ? { stBuyCnt: rec.steamBuyCount } : {})
+          };
+          if (this.priceMap[n]) Object.assign(this.priceMap[n], patch);
+          if (it) Object.assign(it, patch);
         }
         // Hydrate live CSFloat sales ONLY when CSFloat data was requested & returned
         if (mkt === 'CSFLOAT' && rec.csfloat?.live) {
@@ -219,42 +230,42 @@ export class MarketService {
   }
 
   async fetchLiveFx() {
-    try {
-      const apiFx = await fetchJsonSafe('/api/fx', 8000);
-      if (apiFx?.ok && apiFx.rates) {
-        return { rates: apiFx.rates, updatedAt: apiFx.updatedAt };
-      }
-    } catch {
-      // Fallback to direct CORS-enabled open.er-api.com
-    }
-    const direct = await fetchJsonSafe('https://open.er-api.com/v6/latest/USD', 8000);
-    if (direct?.rates) {
-      return {
-        rates: {
-          USD: 1,
-          TRY: Number(direct.rates.TRY) || DEFAULT_FX_RATES.TRY,
-          CNY: Number(direct.rates.CNY) || DEFAULT_FX_RATES.CNY,
-          EUR: Number(direct.rates.EUR) || DEFAULT_FX_RATES.EUR
-        },
-        updatedAt: direct.time_last_update_utc || new Date().toISOString()
-      };
-    }
-    return null;
-  }
+          try {
+            const apiFx = await fetchJsonSafe('/api/fx', 8000);
+            if (apiFx?.ok && apiFx.rates) {
+              return { rates: apiFx.rates, updatedAt: apiFx.updatedAt };
+            }
+          } catch {
+            // Fallback to direct CORS-enabled open.er-api.com
+          }
+          const direct = await fetchJsonSafe('https://open.er-api.com/v6/latest/USD', 8000);
+          if (direct?.rates) {
+            return {
+              rates: {
+                USD: 1,
+                TRY: Number(direct.rates.TRY) || DEFAULT_FX_RATES.TRY,
+                CNY: Number(direct.rates.CNY) || DEFAULT_FX_RATES.CNY,
+                EUR: Number(direct.rates.EUR) || DEFAULT_FX_RATES.EUR
+              },
+              updatedAt: direct.time_last_update_utc || new Date().toISOString()
+            };
+          }
+          return null;
+        }
 
   async lookupLiveItems(query) {
-    const q = String(query || '').trim();
-    if (q.length < 2) return [];
-    try {
-      const res = await fetchJsonSafe(`/api/item-lookup?q=${encodeURIComponent(q)}`, 8000);
-      if (res?.ok && Array.isArray(res.items)) return res.items;
-    } catch {
-      // Silent fallback
-    }
-    return [];
-  }
+          const q = String(query || '').trim();
+          if (q.length < 2) return [];
+          try {
+            const res = await fetchJsonSafe(`/api/item-lookup?q=${encodeURIComponent(q)}`, 8000);
+            if (res?.ok && Array.isArray(res.items)) return res.items;
+          } catch {
+            // Silent fallback
+          }
+          return [];
+        }
 
-  rebuildWithCustomItems(customItems) {
-    return mergeCatalogAndPrices(this.catalogRaw?.items || [], this.priceMap, customItems);
-  }
-}
+        rebuildWithCustomItems(customItems) {
+          return mergeCatalogAndPrices(this.catalogRaw?.items || [], this.priceMap, customItems);
+        }
+      }

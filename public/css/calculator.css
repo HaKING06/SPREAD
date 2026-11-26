@@ -302,6 +302,7 @@
   .calc-hero-strip {
     grid-template-columns: 1fr;
   }
+
   .hero-metrics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     border-left: none;
@@ -310,10 +311,12 @@
     border-bottom: 1px solid var(--border-hair);
     padding: 14px 0;
   }
+
   .hero-actions {
     flex-direction: row;
     flex-wrap: wrap;
   }
+
   .charts-grid {
     grid-template-columns: 1fr;
   }
@@ -323,9 +326,11 @@
   .legs-grid {
     grid-template-columns: 1fr;
   }
+
   .timeline-bar {
     grid-template-columns: 1fr;
   }
+
   .tl-bridge {
     flex-direction: row;
     justify-content: center;

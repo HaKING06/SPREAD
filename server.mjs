@@ -167,169 +167,219 @@ async function handleApiMarket(res, forceRefresh) {
       const bOrder = Number(bObj?.highest_order?.price) || Number(prev.bo) || 0;
       const mv = mcsMap.has(mhn) ? mcsMap.get(mhn) : Number(prev.mv) || 0;
 
-        const isEstSteam = steamUsd <= 0 && (item.c === 'Knives' || item.c === 'Gloves') && cfPrice > 0;
-        const effSteamUsd = isEstSteam ? Number(prev.s) || round2(Math.min(1850, Math.max(cfPrice, bPrice) * 1.32)) : steamUsd;
+      const isEstSteam = steamUsd <= 0 && (item.c === 'Knives' || item.c === 'Gloves') && cfPrice > 0;
+      const effSteamUsd = isEstSteam ? Number(prev.s) || round2(Math.min(1850, Math.max(cfPrice, bPrice) * 1.32)) : steamUsd;
 
-        if (effSteamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
-          liveCount += 1;
-          prices[mhn] = {
-            s: round2(effSteamUsd),
-            s7: round2(st7 || effSteamUsd),
-            s30: round2(st30 || effSteamUsd),
-            s90: round2(st90 || effSteamUsd),
-            ...(isEstSteam ? { sEst: 1 } : {}),
-            cf: cfPrice > 0 ? round2(cfPrice) : 0,
-            cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
-            q: cfQty,
-            yp: ypPrice > 0 ? round2(ypPrice) : 0,
-            ypo: ypBuyOrder > 0 ? round2(ypBuyOrder) : 0,
-            b: bPrice > 0 ? round2(bPrice) : 0,
-            bo: bOrder > 0 ? round2(bOrder) : 0,
-            v24: Number(prev.v24) || 0,
-            v7: Number(prev.v7) || 0,
-            v30: Number(prev.v30) || 0,
-            vm: Number(prev.vm) || 0,
-            mv
-          };
-        }
+      if (effSteamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
+        liveCount += 1;
+        prices[mhn] = {
+          s: round2(effSteamUsd),
+          s7: round2(st7 || effSteamUsd),
+          s30: round2(st30 || effSteamUsd),
+          s90: round2(st90 || effSteamUsd),
+          ...(isEstSteam ? { sEst: 1 } : {}),
+          cf: cfPrice > 0 ? round2(cfPrice) : 0,
+          cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
+          q: cfQty,
+          yp: ypPrice > 0 ? round2(ypPrice) : 0,
+          ypo: ypBuyOrder > 0 ? round2(ypBuyOrder) : 0,
+          b: bPrice > 0 ? round2(bPrice) : 0,
+          bo: bOrder > 0 ? round2(bOrder) : 0,
+          v24: Number(prev.v24) || 0,
+          v7: Number(prev.v7) || 0,
+          v30: Number(prev.v30) || 0,
+          vm: Number(prev.vm) || 0,
+          mv
+        };
       }
-
-      const jsonStr = JSON.stringify({
-        ok: true,
-        mode: 'live-local',
-        updatedAt: new Date().toISOString(),
-        feeds: {
-          csfloatLive: cfLiveRes.status === 'fulfilled',
-          csfloatOrders: cfOrdRes.status === 'fulfilled',
-          buff163: buffRes.status === 'fulfilled',
-          steam: steamRes.status === 'fulfilled',
-          youpin: ypRes.status === 'fulfilled',
-          marketVol: mcsRes.status === 'fulfilled'
-        },
-        count: liveCount,
-        prices
-      });
-
-      cacheStore.market = { expiresAt: now + 5 * 60 * 1000, payload: jsonStr };
-      res.writeHead(200, {
-        ...SECURITY_HEADERS,
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-Spread-Cache': 'MISS'
-      });
-      res.end(jsonStr);
-    } catch (err) {
-      res.writeHead(502, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: String(err?.message || err) }));
     }
+
+    const jsonStr = JSON.stringify({
+      ok: true,
+      mode: 'live-local',
+      updatedAt: new Date().toISOString(),
+      feeds: {
+        csfloatLive: cfLiveRes.status === 'fulfilled',
+        csfloatOrders: cfOrdRes.status === 'fulfilled',
+        buff163: buffRes.status === 'fulfilled',
+        steam: steamRes.status === 'fulfilled',
+        youpin: ypRes.status === 'fulfilled',
+        marketVol: mcsRes.status === 'fulfilled'
+      },
+      count: liveCount,
+      prices
+    });
+
+    cacheStore.market = { expiresAt: now + 5 * 60 * 1000, payload: jsonStr };
+    res.writeHead(200, {
+      ...SECURITY_HEADERS,
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Spread-Cache': 'MISS'
+    });
+    res.end(jsonStr);
+  } catch (err) {
+    res.writeHead(502, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: String(err?.message || err) }));
   }
+}
 
 async function handleApiFx(res) {
-    const now = Date.now();
-    if (cacheStore.fx.payload && now < cacheStore.fx.expiresAt) {
-      res.writeHead(200, {
-        ...SECURITY_HEADERS,
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-Spread-Cache': 'HIT'
-      });
-      res.end(cacheStore.fx.payload);
-      return;
-    }
-
-    try {
-      const data = await fetchJsonTimeout('https://open.er-api.com/v6/latest/USD', 10000);
-      const rates = data?.rates || {};
-      const jsonStr = JSON.stringify({
-        ok: true,
-        base: 'USD',
-        updatedAt: data?.time_last_update_utc || new Date().toISOString(),
-        rates: {
-          USD: 1,
-          TRY: Number(rates.TRY) || 34.5,
-          CNY: Number(rates.CNY) || 7.25,
-          EUR: Number(rates.EUR) || 0.92
-        }
-      });
-      cacheStore.fx = { expiresAt: now + 60 * 60 * 1000, payload: jsonStr };
-      res.writeHead(200, {
-        ...SECURITY_HEADERS,
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-Spread-Cache': 'MISS'
-      });
-      res.end(jsonStr);
-    } catch (err) {
-      res.writeHead(502, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: String(err?.message || err) }));
-    }
+  const now = Date.now();
+  if (cacheStore.fx.payload && now < cacheStore.fx.expiresAt) {
+    res.writeHead(200, {
+      ...SECURITY_HEADERS,
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Spread-Cache': 'HIT'
+    });
+    res.end(cacheStore.fx.payload);
+    return;
   }
 
-  function parseCsfloatGraph(arr) {
-    if (!Array.isArray(arr) || arr.length === 0) return null;
-    const now = new Date();
-    const utcDayFrac = (now.getUTCHours() + now.getUTCMinutes() / 60) / 24;
-    const todayCnt = Number(arr[0]?.count) || 0;
-    const ydayCnt = Number(arr[1]?.count) || 0;
-    const rolling24h = Math.max(todayCnt, Math.round(todayCnt + ydayCnt * Math.max(0, 1 - utcDayFrac)));
-    const s7 = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.count) || 0), 0);
-    const s30 = arr.slice(0, 30).reduce((a, x) => a + (Number(x?.count) || 0), 0);
-    const weightedSum = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.avg_price) || 0) * (Number(x?.count) || 0), 0);
-    const avg7Usd = s7 > 0 ? round2(weightedSum / s7 / 100) : 0;
-    return { live: true, sold24h: rolling24h, sold7d: s7, sold30d: s30, avg7Usd };
+  try {
+    const data = await fetchJsonTimeout('https://open.er-api.com/v6/latest/USD', 10000);
+    const rates = data?.rates || {};
+    const jsonStr = JSON.stringify({
+      ok: true,
+      base: 'USD',
+      updatedAt: data?.time_last_update_utc || new Date().toISOString(),
+      rates: {
+        USD: 1,
+        TRY: Number(rates.TRY) || 34.5,
+        CNY: Number(rates.CNY) || 7.25,
+        EUR: Number(rates.EUR) || 0.92
+      }
+    });
+    cacheStore.fx = { expiresAt: now + 60 * 60 * 1000, payload: jsonStr };
+    res.writeHead(200, {
+      ...SECURITY_HEADERS,
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Spread-Cache': 'MISS'
+    });
+    res.end(jsonStr);
+  } catch (err) {
+    res.writeHead(502, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: String(err?.message || err) }));
+  }
+}
+
+function parseCsfloatGraph(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const now = new Date();
+  const utcDayFrac = (now.getUTCHours() + now.getUTCMinutes() / 60) / 24;
+  const todayCnt = Number(arr[0]?.count) || 0;
+  const ydayCnt = Number(arr[1]?.count) || 0;
+  const rolling24h = Math.max(todayCnt, Math.round(todayCnt + ydayCnt * Math.max(0, 1 - utcDayFrac)));
+  const s7 = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.count) || 0), 0);
+  const s30 = arr.slice(0, 30).reduce((a, x) => a + (Number(x?.count) || 0), 0);
+  const weightedSum = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.avg_price) || 0) * (Number(x?.count) || 0), 0);
+  const avg7Usd = s7 > 0 ? round2(weightedSum / s7 / 100) : 0;
+  return { live: true, sold24h: rolling24h, sold7d: s7, sold30d: s30, avg7Usd };
+}
+
+function parseSteamSummaryCount(htmlStr) {
+  if (!htmlStr || typeof htmlStr !== 'string') return 0;
+  const m = htmlStr.match(/>([0-9,]+)</);
+  if (!m) return 0;
+  const v = parseInt(m[1].replace(/,/g, ''), 10);
+  return Number.isFinite(v) ? v : 0;
+}
+
+async function handleSteamVerify(res, reqUrl) {
+  // CS2 skin names contain "|", so use repeated ?name= & ?nid= params (or ;; fallback)
+  const multiNames = reqUrl.searchParams.getAll('name');
+  const multiNids = reqUrl.searchParams.getAll('nid');
+  const legacyNames = (reqUrl.searchParams.get('names') || '')
+    .split(';;')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const nidMap = new Map();
+  multiNames.forEach((n, idx) => {
+    const clean = n.trim();
+    const nid = parseInt(multiNids[idx] || '0', 10);
+    if (clean && Number.isFinite(nid) && nid > 0) nidMap.set(clean, nid);
+  });
+
+  const names = Array.from(new Set([...multiNames, ...legacyNames].map((s) => s.trim())))
+    .filter((s) => s.length > 0 && s.length <= 130)
+    .slice(0, 6);
+
+  if (names.length === 0) {
+    res.writeHead(400, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: false, error: 'name param required' }));
+    return;
   }
 
-  async function handleSteamVerify(res, reqUrl) {
-    // CS2 skin names contain "|", so use repeated ?name= params (or ;; fallback)
-    const multiNames = reqUrl.searchParams.getAll('name');
-    const legacyNames = (reqUrl.searchParams.get('names') || '')
-      .split(';;')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const names = Array.from(new Set([...multiNames, ...legacyNames].map((s) => s.trim())))
-      .filter((s) => s.length > 0 && s.length <= 130)
-      .slice(0, 6);
+  const mkt = (reqUrl.searchParams.get('mkt') || 'CSFLOAT').toUpperCase() === 'YOUPIN' ? 'YOUPIN' : 'CSFLOAT';
+  const key = `${mkt}:${names.map((n) => `${n}:${nidMap.get(n) || 0}`).join(';;')}`;
+  const now = Date.now();
+  const cached = cacheStore.steamVerify.get(key);
+  if (cached && now < cached.expiresAt) {
+    res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(cached.payload);
+    return;
+  }
 
-    if (names.length === 0) {
-      res.writeHead(400, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: false, error: 'name param required' }));
-      return;
-    }
+  const results = {};
+  await Promise.allSettled(
+    names.map(async (name) => {
+      const enc = encodeURIComponent(name);
+      const nid = nidMap.get(name) || 0;
+      const stPoTask = fetchJsonTimeout(
+        `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${enc}`,
+        5000
+      );
+      const stHistTask =
+        nid > 0
+          ? fetchJsonTimeout(
+              `https://steamcommunity.com/market/itemordershistogram?country=US&language=english&currency=1&item_nameid=${nid}&two_factor=0`,
+              5000
+            )
+          : Promise.resolve(null);
+      const cfTask =
+        mkt === 'CSFLOAT'
+          ? fetchJsonTimeout(`https://csfloat.com/api/v1/history/${enc}/graph`, 5500)
+          : Promise.resolve(null);
 
-    const mkt = (reqUrl.searchParams.get('mkt') || 'CSFLOAT').toUpperCase() === 'YOUPIN' ? 'YOUPIN' : 'CSFLOAT';
-    const key = `${mkt}:${names.join(';;')}`;
-    const now = Date.now();
-    const cached = cacheStore.steamVerify.get(key);
-    if (cached && now < cached.expiresAt) {
-      res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(cached.payload);
-      return;
-    }
-
-    const results = {};
-    await Promise.allSettled(
-      names.map(async (name) => {
-        const enc = encodeURIComponent(name);
-        const tasks = [
-          fetchJsonTimeout(`https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${enc}`, 5000)
-        ];
-        if (mkt === 'CSFLOAT') {
-          tasks.push(fetchJsonTimeout(`https://csfloat.com/api/v1/history/${enc}/graph`, 5500));
-        }
-        const [stRes, cfRes] = await Promise.allSettled(tasks);
-        const entry = { live: false, volume24h: 0, medianUsd: 0, lowestUsd: 0, csfloat: null };
-        if (stRes?.status === 'fulfilled' && stRes.value?.success) {
-          entry.live = true;
-          entry.volume24h = Math.round(parseSteamNumber(stRes.value.volume));
-          entry.medianUsd = round2(parseSteamNumber(stRes.value.median_price));
-          entry.lowestUsd = round2(parseSteamNumber(stRes.value.lowest_price));
-        }
-        if (mkt === 'CSFLOAT' && cfRes?.status === 'fulfilled') {
-          const parsedCf = parseCsfloatGraph(cfRes.value);
-          if (parsedCf) entry.csfloat = parsedCf;
-        }
-        if (entry.live || entry.csfloat?.live) {
-          results[name] = entry;
-        }
-      })
-    );
+      const [stRes, histRes, cfRes] = await Promise.allSettled([stPoTask, stHistTask, cfTask]);
+      const entry = {
+        live: false,
+        sold24hChecked: false,
+        volume24h: 0,
+        medianUsd: 0,
+        lowestUsd: 0,
+        steamBuyOrderUsd: 0,
+        steamSellOrderUsd: 0,
+        steamBuyCount: 0,
+        steamSellCount: 0,
+        csfloat: null
+      };
+      if (stRes?.status === 'fulfilled' && stRes.value?.success) {
+        entry.live = true;
+        entry.sold24hChecked = true;
+        entry.volume24h = Math.round(parseSteamNumber(stRes.value.volume));
+        entry.medianUsd = round2(parseSteamNumber(stRes.value.median_price));
+        entry.lowestUsd = round2(parseSteamNumber(stRes.value.lowest_price));
+      }
+      if (histRes?.status === 'fulfilled' && histRes.value?.success === 1) {
+        const h = histRes.value;
+        const bo = Number(h.highest_buy_order) || 0;
+        const so = Number(h.lowest_sell_order) || 0;
+        if (bo > 0) entry.steamBuyOrderUsd = round2(bo / 100);
+        if (so > 0) entry.steamSellOrderUsd = round2(so / 100);
+        entry.steamBuyCount = parseSteamSummaryCount(h.buy_order_summary);
+        entry.steamSellCount = parseSteamSummaryCount(h.sell_order_summary);
+        entry.live = true;
+      }
+      if (mkt === 'CSFLOAT' && cfRes?.status === 'fulfilled' && cfRes.value) {
+        const parsedCf = parseCsfloatGraph(cfRes.value);
+        if (parsedCf) entry.csfloat = parsedCf;
+      }
+      if (entry.live || entry.csfloat?.live) {
+        results[name] = entry;
+      }
+    })
+  );
 
     const payload = JSON.stringify({ ok: true, updatedAt: new Date().toISOString(), items: results });
     cacheStore.steamVerify.set(key, { expiresAt: now + 15 * 60 * 1000, payload });

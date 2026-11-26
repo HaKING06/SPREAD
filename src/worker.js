@@ -138,72 +138,72 @@ async function handleApiMarket(request, env, ctx) {
       const bOrder = Number(bObj?.highest_order?.price) || Number(prev.bo) || 0;
       const mv = mcsMap.has(mhn) ? mcsMap.get(mhn) : Number(prev.mv) || 0;
 
-        const isEstSteam = steamUsd <= 0 && (item.c === 'Knives' || item.c === 'Gloves') && cfPrice > 0;
-        const effSteamUsd = isEstSteam ? Number(prev.s) || round2(Math.min(1850, Math.max(cfPrice, bPrice) * 1.32)) : steamUsd;
+      const isEstSteam = steamUsd <= 0 && (item.c === 'Knives' || item.c === 'Gloves') && cfPrice > 0;
+      const effSteamUsd = isEstSteam ? Number(prev.s) || round2(Math.min(1850, Math.max(cfPrice, bPrice) * 1.32)) : steamUsd;
 
-        if (effSteamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
-          liveCount += 1;
-          prices[mhn] = {
-            s: round2(effSteamUsd),
-            s7: round2(st7 || effSteamUsd),
-            s30: round2(st30 || effSteamUsd),
-            s90: round2(st90 || effSteamUsd),
-            ...(isEstSteam ? { sEst: 1 } : {}),
-            cf: cfPrice > 0 ? round2(cfPrice) : 0,
-            cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
-            q: cfQty,
-            yp: ypPrice > 0 ? round2(ypPrice) : 0,
-            ypo: ypBuyOrder > 0 ? round2(ypBuyOrder) : 0,
-            b: bPrice > 0 ? round2(bPrice) : 0,
-            bo: bOrder > 0 ? round2(bOrder) : 0,
-            v24: Number(prev.v24) || 0,
-            v7: Number(prev.v7) || 0,
-            v30: Number(prev.v30) || 0,
-            vm: Number(prev.vm) || 0,
-            mv
-          };
-        }
+      if (effSteamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
+        liveCount += 1;
+        prices[mhn] = {
+          s: round2(effSteamUsd),
+          s7: round2(st7 || effSteamUsd),
+          s30: round2(st30 || effSteamUsd),
+          s90: round2(st90 || effSteamUsd),
+          ...(isEstSteam ? { sEst: 1 } : {}),
+          cf: cfPrice > 0 ? round2(cfPrice) : 0,
+          cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
+          q: cfQty,
+          yp: ypPrice > 0 ? round2(ypPrice) : 0,
+          ypo: ypBuyOrder > 0 ? round2(ypBuyOrder) : 0,
+          b: bPrice > 0 ? round2(bPrice) : 0,
+          bo: bOrder > 0 ? round2(bOrder) : 0,
+          v24: Number(prev.v24) || 0,
+          v7: Number(prev.v7) || 0,
+          v30: Number(prev.v30) || 0,
+          vm: Number(prev.vm) || 0,
+          mv
+        };
       }
-
-      const payload = {
-        ok: true,
-        mode: 'live-edge',
-        updatedAt: new Date().toISOString(),
-        feeds: {
-          csfloatLive: cfLiveRes.status === 'fulfilled',
-          csfloatOrders: cfOrdRes.status === 'fulfilled',
-          buff163: buffRes.status === 'fulfilled',
-          steam: steamRes.status === 'fulfilled',
-          youpin: ypRes.status === 'fulfilled',
-          marketVol: mcsRes.status === 'fulfilled'
-        },
-        count: liveCount,
-        prices
-      };
-
-      const response = new Response(JSON.stringify(payload), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Cache-Control': `public, max-age=${MARKET_CACHE_TTL}, s-maxage=${MARKET_CACHE_TTL}`,
-          'X-Spread-Cache': 'MISS',
-          'X-Content-Type-Options': 'nosniff'
-        }
-      });
-
-      try {
-        ctx.waitUntil(cache.put(cacheKey, response.clone()));
-      } catch {
-        // Ignore
-      }
-      return response;
-    } catch (err) {
-      return Response.json(
-        { ok: false, error: 'Upstream market sync failed', detail: String(err?.message || err) },
-        { status: 502 }
-      );
     }
+
+    const payload = {
+      ok: true,
+      mode: 'live-edge',
+      updatedAt: new Date().toISOString(),
+      feeds: {
+        csfloatLive: cfLiveRes.status === 'fulfilled',
+        csfloatOrders: cfOrdRes.status === 'fulfilled',
+        buff163: buffRes.status === 'fulfilled',
+        steam: steamRes.status === 'fulfilled',
+        youpin: ypRes.status === 'fulfilled',
+        marketVol: mcsRes.status === 'fulfilled'
+      },
+      count: liveCount,
+      prices
+    };
+
+    const response = new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': `public, max-age=${MARKET_CACHE_TTL}, s-maxage=${MARKET_CACHE_TTL}`,
+        'X-Spread-Cache': 'MISS',
+        'X-Content-Type-Options': 'nosniff'
+      }
+    });
+
+    try {
+      ctx.waitUntil(cache.put(cacheKey, response.clone()));
+    } catch {
+      // Ignore
+    }
+    return response;
+  } catch (err) {
+    return Response.json(
+      { ok: false, error: 'Upstream market sync failed', detail: String(err?.message || err) },
+      { status: 502 }
+    );
   }
+}
 
 /**
  * Live On-Demand Dual Sales Volume Verifier:
@@ -212,77 +212,128 @@ async function handleApiMarket(request, env, ctx) {
  * Accepts up to 6 item names via ?names=Name1|Name2|... (15m Edge cache)
  */
 function parseCsfloatGraph(arr) {
-    if (!Array.isArray(arr) || arr.length === 0) return null;
-    const now = new Date();
-    const utcDayFrac = (now.getUTCHours() + now.getUTCMinutes() / 60) / 24;
-    const todayCnt = Number(arr[0]?.count) || 0;
-    const ydayCnt = Number(arr[1]?.count) || 0;
-    // Rolling 24h count: partial UTC today + remaining fraction of UTC yesterday
-    const rolling24h = Math.max(todayCnt, Math.round(todayCnt + ydayCnt * Math.max(0, 1 - utcDayFrac)));
-    const s7 = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.count) || 0), 0);
-    const s30 = arr.slice(0, 30).reduce((a, x) => a + (Number(x?.count) || 0), 0);
-    const weightedSum = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.avg_price) || 0) * (Number(x?.count) || 0), 0);
-    const avg7Usd = s7 > 0 ? round2(weightedSum / s7 / 100) : 0;
-    return { live: true, sold24h: rolling24h, sold7d: s7, sold30d: s30, avg7Usd };
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const now = new Date();
+  const utcDayFrac = (now.getUTCHours() + now.getUTCMinutes() / 60) / 24;
+  const todayCnt = Number(arr[0]?.count) || 0;
+  const ydayCnt = Number(arr[1]?.count) || 0;
+  // Rolling 24h count: partial UTC today + remaining fraction of UTC yesterday
+  const rolling24h = Math.max(todayCnt, Math.round(todayCnt + ydayCnt * Math.max(0, 1 - utcDayFrac)));
+  const s7 = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.count) || 0), 0);
+  const s30 = arr.slice(0, 30).reduce((a, x) => a + (Number(x?.count) || 0), 0);
+  const weightedSum = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.avg_price) || 0) * (Number(x?.count) || 0), 0);
+  const avg7Usd = s7 > 0 ? round2(weightedSum / s7 / 100) : 0;
+  return { live: true, sold24h: rolling24h, sold7d: s7, sold30d: s30, avg7Usd };
+}
+
+function parseSteamSummaryCount(htmlStr) {
+  if (!htmlStr || typeof htmlStr !== 'string') return 0;
+  const m = htmlStr.match(/>([0-9,]+)</);
+  if (!m) return 0;
+  const v = parseInt(m[1].replace(/,/g, ''), 10);
+  return Number.isFinite(v) ? v : 0;
+}
+
+async function handleSteamVerify(request, ctx) {
+  const url = new URL(request.url);
+  // IMPORTANT: CS2 skin names contain "|" (e.g. "AK-47 | Redline (FT)"), so use repeated ?name= & ?nid= params!
+  const multiNames = url.searchParams.getAll('name');
+  const multiNids = url.searchParams.getAll('nid');
+  const legacyNames = (url.searchParams.get('names') || '')
+    .split(';;')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const nidMap = new Map();
+  multiNames.forEach((n, idx) => {
+    const clean = n.trim();
+    const nid = parseInt(multiNids[idx] || '0', 10);
+    if (clean && Number.isFinite(nid) && nid > 0) nidMap.set(clean, nid);
+  });
+
+  const rawNames = Array.from(new Set([...multiNames, ...legacyNames].map((s) => s.trim())))
+    .filter((s) => s.length > 0 && s.length <= 130)
+    .slice(0, 6);
+
+  if (rawNames.length === 0) {
+    return Response.json({ ok: false, error: 'name param required' }, { status: 400 });
   }
 
-  async function handleSteamVerify(request, ctx) {
-    const url = new URL(request.url);
-    // IMPORTANT: CS2 skin names contain "|" (e.g. "AK-47 | Redline (FT)"), so use repeated ?name= params!
-    const multiNames = url.searchParams.getAll('name');
-    const legacyNames = (url.searchParams.get('names') || '')
-      .split(';;')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const rawNames = Array.from(new Set([...multiNames, ...legacyNames].map((s) => s.trim())))
-      .filter((s) => s.length > 0 && s.length <= 130)
-      .slice(0, 6);
+  const mkt = (url.searchParams.get('mkt') || 'CSFLOAT').toUpperCase() === 'YOUPIN' ? 'YOUPIN' : 'CSFLOAT';
+  const cache = caches.default;
+  const cacheSig = rawNames.map((n) => `${n}:${nidMap.get(n) || 0}`).join(';;');
+  const cacheKey = new Request(url.origin + `/api/steam-verify?v=5&mkt=${mkt}&k=` + encodeURIComponent(cacheSig), {
+    method: 'GET'
+  });
 
-    if (rawNames.length === 0) {
-      return Response.json({ ok: false, error: 'name param required' }, { status: 400 });
-    }
+  try {
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+  } catch {
+    // Ignore
+  }
 
-    const mkt = (url.searchParams.get('mkt') || 'CSFLOAT').toUpperCase() === 'YOUPIN' ? 'YOUPIN' : 'CSFLOAT';
-    const cache = caches.default;
-    const cacheKey = new Request(url.origin + `/api/steam-verify?v=4&mkt=${mkt}&k=` + encodeURIComponent(rawNames.join(';;')), {
-      method: 'GET'
-    });
+  const results = {};
+  await Promise.allSettled(
+    rawNames.map(async (name) => {
+      const enc = encodeURIComponent(name);
+      const nid = nidMap.get(name) || 0;
+      const stPoTask = fetchJsonWithTimeout(
+        `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${enc}`,
+        4500
+      );
+      const stHistTask =
+        nid > 0
+          ? fetchJsonWithTimeout(
+              `https://steamcommunity.com/market/itemordershistogram?country=US&language=english&currency=1&item_nameid=${nid}&two_factor=0`,
+              4500
+            )
+          : Promise.resolve(null);
+      const cfTask =
+        mkt === 'CSFLOAT'
+          ? fetchJsonWithTimeout(`https://csfloat.com/api/v1/history/${enc}/graph`, 5000)
+          : Promise.resolve(null);
 
-    try {
-      const cached = await cache.match(cacheKey);
-      if (cached) return cached;
-    } catch {
-      // Ignore
-    }
+      const [stRes, histRes, cfRes] = await Promise.allSettled([stPoTask, stHistTask, cfTask]);
 
-    const results = {};
-    await Promise.allSettled(
-      rawNames.map(async (name) => {
-        const enc = encodeURIComponent(name);
-        const tasks = [
-          fetchJsonWithTimeout(`https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${enc}`, 4500)
-        ];
-        if (mkt === 'CSFLOAT') {
-          tasks.push(fetchJsonWithTimeout(`https://csfloat.com/api/v1/history/${enc}/graph`, 5000));
-        }
-        const [stRes, cfRes] = await Promise.allSettled(tasks);
-
-        const entry = { live: false, volume24h: 0, medianUsd: 0, lowestUsd: 0, csfloat: null };
-        if (stRes?.status === 'fulfilled' && stRes.value?.success) {
-          entry.live = true;
-          entry.volume24h = Math.round(parseSteamNumber(stRes.value.volume));
-          entry.medianUsd = round2(parseSteamNumber(stRes.value.median_price));
-          entry.lowestUsd = round2(parseSteamNumber(stRes.value.lowest_price));
-        }
-        if (mkt === 'CSFLOAT' && cfRes?.status === 'fulfilled') {
-          const parsedCf = parseCsfloatGraph(cfRes.value);
-          if (parsedCf) entry.csfloat = parsedCf;
-        }
-        if (entry.live || entry.csfloat?.live) {
-          results[name] = entry;
-        }
-      })
-    );
+      const entry = {
+        live: false,
+        sold24hChecked: false,
+        volume24h: 0,
+        medianUsd: 0,
+        lowestUsd: 0,
+        steamBuyOrderUsd: 0,
+        steamSellOrderUsd: 0,
+        steamBuyCount: 0,
+        steamSellCount: 0,
+        csfloat: null
+      };
+      if (stRes?.status === 'fulfilled' && stRes.value?.success) {
+        entry.live = true;
+        entry.sold24hChecked = true;
+        entry.volume24h = Math.round(parseSteamNumber(stRes.value.volume));
+        entry.medianUsd = round2(parseSteamNumber(stRes.value.median_price));
+        entry.lowestUsd = round2(parseSteamNumber(stRes.value.lowest_price));
+      }
+      if (histRes?.status === 'fulfilled' && histRes.value?.success === 1) {
+        const h = histRes.value;
+        const bo = Number(h.highest_buy_order) || 0;
+        const so = Number(h.lowest_sell_order) || 0;
+        if (bo > 0) entry.steamBuyOrderUsd = round2(bo / 100);
+        if (so > 0) entry.steamSellOrderUsd = round2(so / 100);
+        entry.steamBuyCount = parseSteamSummaryCount(h.buy_order_summary);
+        entry.steamSellCount = parseSteamSummaryCount(h.sell_order_summary);
+        entry.live = true;
+      }
+      if (mkt === 'CSFLOAT' && cfRes?.status === 'fulfilled' && cfRes.value) {
+        const parsedCf = parseCsfloatGraph(cfRes.value);
+        if (parsedCf) entry.csfloat = parsedCf;
+      }
+      if (entry.live || entry.csfloat?.live) {
+        results[name] = entry;
+      }
+    })
+  );
 
     const response = new Response(
       JSON.stringify({ ok: true, updatedAt: new Date().toISOString(), items: results }),

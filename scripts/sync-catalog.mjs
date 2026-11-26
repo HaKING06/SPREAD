@@ -33,6 +33,8 @@ const ENDPOINTS = {
   youpinPrices: 'https://prices.csgotrader.app/latest/youpin898.json',
   skinportSales: 'https://api.skinport.com/v1/sales/history?app_id=730&currency=USD',
   marketCsgo: 'https://market.csgo.com/api/v2/prices/USD.json',
+  steamNameIds: 'https://raw.githubusercontent.com/somespecialone/steam-market-ids/main/data/CS2/item_names.json',
+  marketplaceIds: 'https://raw.githubusercontent.com/ModestSerhat/cs2-marketplace-ids/main/cs2_marketplaceids.json',
   fx: 'https://open.er-api.com/v6/latest/USD'
 };
 
@@ -91,6 +93,8 @@ async function main() {
     youpinPrices,
     skinportSales,
     marketCsgo,
+    steamNameIds,
+    marketplaceIdsRaw,
     fxData
   ] = await Promise.all([
     fetchJson('ByMykel crates.json', ENDPOINTS.crates),
@@ -103,8 +107,11 @@ async function main() {
     fetchJson('CSGOTrader Youpin898 Prices', ENDPOINTS.youpinPrices),
     fetchJson('Skinport Sales History (24h/7d/30d)', ENDPOINTS.skinportSales),
     fetchJson('Market.CSGO Volume Feed', ENDPOINTS.marketCsgo),
+    fetchJson('Steam Market item_nameid DB', ENDPOINTS.steamNameIds).catch(() => ({})),
+    fetchJson('CS2 Marketplace IDs (Youpin/Buff)', ENDPOINTS.marketplaceIds).catch(() => ({})),
     fetchJson('Open ER-API FX Rates', ENDPOINTS.fx)
   ]);
+  const mpIds = marketplaceIdsRaw?.items || marketplaceIdsRaw || {};
 
   const cfLiveMap = new Map();
   if (Array.isArray(csfloatLive)) {
@@ -229,7 +236,13 @@ async function main() {
       : steamUsd;
     if (finalSteamUsd > 20000) continue;
 
-    catalogItems.push(meta);
+    const nid = Number(steamNameIds?.[mhn]) || 0;
+    const ypId = Number(mpIds?.[mhn]?.youpin_id) || 0;
+    catalogItems.push({
+      ...meta,
+      ...(nid > 0 ? { nid } : {}),
+      ...(ypId > 0 ? { ypId } : {})
+    });
 
     snapshotPrices[mhn] = {
       s: round2(finalSteamUsd),

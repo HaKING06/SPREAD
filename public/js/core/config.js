@@ -10,7 +10,7 @@ export const BRAND = {
   supportEmail: 'spread@haking.tr',
   buyMeACoffeeUrl: 'https://buymeacoffee.com/haking',
   steamTradeDonateUrl: 'https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7',
-  version: '7.1.0'
+  version: '8.0.0'
 };
 
 export const ROUTES = {
@@ -69,7 +69,10 @@ export const MARKETPLACES = {
     defaultSellFee: 1.0,
     defaultWithdrawFee: 0.0,
     tagline: 'CN P2P • %1 Satış Komisyonu • Yüksek Kasa Hacmi',
-    searchUrl: (mhn) => `https://www.youpin898.com/?search=${encodeURIComponent(mhn)}`
+    searchUrl: (mhn, item) =>
+      item?.ypId
+        ? `https://www.youpin898.com/market/goods-list?listType=10&templateId=${item.ypId}`
+        : `https://www.youpin898.com/?search=${encodeURIComponent(mhn)}`
   }
 };
 

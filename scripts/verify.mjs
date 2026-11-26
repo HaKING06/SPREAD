@@ -468,23 +468,35 @@ async function main() {
       fail(`V7 Owned-Skin Arbitrage Optimizer failed: ${JSON.stringify(ownedRes).slice(0, 180)}`);
     }
 
-    // 5b-V7.1. Strict Marketplace Isolation & Live Youpin898 Order Book (yp + ypo) Verification
+    // 5b-V7.1 & V8.0. Directional Leg-1 (Steam) vs Leg-2 (CSFloat/Youpin898) Telemetry + Steam Histogram & Direct Youpin IDs
     const asiimovMw = findItem('AK-47 | Asiimov (Minimal Wear)');
+    const m9Vanilla = findItem('★ M9 Bayonet');
     const ypLiveOk = asiimovMw && asiimovMw.yp > 25 && asiimovMw.yp < 48 && asiimovMw.ypo > 25 && asiimovMw.ypo <= asiimovMw.yp;
-    const synthMixed = { ...asiimovMw, cf24: 99, cf7: 500, cf30: 2000 };
-    const ypVel = computeVelocityProfile(synthMixed, 'YOUPIN');
-    const cfVel = computeVelocityProfile(synthMixed, 'CSFLOAT');
-    const noCfLeak = !/CSFloat/i.test(ypVel.volText) && ypVel.volSource !== 'CSFLOAT' && ypVel.bidAskPct > 90;
-    const cfWorks = /CSFloat/i.test(cfVel.volText) && cfVel.volSource === 'CSFLOAT';
+    const idsOk = m9Vanilla && Number(m9Vanilla.nid) > 0 && Number(m9Vanilla.ypId) > 0;
+    const synthMixed = { ...asiimovMw, cf24: 99, cf7: 500, cf30: 2000, st24: 18, st24Checked: true, stBuyOrd: 51.2, stSellCnt: 24 };
+    const leg1SteamVel = computeVelocityProfile(synthMixed, 'CSFLOAT', 1);
+    const leg1ZeroVel = computeVelocityProfile({ ...m9Vanilla, st24: 0, st24Checked: true, stBuyOrd: 717, stSellCnt: 7 }, 'CSFLOAT', 1);
+    const leg2CfVel = computeVelocityProfile(synthMixed, 'CSFLOAT', 2);
+    const leg2YpVel = computeVelocityProfile(synthMixed, 'YOUPIN', 2);
+    const dirOk =
+      leg1SteamVel.volSource === 'STEAM_LIVE' &&
+      !/CSFloat/i.test(leg1SteamVel.volText) &&
+      /Steam 24/i.test(leg1SteamVel.volText) &&
+      leg1ZeroVel.tier === 'C' &&
+      /0/.test(leg1ZeroVel.volText) &&
+      leg2CfVel.volSource === 'CSFLOAT' &&
+      /CSFloat/i.test(leg2CfVel.volText) &&
+      !/CSFloat/i.test(leg2YpVel.volText) &&
+      leg2YpVel.bidAskPct > 90;
     const ypOpts = { marketplace: 'YOUPIN', buyFeePct: 0, sellFeePct: 1, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true };
     const ypAdv = analyzeCapitalStrategies(mergedSample, ypOpts, 800);
     const ypBasket = optimizeMultiItemBasket(mergedSample, ypOpts, 800, { buyCount: 0, sellCount: 0 });
-    if (ypLiveOk && noCfLeak && cfWorks && ypAdv.strategies.length >= 2 && ypBasket?.plan) {
+    if (ypLiveOk && idsOk && dirOk && ypAdv.strategies.length >= 2 && ypBasket?.plan) {
       pass(
-        `V7.1 Live Youpin898 Isolation verified: Asiimov MW YP $${asiimovMw.yp} / Bid $${asiimovMw.ypo} (${ypVel.bidAskPct}%) | YP volText="${ypVel.volText}" (zero CSFloat leak!) | YP $800 Basket +$${ypBasket.plan.netProfitUsd.toFixed(2)}.`
+        `V8.0 Directional Engine & Youpin898 Order Book verified: M9 nid=${m9Vanilla.nid} ypId=${m9Vanilla.ypId} | Leg1="${leg1SteamVel.volText}" | Leg1(0-sale)="${leg1ZeroVel.volText}" (${leg1ZeroVel.tier}) | Leg2(YP)="${leg2YpVel.volText}" | YP $800 Basket +$${ypBasket.plan.netProfitUsd.toFixed(2)}.`
       );
     } else {
-      fail(`V7.1 Youpin898 isolation failed: ypLiveOk=${ypLiveOk}, noCfLeak=${noCfLeak}, cfWorks=${cfWorks}, ypStrats=${ypAdv.strategies.length}, ypText=${ypVel.volText}`);
+      fail(`V8.0 directional check failed: ypLiveOk=${ypLiveOk}, idsOk=${idsOk}, dirOk=${dirOk}, l1=${leg1SteamVel.volText}, l1z=${leg1ZeroVel.volText}/${leg1ZeroVel.tier}, l2yp=${leg2YpVel.volText}`);
     }
   }
 
@@ -686,8 +698,8 @@ async function main() {
         ['/api/fx', 200],
         ['/api/market', 200],
         ['/api/item-lookup?q=karambit%20doppler%20fn', 200],
-        ['/api/steam-verify?mkt=CSFLOAT&name=Desert%20Eagle%20%7C%20Conspiracy%20(Factory%20New)', 200],
-        ['/api/steam-verify?mkt=YOUPIN&name=AK-47%20%7C%20Asiimov%20(Minimal%20Wear)', 200],
+        ['/api/steam-verify?mkt=CSFLOAT&name=Desert%20Eagle%20%7C%20Conspiracy%20(Factory%20New)&nid=175975101&name=%E2%98%85%20M9%20Bayonet&nid=1285128', 200],
+        ['/api/steam-verify?mkt=YOUPIN&name=AK-47%20%7C%20Asiimov%20(Minimal%20Wear)&nid=176024735', 200],
         ['/server.mjs', 403],
         ['/scripts/sync-catalog.mjs', 403]
       ];
@@ -739,12 +751,13 @@ async function main() {
         } else if (ep.startsWith('/api/steam-verify')) {
           const j = await res.json();
           const rec = j.items?.['Desert Eagle | Conspiracy (Factory New)'];
-          if (j.ok && rec?.csfloat?.live && rec.csfloat.sold7d >= 20) {
+          const m9Rec = j.items?.['★ M9 Bayonet'];
+          if (j.ok && rec?.csfloat?.live && rec.csfloat.sold7d >= 20 && m9Rec?.steamBuyOrderUsd > 300) {
             pass(
-              `Live /api/steam-verify -> CSFloat 24h:${rec.csfloat.sold24h}, 7d:${rec.csfloat.sold7d}, 30d:${rec.csfloat.sold30d} | Steam 24h:${rec.volume24h || 'n/a'}`
+              `Live /api/steam-verify (CSFLOAT+Histogram) -> Deagle CF 24h:${rec.csfloat.sold24h}, 7d:${rec.csfloat.sold7d} | M9 Steam 24h:${m9Rec.volume24h} (checked:${m9Rec.sold24hChecked}), BuyOrd:$${m9Rec.steamBuyOrderUsd}, Listed:${m9Rec.steamSellCount}`
             );
           } else {
-            fail(`Live /api/steam-verify missing real CSFloat sales: ${JSON.stringify(j).slice(0, 180)}`);
+            fail(`Live /api/steam-verify missing CSFloat sales or M9 Steam histogram: ${JSON.stringify(j).slice(0, 240)}`);
           }
         } else {
           pass(`HTTP ${res.status} ${ep}`);
