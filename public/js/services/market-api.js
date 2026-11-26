@@ -66,6 +66,7 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       cfo: Number(p.cfo) || 0,
       q: Number(p.q) || 0,
       yp: Number(p.yp) || 0,
+      ypo: Number(p.ypo) || 0,
       b: Number(p.b) || 0,
       bo: Number(p.bo) || 0,
       v24: Number(p.v24) || 0,
@@ -77,6 +78,8 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       cf7: Number(p.cf7) || 0,
       cf30: Number(p.cf30) || 0,
       cfAvg7: Number(p.cfAvg7) || 0,
+      st24: Number(p.st24) || 0,
+      stMed: Number(p.stMed) || 0,
       isCustom: false
     });
   }
@@ -158,46 +161,56 @@ export class MarketService {
   }
 
   /**
-   * Fetches real-time CSFloat Sales History (24h/7d/30d) AND Steam Market 24h Volume & Median
+   * Fetches real-time Steam Market 24h Volume & Median (+ CSFloat Sales History ONLY in CSFLOAT mode!)
    * for up to 6 active desk / basket / top strategy items.
    */
-  async verifySteamLive(names = [], liveItemsRef = null) {
+  async verifySteamLive(names = [], liveItemsRef = null, marketplace = 'CSFLOAT') {
+    const mkt = marketplace === 'YOUPIN' ? 'YOUPIN' : 'CSFLOAT';
     const unique = Array.from(new Set(names.filter(Boolean))).slice(0, 6);
-    const missing = unique.filter((n) => !this.steamLiveCache.has(n));
+    const cacheKeyOf = (n) => `${mkt}:${n}`;
+    const missing = unique.filter((n) => !this.steamLiveCache.has(cacheKeyOf(n)));
     if (missing.length > 0) {
       try {
         const q = missing.map((n) => `name=${encodeURIComponent(n)}`).join('&');
-        const res = await fetchJsonSafe(`/api/steam-verify?${q}`, 8000);
+        const res = await fetchJsonSafe(`/api/steam-verify?mkt=${mkt}&${q}`, 8000);
         if (res?.ok && res.items) {
           for (const [k, v] of Object.entries(res.items)) {
-            this.steamLiveCache.set(k, v);
+            this.steamLiveCache.set(cacheKeyOf(k), v);
           }
         }
       } catch {
-        // Silent fallback — item still has Skinport + Market.CSGO baseline data
+        // Silent fallback
       }
     }
     const out = {};
     for (const n of unique) {
-      const rec = this.steamLiveCache.get(n);
+      const rec = this.steamLiveCache.get(cacheKeyOf(n));
       if (rec) {
         out[n] = rec;
-        // Hydrate live CSFloat sales directly onto the in-memory item & priceMap!
-        if (rec.csfloat?.live) {
+        const it = Array.isArray(liveItemsRef) ? liveItemsRef.find((x) => x.n === n) : null;
+        if (rec.live && rec.volume24h > 0) {
+          if (this.priceMap[n]) {
+            this.priceMap[n].st24 = rec.volume24h;
+            this.priceMap[n].stMed = rec.medianUsd;
+          }
+          if (it) {
+            it.st24 = rec.volume24h;
+            it.stMed = rec.medianUsd;
+          }
+        }
+        // Hydrate live CSFloat sales ONLY when CSFloat data was requested & returned
+        if (mkt === 'CSFLOAT' && rec.csfloat?.live) {
           if (this.priceMap[n]) {
             this.priceMap[n].cf24 = rec.csfloat.sold24h;
             this.priceMap[n].cf7 = rec.csfloat.sold7d;
             this.priceMap[n].cf30 = rec.csfloat.sold30d;
             this.priceMap[n].cfAvg7 = rec.csfloat.avg7Usd;
           }
-          if (Array.isArray(liveItemsRef)) {
-            const it = liveItemsRef.find((x) => x.n === n);
-            if (it) {
-              it.cf24 = rec.csfloat.sold24h;
-              it.cf7 = rec.csfloat.sold7d;
-              it.cf30 = rec.csfloat.sold30d;
-              it.cfAvg7 = rec.csfloat.avg7Usd;
-            }
+          if (it) {
+            it.cf24 = rec.csfloat.sold24h;
+            it.cf7 = rec.csfloat.sold7d;
+            it.cf30 = rec.csfloat.sold30d;
+            it.cfAvg7 = rec.csfloat.avg7Usd;
           }
         }
       }

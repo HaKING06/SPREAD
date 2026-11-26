@@ -167,8 +167,8 @@ class SpreadApp {
       this.views.calculator?.render();
       this.toast(
         isTr()
-          ? `"${item.n}" ${legNum}. Adım sepetine eklendi ve adetler otomatik dengelendi.`
-          : `"${item.n}" added to Step ${legNum} basket and quantities auto-rebalanced.`
+            ? `"${item.n}" ${legNum}. Adım sepetine eklendi ve adetler otomatik dengelendi.`
+            : `"${item.n}" added to Step ${legNum} basket and quantities auto-rebalanced.`
       );
       return;
     }
@@ -603,6 +603,22 @@ class SpreadApp {
               if (m.marketSellUsd > 0) line.marketUsd = m.marketSellUsd;
             }
           }
+          this.settings.activeBasket.leg1 = rebalanceBasketLeg(
+            this.settings.activeBasket.leg1,
+            this.settings.activeBasket.leg2,
+            1,
+            this.settings.capitalUsd,
+            evalOpts,
+            (n) => this.findItemByName(n)
+          );
+          this.settings.activeBasket.leg2 = rebalanceBasketLeg(
+            this.settings.activeBasket.leg1,
+            this.settings.activeBasket.leg2,
+            2,
+            this.settings.capitalUsd,
+            evalOpts,
+            (n) => this.findItemByName(n)
+          );
         }
 
         this.saveSettings();
@@ -679,15 +695,15 @@ class SpreadApp {
       this.renderAll();
       const labels = isTr()
         ? {
-            EXACT_VALVE: 'Gerçek Valve Cent Hesabı ($0.01 taban kesinti dahil)',
-            DIV_115: 'Klasik ÷ 1.15 Oransal Formül',
-            CUSTOM: 'Özel Steam Komisyon Yüzdesi'
-          }
+          EXACT_VALVE: 'Gerçek Valve Cent Hesabı ($0.01 taban kesinti dahil)',
+          DIV_115: 'Klasik ÷ 1.15 Oransal Formül',
+          CUSTOM: 'Özel Steam Komisyon Yüzdesi'
+        }
         : {
-            EXACT_VALVE: 'Exact Valve Cent Solver (incl. $0.01 floor fees)',
-            DIV_115: 'Classic ÷ 1.15 Flat Proportional Formula',
-            CUSTOM: 'Custom Steam Fee Percentage'
-          };
+          EXACT_VALVE: 'Exact Valve Cent Solver (incl. $0.01 floor fees)',
+          DIV_115: 'Classic ÷ 1.15 Flat Proportional Formula',
+          CUSTOM: 'Custom Steam Fee Percentage'
+        };
       this.toast(isTr() ? `Steam kesinti modu: ${labels[next]}` : `Steam fee mode: ${labels[next]}`);
     });
 

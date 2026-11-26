@@ -262,20 +262,21 @@ export function initScannerView(app) {
         drawSparkline(sparkCanvas, [item.s90, item.s30, item.s7, item.s]);
       });
 
+      const activeBidUsd = s.marketplace === 'YOUPIN' ? Number(item.ypo) || 0 : Number(item.cfo) || 0;
       const marketPriceCell = el(
         'td',
         { className: 'ta-right num' },
         el('div', { style: { fontWeight: '600' } }, money(m.marketBuyUsd)),
-        s.marketplace === 'CSFLOAT' && item.cfo > 0
+        activeBidUsd > 0
           ? el(
-              'div',
-              {
-                style: { fontSize: '10.5px' },
-                className: 'txt-muted',
-                title: tr ? 'Anında satış (en yüksek alım emri)' : 'Instant sell (highest buy order)'
-              },
-              `${tr ? 'Anlık' : 'Bid'}: ${money(item.cfo)}`
-            )
+            'div',
+            {
+              style: { fontSize: '10.5px' },
+              className: 'txt-muted',
+              title: tr ? `${mkt.name} anında satış (en yüksek alım emri)` : `${mkt.name} instant sell (highest buy order)`
+            },
+            `${tr ? 'Anlık' : 'Bid'}: ${money(activeBidUsd)}`
+          )
           : null
       );
 
@@ -358,7 +359,7 @@ export function initScannerView(app) {
           el(
             'div',
             { style: { fontSize: '10px', marginTop: '2px' }, className: 'txt-muted' },
-            `${m.velocity.volText}${item.q > 0 ? ` • ${item.q} ${tr ? 'ilan' : 'listed'}` : ''}`
+            `${m.velocity.volText}${s.marketplace === 'CSFLOAT' && item.q > 0 ? ` • ${item.q} ${tr ? 'ilan' : 'listed'}` : ''}`
           )
         ),
         // Market price
@@ -406,15 +407,15 @@ export function initScannerView(app) {
             ),
             item.isCustom
               ? el(
-                  'button',
-                  {
-                    type: 'button',
-                    className: 'btn btn-sm btn-danger',
-                    title: tr ? 'Özel eşyayı sil' : 'Delete custom item',
-                    onClick: () => app.deleteCustomItem(item.customId)
-                  },
-                  '✕'
-                )
+                'button',
+                {
+                  type: 'button',
+                  className: 'btn btn-sm btn-danger',
+                  title: tr ? 'Özel eşyayı sil' : 'Delete custom item',
+                  onClick: () => app.deleteCustomItem(item.customId)
+                },
+                '✕'
+              )
               : null
           )
         )

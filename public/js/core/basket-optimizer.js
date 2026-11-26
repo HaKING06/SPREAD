@@ -179,7 +179,13 @@ function buildLeg2Line(cand, qty, opts) {
   const cashReturnUsd = qty * cand.m.netSell;
   const slipPct = opts.useBuyOrderForLeg2 ? 0 : calcSlipPct(qty, cand.qty, 1.5);
   const slippageUsd = cashReturnUsd * (slipPct / 100);
-  const instSell = isCSFloat && cand.item.cfo > 0 ? cand.item.cfo : cand.m.marketSellUsd;
+  const instSell = isCSFloat
+    ? cand.item.cfo > 0
+      ? cand.item.cfo
+      : cand.m.marketSellUsd
+    : cand.item.ypo > 0
+    ? cand.item.ypo
+    : cand.m.marketSellUsd;
   const instNetUnit = calcNetSellUsd(instSell, opts.sellFeePct, opts.withdrawFeePct);
   const instantCashUsd = qty * instNetUnit;
   const fillDays = estimateLeg2FillDays(cand.item, cand.vel, qty, opts.useBuyOrderForLeg2);
@@ -687,8 +693,8 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
       }
     }
 
-    // Leg 2 pool (high liquidity, low cashout loss, strong order-book turnover)
-    const bidAskOk = !isCSFloat || vel.bidAskPct === 0 || vel.bidAskPct >= 85;
+    // Leg 2 pool (high liquidity, low cashout loss, strong order-book turnover & Bid/Ask on active market)
+    const bidAskOk = vel.bidAskPct === 0 || vel.bidAskPct >= (isCSFloat ? 85 : 88);
     const l2TierOk = minSpeed === 'MODERATE' ? allowedTiers.has(vel.tier) : vel.tier === 'A' || vel.tier === 'B';
     const l2NoKnife = !vel.isKnifeOrGlove || (cap >= 1500 && vel.sold7d >= 8 && qty >= 60);
     const l2MinPrice = Math.max(tier.minL2Price * 0.7, cap / 60, 4);
@@ -1211,7 +1217,7 @@ export function estimateBasketReality(basketMetrics, leg1ItemsMap, leg2ItemsMap,
 
   for (const line of bd.leg1) {
     const it = leg1ItemsMap.get(line.name.toLowerCase()) || null;
-    const vel = computeVelocityProfile(it);
+    const vel = computeVelocityProfile(it, opts.marketplace);
     const fd = estimateLeg1FillDays(it, vel, line.qty);
     if (fd > maxExtraL1) maxExtraL1 = fd;
     if (it && (vel.tier === 'C' || vel.tier === 'D')) {
@@ -1224,7 +1230,7 @@ export function estimateBasketReality(basketMetrics, leg1ItemsMap, leg2ItemsMap,
 
   for (const line of bd.leg2) {
     const it = leg2ItemsMap.get(line.name.toLowerCase()) || null;
-    const vel = computeVelocityProfile(it);
+    const vel = computeVelocityProfile(it, opts.marketplace);
     const fd = estimateLeg2FillDays(it, vel, line.qty, opts.useBuyOrderForLeg2);
     if (fd > maxExtraL2) maxExtraL2 = fd;
     if (it && (vel.tier === 'C' || vel.tier === 'D')) {
@@ -1311,6 +1317,7 @@ export function runMonteCarloSimulation({
   expectedProfitUsd = 0,
   capitalUsd = 200,
   instantFloorProfitUsd = null,
+  marketplace = 'CSFLOAT',
   trials = 500
 }) {
   const cap = Math.max(1, Number(capitalUsd) || 200);
@@ -1345,11 +1352,20 @@ export function runMonteCarloSimulation({
       else if (vsBuff >= 8) driftPct -= Math.min(4.5, (vsBuff - 4) * 0.35) * w;
     }
     if (x.m?.trendStatus === 'FALLING') driftPct -= 2.4 * w;
-    if (x.item?.cfAvg7 > 0 && x.item?.cf > 0 && x.item.cfAvg7 > x.item.cf * 1.4) {
+    if (marketplace !== 'YOUPIN' && x.item?.cfAvg7 > 0 && x.item?.cf > 0 && x.item.cfAvg7 > x.item.cf * 1.4) {
       warnings.push(
         bi(
           `${x.item.n}: CSFloat 7d avg ($${x.item.cfAvg7}) > floor ($${x.item.cf}) — sticker/float crafts present; buy clean floor.`,
           `${x.item.n}: CSFloat 7g ort ($${x.item.cfAvg7}) tabandan ($${x.item.cf}) yüksek — sticker/float craft yoğun, temiz taban ilan al.`
+        )
+      );
+    }
+    if (marketplace === 'YOUPIN' && x.item?.ypo > 0 && x.item?.yp > 0 && ((x.item.yp - x.item.ypo) / x.item.yp) * 100 > 8) {
+      const sp = (((x.item.yp - x.item.ypo) / x.item.yp) * 100).toFixed(1);
+      warnings.push(
+        bi(
+          `${x.item.n}: Youpin898 Ask/Bid gap is ${sp}% — consider placing a Youpin buy order instead of paying instant ask.`,
+          `${x.item.n}: Youpin898 Ask/Bid farkı %${sp} — direkt ilan almak yerine Youpin alım emri (buy order) bırakabilirsin.`
         )
       );
     }
@@ -1496,8 +1512,8 @@ export function rebalanceBasketLeg(leg1Lines, leg2Lines, targetLegNum, capitalUs
     // Wrap current Leg 2 desk lines into subset format preserving user's exact edited prices!
     const subset = leg2Lines.map((line) => {
       const catalogItem = typeof findItemFn === 'function' ? findItemFn(line.name) : null;
-      const synthItem = catalogItem || { n: line.name, s: line.steamUsd, cf: line.marketUsd, q: 120, v7: 15, v30: 60, mv: 60 };
-      const vel = computeVelocityProfile(synthItem);
+      const synthItem = catalogItem || { n: line.name, s: line.steamUsd, cf: line.marketUsd, yp: line.marketUsd, q: 120, v7: 15, v30: 60, mv: 60 };
+      const vel = computeVelocityProfile(synthItem, opts.marketplace);
       const netSell = calcNetSellUsd(line.marketUsd, opts.sellFeePct, opts.withdrawFeePct);
       const m2 = line.steamUsd > 0 ? netSell / line.steamUsd : 0;
       return {
@@ -1620,7 +1636,7 @@ export function optimizeArbitrageForOwnedLeg1(items, leg1DeskLines, opts, capita
       const effBuy = calcEffectiveBuyUsd(buyUsd, opts.buyFeePct);
       const netSteam = calcNetSteamUsd(steamUsd, opts.steamFeeMode, opts.steamCustomFeePct);
       const m1 = effBuy > 0 ? netSteam / effBuy : 0;
-      const vel = computeVelocityProfile(itemObj);
+      const vel = computeVelocityProfile(itemObj, opts.marketplace);
       const m = {
         ...(found ? evaluateItemMetrics(found, opts) : {}),
         marketBuyUsd: buyUsd,
@@ -1660,7 +1676,7 @@ export function optimizeArbitrageForOwnedLeg1(items, leg1DeskLines, opts, capita
     const vel = m.velocity;
     if (vel.tier !== 'A' && vel.tier !== 'B') continue;
     if (vel.isKnifeOrGlove && !(effectiveCap >= 1200 && vel.sold7d >= 6 && qty >= 45)) continue;
-    if (isCSFloat && vel.bidAskPct > 0 && vel.bidAskPct < 86) continue;
+    if (vel.bidAskPct > 0 && vel.bidAskPct < (isCSFloat ? 86 : 88)) continue;
     if (m.leg2LossPct < 3.0 && !(vel.tier === 'A' && vel.mktVol >= 150 && m.leg2LossPct >= 0.5)) continue;
     if (m.leg2LossPct > 16.5) continue;
     if (m.steamUsd < Math.min(Math.max(tier.minL2Price * 0.65, totalNetSteamUsd / 55, 5), totalNetSteamUsd * 0.45)) continue;
@@ -1698,7 +1714,8 @@ export function optimizeArbitrageForOwnedLeg1(items, leg1DeskLines, opts, capita
       leg2Lines: plan.leg2Lines,
       expectedProfitUsd: plan.slippageAdjProfitUsd,
       capitalUsd: effectiveCap,
-      instantFloorProfitUsd: plan.instantFloorProfitUsd
+      instantFloorProfitUsd: plan.instantFloorProfitUsd,
+      marketplace: opts.marketplace
     });
     const extraVsDirectUsd = Math.round((plan.endCashEquivUsd - (effectiveCap - totalSpent1) - directSellNetUsd) * 100) / 100;
     return { id, tag, title, plan, mc, extraVsDirectUsd };

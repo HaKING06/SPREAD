@@ -78,9 +78,9 @@ export function calcNetSellUsd(grossMarketUsd, sellFeePct = 2.0, withdrawFeePct 
 }
 
 /**
- * Real-World Sales Velocity, Dollar Liquidity & Quantity-Relative Fill-Time Profiler (V3)
+ * Real-World Sales Velocity, Dollar Liquidity & Quantity-Relative Fill-Time Profiler (V7.1 Marketplace-Isolated)
  */
-export function computeVelocityProfile(item) {
+export function computeVelocityProfile(item, marketplace = 'CSFLOAT') {
   if (!item) {
     return {
       tier: 'C',
@@ -91,6 +91,7 @@ export function computeVelocityProfile(item) {
       sold24h: 0,
       sold7d: 0,
       sold30d: 0,
+      volSource: 'NONE',
       mktVol: 0,
       weeklyUsd: 0,
       estDailySales: 0.5,
@@ -106,10 +107,12 @@ export function computeVelocityProfile(item) {
     };
   }
 
-  const hasLiveCf = (Number(item.cf7) || 0) > 0 || (Number(item.cf30) || 0) > 0;
-  const cf24 = Number(item.cf24) || 0;
-  const cf7 = Number(item.cf7) || 0;
-  const cf30 = Number(item.cf30) || 0;
+  const isYoupin = marketplace === 'YOUPIN';
+  const hasLiveCf = !isYoupin && ((Number(item.cf7) || 0) > 0 || (Number(item.cf30) || 0) > 0);
+  const cf24 = isYoupin ? 0 : Number(item.cf24) || 0;
+  const cf7 = isYoupin ? 0 : Number(item.cf7) || 0;
+  const cf30 = isYoupin ? 0 : Number(item.cf30) || 0;
+  const st24 = Number(item.st24) || 0;
   const v24 = Number(item.v24) || 0;
   const v7 = Number(item.v7) || 0;
   const v30 = Number(item.v30) || 0;
@@ -117,16 +120,25 @@ export function computeVelocityProfile(item) {
   const q = Number(item.q) || 0;
   const cf = Number(item.cf) || 0;
   const cfo = Number(item.cfo) || 0;
+  const yp = Number(item.yp) || 0;
+  const ypo = Number(item.ypo) || 0;
   const steamUsd = Number(item.s) || 0;
-  const priceRef = Math.max(cf, steamUsd);
-  const bidAskPct = cf > 0 && cfo > 0 ? (cfo / cf) * 100 : 0;
+  const priceRef = Math.max(isYoupin ? yp : cf, steamUsd);
+  const bidAskPct = isYoupin
+    ? yp > 0 && ypo > 0
+      ? Math.round((ypo / yp) * 1000) / 10
+      : 0
+    : cf > 0 && cfo > 0
+    ? Math.round((cfo / cf) * 1000) / 10
+    : 0;
 
-  // V6.3 Dual-Source Sales Velocity:
-  // Uses REAL live CSFloat sales history (cf24/cf7/cf30) whenever verified; otherwise honest Skinport + Market.CSGO!
-  const disp24 = hasLiveCf ? cf24 : v24;
-  const disp7 = hasLiveCf ? cf7 : v7;
-  const disp30 = hasLiveCf ? cf30 : v30;
-  const sp7 = Math.max(v7, Math.round(v30 / 4.3));
+  // V7.1 Strict Marketplace-Isolated Sales Velocity:
+  // CSFloat mode: REAL live CSFloat sales history (cf24/cf7/cf30) + CSFloat Bid/Ask (cfo/cf) + depth (q)
+  // Youpin898 mode: REAL live Youpin898 Bid/Ask (ypo/yp) + Live Steam 24h (st24) + Global P2P liquidity (NEVER leaks CSFloat!)
+  const disp24 = isYoupin ? (st24 > 0 ? st24 : v24) : hasLiveCf ? cf24 : v24;
+  const disp7 = isYoupin ? v7 : hasLiveCf ? cf7 : v7;
+  const disp30 = isYoupin ? v30 : hasLiveCf ? cf30 : v30;
+  const sp7 = Math.max(v7, Math.round(v30 / 4.3), isYoupin && st24 > 0 ? Math.round(st24 * 3.5) : 0);
   const eff7 = hasLiveCf ? Math.max(cf7, sp7) : sp7;
   const weeklyUsd = Math.round(eff7 * priceRef);
 
@@ -135,17 +147,23 @@ export function computeVelocityProfile(item) {
   const rate24Capped = Math.min(disp24, Math.max(rate7, rate30, 0.5) * 1.65 + 1);
   const primaryDaily = rate30 * 0.45 + rate7 * 0.40 + rate24Capped * 0.15;
   const mcsDaily = mv / 14;
-  // Monthly order-book sell-through rate: real CSFloat sales/q when live, else Skinport-scaled proxy
   const turnover30Pct =
-    q > 0
+    !isYoupin && q > 0
       ? Math.round((((hasLiveCf ? cf30 : v30 + mv * 0.35) / Math.max(20, q)) * 1000)) / 10
       : 0;
-  const bidAskBoost = bidAskPct >= 93 ? 1.15 : bidAskPct >= 90 ? 1.0 : bidAskPct > 0 && bidAskPct < 85 ? 0.72 : 0.9;
-  // Note: CSFloat typically does ~4x Skinport daily volume; when live CSFloat data is loaded, use 1.0x directly!
+  const bidAskBoost = bidAskPct >= 95 ? 1.2 : bidAskPct >= 92 ? 1.12 : bidAskPct >= 89 ? 1.0 : bidAskPct > 0 && bidAskPct < 85 ? 0.72 : 0.9;
+  // CSFloat live -> 1.05x directly; Youpin898 P2P China liquidity + live Steam 24h anchor when hydrated
+  const ypSteamDaily = isYoupin && st24 > 0 ? st24 * 0.65 : 0;
   const estDailySales = Math.max(
     0.08,
     Math.round(
-      (hasLiveCf ? primaryDaily * 1.05 + mcsDaily * 0.25 : primaryDaily * 2.35 + mcsDaily * 0.55) * bidAskBoost * 100
+      (hasLiveCf
+        ? primaryDaily * 1.05 + mcsDaily * 0.25
+        : isYoupin
+        ? Math.max(primaryDaily * 2.5 + mcsDaily * 0.6, ypSteamDaily)
+        : primaryDaily * 2.35 + mcsDaily * 0.55) *
+        bidAskBoost *
+        100
     ) / 100
   );
 
@@ -251,8 +269,31 @@ export function computeVelocityProfile(item) {
     Math.round(sp7 * 3.5 + mv * 0.45 + (item.c === 'Case' && mv > 500 ? mv * 0.5 : 0))
   );
 
-  const volSource = hasLiveCf ? 'CSFLOAT' : 'SKINPORT';
-  const volText = hasLiveCf
+  const volSource = isYoupin
+    ? st24 > 0
+      ? 'STEAM_YP'
+      : bidAskPct > 0
+      ? 'YOUPIN_OB'
+      : 'GLOBAL'
+    : hasLiveCf
+    ? 'CSFLOAT'
+    : 'SKINPORT';
+
+  const volText = isYoupin
+    ? st24 > 0 && bidAskPct > 0
+      ? bi(`Steam 24h: ${st24} • YP Bid ${bidAskPct.toFixed(1)}%`, `Steam 24s: ${st24} • YP Bid %${bidAskPct.toFixed(1)}`)
+      : st24 > 0
+      ? bi(`Steam 24h: ${st24} • Global 7d: ${v7}`, `Steam 24s: ${st24} • Global 7g: ${v7}`)
+      : bidAskPct > 0 && v7 > 0
+      ? bi(`YP Bid ${bidAskPct.toFixed(1)}% • Global 7d: ${v7}`, `YP Bid %${bidAskPct.toFixed(1)} • Global 7g: ${v7}`)
+      : bidAskPct > 0
+      ? bi(`YP Bid ${bidAskPct.toFixed(1)}% • 30d: ${v30}`, `YP Bid %${bidAskPct.toFixed(1)} • 30g: ${v30}`)
+      : v7 > 0
+      ? bi(`Global 7d: ${v7} • 30d: ${v30}`, `Global 7g: ${v7} • 30g: ${v30}`)
+      : mv > 0
+      ? bi(`Global Vol: ${mv}`, `Global Hacim: ${mv}`)
+      : bi('Low volume', 'Düşük hacim')
+    : hasLiveCf
     ? bi(`CSFloat 24h: ${cf24} • 7d: ${cf7}`, `CSFloat 24s: ${cf24} • 7g: ${cf7}`)
     : v7 > 0
     ? bi(`Skinport 7d: ${v7} • 30d: ${v30}`, `Skinport 7g: ${v7} • 30g: ${v30}`)
@@ -316,7 +357,9 @@ export function evaluateItemMetrics(item, opts) {
   const marketBuyUsd = marketplace === 'YOUPIN' ? Number(item.yp) || 0 : Number(item.cf) || 0;
   const marketSellUsd =
     marketplace === 'YOUPIN'
-      ? Number(item.yp) || 0
+      ? useBuyOrderForLeg2 && item.ypo > 0
+        ? Number(item.ypo)
+        : Number(item.yp) || 0
       : useBuyOrderForLeg2 && item.cfo > 0
       ? Number(item.cfo)
       : Number(item.cf) || 0;
@@ -353,15 +396,25 @@ export function evaluateItemMetrics(item, opts) {
   const stability30 = Math.abs(spikeRatio);
   const isSpiky = stability30 > 0.22;
 
-  const velocity = computeVelocityProfile(item);
-  // Real structural spreads have steady 30d pricing, deep CSFloat books (45+ listings), and tight Bid/Ask (>=88%)
+  const velocity = computeVelocityProfile(item, marketplace);
+  // Real structural spreads: deep CSFloat book (q>=45) OR tight Youpin898 order book (ypo/yp>=93% aligned with Buff163)
   const isStableDeepBook =
-    (Number(item.q) || 0) >= 45 &&
-    (velocity.bidAskPct === 0 || velocity.bidAskPct >= 88) &&
-    stability30 <= 0.14 &&
-    velocity.sold7d >= 5;
+    marketplace === 'YOUPIN'
+      ? (Number(item.ypo) || 0) > 0 &&
+        velocity.bidAskPct >= 93 &&
+        stability30 <= 0.14 &&
+        (vsBuffPct === null || Math.abs(vsBuffPct) <= 9) &&
+        (velocity.sold7d >= 5 || velocity.mktVol >= 35)
+      : (Number(item.q) || 0) >= 45 &&
+        (velocity.bidAskPct === 0 || velocity.bidAskPct >= 88) &&
+        stability30 <= 0.14 &&
+        velocity.sold7d >= 5;
+
+  const ypBuffOutlier =
+    marketplace === 'YOUPIN' && item.c !== 'Case' && vsBuffPct !== null && Math.abs(vsBuffPct) > 22;
 
   const isAnomalySpread =
+    ypBuffOutlier ||
     leg1ProfitPct > 65 ||
     (leg1ProfitPct > 44 && !isStableDeepBook) ||
     (velocity.isPatternSensitive && leg1ProfitPct > 38 && !isStableDeepBook);
@@ -619,7 +672,7 @@ export function getCapitalTierInfo(capitalUsd) {
         {
           pct: 35,
           role: bi('Popular Rifle / AWP Lane', 'Popüler Tüfek / AWP'),
-          note: bi('Tight CSFloat Bid/Ask for rapid cashout.', 'Yüksek CSFloat Bid/Ask ile hızlı nakit.')
+          note: bi('Tight P2P Bid/Ask for rapid cashout.', 'Yüksek P2P Bid/Ask ile hızlı nakit.')
         },
         {
           pct: 15,
@@ -669,8 +722,8 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
   const depth1 = Number(item1?.q) || 0;
   const isCSFloat = opts.marketplace !== 'YOUPIN';
 
-  const vel1 = computeVelocityProfile(item1);
-  const vel2 = computeVelocityProfile(item2);
+  const vel1 = computeVelocityProfile(item1, opts.marketplace);
+  const vel2 = computeVelocityProfile(item2, opts.marketplace);
 
   // V5.1 Quantity-relative & Queue-Competition fill-time model:
   // Selling large q2 into a congested book (low turnover30Pct + high listing overhang) faces undercut queue drag.
@@ -903,8 +956,8 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       }
     }
 
-    // Leg 2 eligibility: strictly eliminate thin-book FN float-overpay anomalies & avoid knives as exit skins under $1,500
-    const bidAskOk = !isCSFloat || vel.bidAskPct === 0 || vel.bidAskPct >= 83;
+    // Leg 2 eligibility: strictly eliminate thin-book FN float-overpay anomalies & enforce real Bid/Ask on BOTH CSFloat & Youpin898
+    const bidAskOk = vel.bidAskPct === 0 || vel.bidAskPct >= (isCSFloat ? 83 : 88);
     const l2AllowedTier = minSpeed === 'MODERATE' ? allowedTiers.has(vel.tier) : vel.tier === 'A' || vel.tier === 'B';
     const l2NoKnifeExit = !vel.isKnifeOrGlove || (cap >= 1500 && vel.sold7d >= 8 && qty >= 60);
     const l2MinPrice = Math.max(tier.minL2Price, cap / 45);
@@ -1018,8 +1071,14 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       const slippageAdjProfit = c1.netProfit - c1.spentM1 * (slip1Pct / 100) - c1.cashReturnM2 * (slip2Pct / 100);
       const slippageAdjRoi = cap > 0 ? (slippageAdjProfit / cap) * 100 : 0;
 
-      // V5 Instant Buy-Order Guaranteed Downside Floor (0-second dump into CSFloat highest_order)
-      const instantSellPrice = isCSFloat && l2.item.cfo > 0 ? l2.item.cfo : l2.m.marketSellUsd;
+      // V7.1 Instant Buy-Order Guaranteed Downside Floor (0-second dump into active marketplace highest_order)
+      const instantSellPrice = isCSFloat
+        ? l2.item.cfo > 0
+          ? l2.item.cfo
+          : l2.m.marketSellUsd
+        : l2.item.ypo > 0
+        ? l2.item.ypo
+        : l2.m.marketSellUsd;
       const instantNetM2 = calcNetSellUsd(instantSellPrice, opts.sellFeePct, opts.withdrawFeePct);
       const instantM2 = l2.m.steamUsd > 0 ? instantNetM2 / l2.m.steamUsd : 0;
       const instantFloorEnd = c1.cashLeftAfterLeg1 + c1.q2 * instantNetM2 + c1.steamWallet * instantM2;
@@ -1388,7 +1447,7 @@ export function findBestExitsForLeg1(items, leg1Ctx, opts, capitalUsd = 200, lim
   const isCSFloat = opts.marketplace !== 'YOUPIN';
   const l1Item = leg1Ctx.item || null;
   const l1NameLower = (leg1Ctx.name || l1Item?.n || '').toLowerCase();
-  const l1Vel = computeVelocityProfile(l1Item);
+  const l1Vel = computeVelocityProfile(l1Item, opts.marketplace);
   const l1Metrics = l1Item
     ? evaluateItemMetrics(l1Item, opts)
     : { stability30: 0.05, isBelowBuff: false, isOverBuff: false, trendStatus: 'STABLE', isAnomalySpread: false };
@@ -1410,7 +1469,7 @@ export function findBestExitsForLeg1(items, leg1Ctx, opts, capitalUsd = 200, lim
     const vel = m.velocity;
     if (vel.tier !== 'A' && vel.tier !== 'B') continue;
     if (vel.isKnifeOrGlove && !(cap >= 1500 && vel.sold7d >= 8 && qty >= 60)) continue;
-    if (isCSFloat && vel.bidAskPct > 0 && vel.bidAskPct < 83) continue;
+    if (vel.bidAskPct > 0 && vel.bidAskPct < (isCSFloat ? 83 : 88)) continue;
     if (m.leg2LossPct < 3.0 && !(vel.tier === 'A' && vel.mktVol >= 150 && m.leg2LossPct >= 0.5)) continue;
     if (m.leg2LossPct > 15.5) continue;
     if (m.steamUsd < minL2Price || m.steamUsd > maxL2Price) continue;
@@ -1437,7 +1496,13 @@ export function findBestExitsForLeg1(items, leg1Ctx, opts, capitalUsd = 200, lim
     const slipProfit = c1.netProfit - c1.cashReturnM2 * (slip2Pct / 100);
     const slipRoi = cap > 0 ? (slipProfit / cap) * 100 : 0;
 
-    const instSell = isCSFloat && item.cfo > 0 ? item.cfo : m.marketSellUsd;
+    const instSell = isCSFloat
+      ? item.cfo > 0
+        ? item.cfo
+        : m.marketSellUsd
+      : item.ypo > 0
+      ? item.ypo
+      : m.marketSellUsd;
     const instNetM2 = calcNetSellUsd(instSell, opts.sellFeePct, opts.withdrawFeePct);
     const instM2 = m.steamUsd > 0 ? instNetM2 / m.steamUsd : 0;
     const instantFloorProfit = Math.round((c1.cashLeftAfterLeg1 + c1.q2 * instNetM2 + c1.steamWallet * instM2 - cap) * 100) / 100;

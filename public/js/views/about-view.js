@@ -46,13 +46,15 @@ export function initAboutView(app) {
         title: 'SPREAD Agent V7 • Monte Carlo & CVaR',
         status: 'OK',
         sub: tr
-          ? '500 senaryolu kalın-kuyruklu risk simülasyonu, Kâr İhtimali (PoP %) ve paralel sepet oto-dengeleme'
-          : '500-scenario fat-tail risk simulation, Profit Probability (PoP %) & parallel basket auto-rebalancing'
+            ? '500 senaryolu kalın-kuyruklu risk simülasyonu, Kâr İhtimali (PoP %) ve paralel sepet oto-dengeleme'
+            : '500-scenario fat-tail risk simulation, Profit Probability (PoP %) & parallel basket auto-rebalancing'
       },
       {
-        title: 'Youpin898 + Open ER-API FX',
+        title: 'Youpin898 Live Order Book + FX',
         status: isLive ? (feeds.youpin !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
-        sub: `1 USD = ₺${app.market.fxRates.TRY.toFixed(2)} | ¥${app.market.fxRates.CNY.toFixed(2)} | €${app.market.fxRates.EUR.toFixed(2)}`
+        sub: tr
+          ? `Canlı Youpin898 Ask + Alım Emri (Buy-Order) & Bid/Ask derinliği • 1 USD = ₺${app.market.fxRates.TRY.toFixed(2)} | ¥${app.market.fxRates.CNY.toFixed(2)}`
+          : `Live Youpin898 Ask + Highest Buy-Order & Bid/Ask tightness • 1 USD = ₺${app.market.fxRates.TRY.toFixed(2)} | ¥${app.market.fxRates.CNY.toFixed(2)}`
       },
       {
         title: tr ? 'Skinport + Market.CSGO + ByMykel' : 'Skinport + Market.CSGO + ByMykel',

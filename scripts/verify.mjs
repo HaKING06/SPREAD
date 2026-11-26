@@ -11,6 +11,7 @@ import {
   analyzeCapitalStrategies,
   calcExactValveSteamFee,
   computeLoopMetrics,
+  computeVelocityProfile,
   estimateExecutionReality,
   findBestExitsForLeg1
 } from '../public/js/core/math-engine.js';
@@ -466,6 +467,25 @@ async function main() {
     } else {
       fail(`V7 Owned-Skin Arbitrage Optimizer failed: ${JSON.stringify(ownedRes).slice(0, 180)}`);
     }
+
+    // 5b-V7.1. Strict Marketplace Isolation & Live Youpin898 Order Book (yp + ypo) Verification
+    const asiimovMw = findItem('AK-47 | Asiimov (Minimal Wear)');
+    const ypLiveOk = asiimovMw && asiimovMw.yp > 25 && asiimovMw.yp < 48 && asiimovMw.ypo > 25 && asiimovMw.ypo <= asiimovMw.yp;
+    const synthMixed = { ...asiimovMw, cf24: 99, cf7: 500, cf30: 2000 };
+    const ypVel = computeVelocityProfile(synthMixed, 'YOUPIN');
+    const cfVel = computeVelocityProfile(synthMixed, 'CSFLOAT');
+    const noCfLeak = !/CSFloat/i.test(ypVel.volText) && ypVel.volSource !== 'CSFLOAT' && ypVel.bidAskPct > 90;
+    const cfWorks = /CSFloat/i.test(cfVel.volText) && cfVel.volSource === 'CSFLOAT';
+    const ypOpts = { marketplace: 'YOUPIN', buyFeePct: 0, sellFeePct: 1, withdrawFeePct: 0, steamFeeMode: 'EXACT_VALVE', conservativeSteamPrice: true };
+    const ypAdv = analyzeCapitalStrategies(mergedSample, ypOpts, 800);
+    const ypBasket = optimizeMultiItemBasket(mergedSample, ypOpts, 800, { buyCount: 0, sellCount: 0 });
+    if (ypLiveOk && noCfLeak && cfWorks && ypAdv.strategies.length >= 2 && ypBasket?.plan) {
+      pass(
+        `V7.1 Live Youpin898 Isolation verified: Asiimov MW YP $${asiimovMw.yp} / Bid $${asiimovMw.ypo} (${ypVel.bidAskPct}%) | YP volText="${ypVel.volText}" (zero CSFloat leak!) | YP $800 Basket +$${ypBasket.plan.netProfitUsd.toFixed(2)}.`
+      );
+    } else {
+      fail(`V7.1 Youpin898 isolation failed: ypLiveOk=${ypLiveOk}, noCfLeak=${noCfLeak}, cfWorks=${cfWorks}, ypStrats=${ypAdv.strategies.length}, ypText=${ypVel.volText}`);
+    }
   }
 
   // 5c. Runtime View Render Test (DOM Shim — catches TDZ, ReferenceError, empty scanner table in BOTH EN & TR!)
@@ -666,7 +686,8 @@ async function main() {
         ['/api/fx', 200],
         ['/api/market', 200],
         ['/api/item-lookup?q=karambit%20doppler%20fn', 200],
-        ['/api/steam-verify?name=Desert%20Eagle%20%7C%20Conspiracy%20(Factory%20New)', 200],
+        ['/api/steam-verify?mkt=CSFLOAT&name=Desert%20Eagle%20%7C%20Conspiracy%20(Factory%20New)', 200],
+        ['/api/steam-verify?mkt=YOUPIN&name=AK-47%20%7C%20Asiimov%20(Minimal%20Wear)', 200],
         ['/server.mjs', 403],
         ['/scripts/sync-catalog.mjs', 403]
       ];
@@ -706,6 +727,14 @@ async function main() {
             pass(`Live /api/item-lookup -> found ${j.items.length} matches incl. ${hit.n} ($${hit.cf}, ${hit.q} listed).`);
           } else {
             fail(`Live /api/item-lookup missed Karambit Doppler FN: ${JSON.stringify(j).slice(0, 180)}`);
+          }
+        } else if (ep.startsWith('/api/steam-verify?mkt=YOUPIN')) {
+          const j = await res.json();
+          const rec = j.items?.['AK-47 | Asiimov (Minimal Wear)'];
+          if (j.ok && (!rec || rec.csfloat === null)) {
+            pass(`Live /api/steam-verify (YOUPIN mode) -> Steam 24h:${rec?.volume24h || 'n/a'} | csfloat=null (100% isolated).`);
+          } else {
+            fail(`Live /api/steam-verify (YOUPIN mode) leaked CSFloat data: ${JSON.stringify(j).slice(0, 180)}`);
           }
         } else if (ep.startsWith('/api/steam-verify')) {
           const j = await res.json();

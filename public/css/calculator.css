@@ -132,8 +132,25 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 13px;
+  padding-bottom: 11px;
   border-bottom: 1px solid var(--border-hair);
+}
+
+.leg-head h2 {
+  line-height: 1.25;
+}
+
+.leg-action-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-hair);
+  background: var(--bg-inset);
 }
 
 .leg-step-badge {

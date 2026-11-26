@@ -30,7 +30,7 @@ const ENDPOINTS = {
   csfloatOrders: 'https://prices.csgotrader.app/latest/csfloat.json',
   buff163: 'https://prices.csgotrader.app/latest/buff163.json',
   steamPrices: 'https://prices.csgotrader.app/latest/steam.json',
-  youpinPrices: 'https://prices.csgotrader.app/latest/youpin.json',
+  youpinPrices: 'https://prices.csgotrader.app/latest/youpin898.json',
   skinportSales: 'https://api.skinport.com/v1/sales/history?app_id=730&currency=USD',
   marketCsgo: 'https://market.csgo.com/api/v2/prices/USD.json',
   fx: 'https://open.er-api.com/v6/latest/USD'
@@ -205,7 +205,9 @@ async function main() {
     const cfPrice = cfLive?.minUsd || Number(cfOrd?.starting_at?.price) || Number(cfOrd?.price) || 0;
     const cfQty = cfLive?.qty || 0;
     const cfBuyOrder = Number(cfOrd?.highest_order?.price) || 0;
-    const ypPrice = Number(youpinPrices[mhn]) || 0;
+    const ypObj = youpinPrices?.[mhn];
+    const ypPrice = Number(ypObj?.starting_at?.price ?? ypObj) || 0;
+    const ypBuyOrder = Number(ypObj?.highest_order?.price) || 0;
     const b163Obj = buff163Prices?.[mhn];
     const b163Price = Number(b163Obj?.starting_at?.price) || 0;
     const b163Order = Number(b163Obj?.highest_order?.price) || 0;
@@ -239,6 +241,7 @@ async function main() {
       cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
       q: cfQty,
       yp: ypPrice > 0 ? round2(ypPrice) : 0,
+      ypo: ypBuyOrder > 0 ? round2(ypBuyOrder) : 0,
       b: b163Price > 0 ? round2(b163Price) : 0,
       bo: b163Order > 0 ? round2(b163Order) : 0,
       v24: sp.v24,
