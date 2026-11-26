@@ -10,7 +10,7 @@ export const BRAND = {
   supportEmail: 'spread@haking.tr',
   buyMeACoffeeUrl: 'https://buymeacoffee.com/haking',
   steamTradeDonateUrl: 'https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7',
-  version: '9.0.0'
+  version: '10.0.0'
 };
 
 export const ROUTES = {
@@ -50,6 +50,31 @@ export const STORAGE_KEYS = {
 
 export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
+const DOPPLER_PHASE_SUFFIX_RE = /\s+-\s+(Phase [1-4]|Ruby|Sapphire|Black Pearl|Emerald)$/i;
+
+const WEAR_FLOAT_RANGES = {
+  FN: [0, 0.07],
+  MW: [0.07, 0.15],
+  FT: [0.15, 0.38],
+  WW: [0.38, 0.45],
+  BS: [0.45, 1]
+};
+
+export const DOPPLER_PHASE_META = {
+  'Phase 1': { short: 'P1', cls: 'phase-p1' },
+  'Phase 2': { short: 'P2', cls: 'phase-p2' },
+  'Phase 3': { short: 'P3', cls: 'phase-p3' },
+  'Phase 4': { short: 'P4', cls: 'phase-p4' },
+  Ruby: { short: 'Ruby', cls: 'phase-ruby' },
+  Sapphire: { short: 'Sapphire', cls: 'phase-sapphire' },
+  Emerald: { short: 'Emerald', cls: 'phase-emerald' },
+  'Black Pearl': { short: 'Black Pearl', cls: 'phase-bp' }
+};
+
+export function stripDopplerPhase(name) {
+  return String(name || '').replace(DOPPLER_PHASE_SUFFIX_RE, '').trim();
+}
+
 export const MARKETPLACES = {
   CSFLOAT: {
     id: 'CSFLOAT',
@@ -59,7 +84,23 @@ export const MARKETPLACES = {
     defaultSellFee: 2.0,
     defaultWithdrawFee: 0.0,
     tagline: 'P2P • %2 Satış Komisyonu • Küresel Nakit',
-    searchUrl: (mhn) => `https://csfloat.com/search?market_hash_name=${encodeURIComponent(mhn)}`
+    searchUrl: (mhn, item) => {
+      if (item?.def && item?.pi) {
+        const params = new URLSearchParams({
+          def_index: String(item.def),
+          paint_index: String(item.pi),
+          category: item.st ? '2' : '1'
+        });
+        const rng = item.w ? WEAR_FLOAT_RANGES[item.w] : null;
+        if (rng) {
+          params.set('min_float', String(rng[0]));
+          params.set('max_float', String(rng[1]));
+        }
+        return `https://csfloat.com/search?${params.toString()}`;
+      }
+      const cleanName = item?.mhn || stripDopplerPhase(mhn);
+      return `https://csfloat.com/search?market_hash_name=${encodeURIComponent(cleanName)}`;
+    }
   },
   YOUPIN: {
     id: 'YOUPIN',
@@ -72,7 +113,7 @@ export const MARKETPLACES = {
     searchUrl: (mhn, item) =>
       item?.ypId
         ? `https://www.youpin898.com/market/goods-list?listType=10&templateId=${item.ypId}`
-        : `https://www.youpin898.com/?search=${encodeURIComponent(mhn)}`
+        : `https://www.youpin898.com/?search=${encodeURIComponent(item?.mhn || stripDopplerPhase(mhn))}`
   }
 };
 
@@ -118,8 +159,9 @@ export const DEFAULT_SETTINGS = {
   }
 };
 
-export function steamMarketUrl(marketHashName) {
-  return `https://steamcommunity.com/market/listings/730/${encodeURIComponent(marketHashName)}`;
+export function steamMarketUrl(marketHashName, item = null) {
+  const base = item?.mhn || stripDopplerPhase(marketHashName);
+  return `https://steamcommunity.com/market/listings/730/${encodeURIComponent(base)}`;
 }
 
 export function buildImageUrl(imgField) {

@@ -62,6 +62,34 @@ const cacheStore = {
   steamVerify: new Map()
 };
 
+const PHASE_SUFFIX_RE = /\s+-\s+(Phase [1-4]|Ruby|Sapphire|Black Pearl|Emerald)$/i;
+const GEM_PHASE_SET = new Set(['Ruby', 'Sapphire', 'Emerald', 'Black Pearl']);
+
+function stripPhaseSuffix(name) {
+  return String(name || '').replace(PHASE_SUFFIX_RE, '').trim();
+}
+
+function expandSearchTokens(normQ) {
+  const out = [];
+  for (const tok of normQ.split(' ').filter(Boolean).slice(0, 8)) {
+    if (tok === 'fn') out.push('factory');
+    else if (tok === 'mw') out.push('minimal');
+    else if (tok === 'ft') out.push('field');
+    else if (tok === 'ww') out.push('well');
+    else if (tok === 'bs') out.push('battle');
+    else if (tok === 'p1') out.push('phase', '1');
+    else if (tok === 'p2') out.push('phase', '2');
+    else if (tok === 'p3') out.push('phase', '3');
+    else if (tok === 'p4') out.push('phase', '4');
+    else if (tok === 'bp') out.push('black', 'pearl');
+    else if (tok === 'sap' || tok === 'saphire') out.push('sapphire');
+    else if (tok === 'em') out.push('emerald');
+    else if (tok === 'rub') out.push('ruby');
+    else out.push(tok);
+  }
+  return out;
+}
+
 function round2(n) {
   return Math.round(n * 100) / 100;
 }
@@ -145,34 +173,59 @@ async function handleApiMarket(res, forceRefresh) {
     let liveCount = 0;
 
     for (const item of catalog.items || []) {
-      const mhn = item.n;
-      const prev = baseSnap.prices?.[mhn] || {};
-      const st = steamObj[mhn];
+      const key = item.n;
+      const baseMhn = item.mhn || item.n;
+      const ph = item.ph || '';
+      const prev = baseSnap.prices?.[key] || {};
+      const st = steamObj[baseMhn];
       const st24 = Number(st?.last_24h) || 0;
       const st7 = Number(st?.last_7d) || 0;
       const st30 = Number(st?.last_30d) || 0;
       const st90 = Number(st?.last_90d) || 0;
       const steamUsd = st24 > 0 ? st24 : st7 > 0 ? st7 : st30;
 
-      const cfLive = cfLiveMap.get(mhn);
-      const cfOrd = cfOrdObj[mhn];
-      const cfPrice = cfLive?.minUsd || Number(cfOrd?.starting_at?.price) || Number(cfOrd?.price) || 0;
-      const cfQty = cfLive?.qty || 0;
-      const cfBuyOrder = Number(cfOrd?.highest_order?.price) || 0;
-      const ypNode = ypObj[mhn];
-      const ypPrice = Number(ypNode?.starting_at?.price ?? ypNode) || Number(prev.yp) || 0;
-      const ypBuyOrder = Number(ypNode?.highest_order?.price) || Number(prev.ypo) || 0;
-      const bObj = buffObj[mhn];
-      const bPrice = Number(bObj?.starting_at?.price) || Number(prev.b) || 0;
-      const bOrder = Number(bObj?.highest_order?.price) || Number(prev.bo) || 0;
-      const mv = mcsMap.has(mhn) ? mcsMap.get(mhn) : Number(prev.mv) || 0;
+      const cfLive = cfLiveMap.get(baseMhn);
+      const cfOrd = cfOrdObj[baseMhn];
+      const ypNode = ypObj[baseMhn];
+      const bObj = buffObj[baseMhn];
 
-      const isEstSteam = steamUsd <= 0 && (item.c === 'Knives' || item.c === 'Gloves') && cfPrice > 0;
-      const effSteamUsd = isEstSteam ? Number(prev.s) || round2(Math.min(1850, Math.max(cfPrice, bPrice) * 1.32)) : steamUsd;
+      const baseCfMin = cfLive?.minUsd || Number(cfOrd?.starting_at?.price) || Number(cfOrd?.price) || 0;
+      const baseBuffMin = Number(bObj?.starting_at?.price) || 0;
+      const isGem = Boolean(item.isGem || (ph && GEM_PHASE_SET.has(ph)));
+
+      const cfPrice = ph
+        ? Number(cfOrd?.starting_at?.doppler?.[ph]) || Number(prev.cf) || 0
+        : baseCfMin;
+      const cfQty = ph
+        ? cfLive?.qty > 0
+          ? Math.max(1, Math.round(cfLive.qty * (isGem ? 0.04 : 0.22)))
+          : Number(prev.q) || 0
+        : cfLive?.qty || 0;
+      const cfBuyOrder = ph
+        ? Number(cfOrd?.highest_order?.doppler?.[ph]) || Number(prev.cfo) || 0
+        : Number(cfOrd?.highest_order?.price) || 0;
+      const ypPrice = ph
+        ? Number(ypNode?.starting_at?.doppler?.[ph]) || Number(prev.yp) || 0
+        : Number(ypNode?.starting_at?.price ?? ypNode) || Number(prev.yp) || 0;
+      const ypBuyOrder = ph
+        ? Number(ypNode?.highest_order?.doppler?.[ph]) || Number(prev.ypo) || 0
+        : Number(ypNode?.highest_order?.price) || Number(prev.ypo) || 0;
+      const bPrice = ph
+        ? Number(bObj?.starting_at?.doppler?.[ph]) || Number(prev.b) || 0
+        : baseBuffMin || Number(prev.b) || 0;
+      const bOrder = ph
+        ? Number(bObj?.highest_order?.doppler?.[ph]) || Number(prev.bo) || 0
+        : Number(bObj?.highest_order?.price) || Number(prev.bo) || 0;
+      const rawMv = mcsMap.has(baseMhn) ? mcsMap.get(baseMhn) : Number(prev.mv) || 0;
+      const mv = isGem ? Math.min(rawMv, 5) : rawMv;
+
+      const isEstSteam = steamUsd <= 0 && (item.c === 'Knives' || item.c === 'Gloves' || Boolean(ph)) && (cfPrice > 0 || ypPrice > 0);
+      const estBaseRef = ph ? Math.max(baseCfMin, baseBuffMin) : Math.max(cfPrice, bPrice);
+      const effSteamUsd = isEstSteam ? Number(prev.s) || round2(Math.min(1850, estBaseRef * 1.32)) : steamUsd;
 
       if (effSteamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
         liveCount += 1;
-        prices[mhn] = {
+        prices[key] = {
           s: round2(effSteamUsd),
           s7: round2(st7 || effSteamUsd),
           s30: round2(st30 || effSteamUsd),
@@ -323,7 +376,8 @@ async function handleSteamVerify(res, reqUrl) {
   const results = {};
   await Promise.allSettled(
     names.map(async (name) => {
-      const enc = encodeURIComponent(name);
+      const baseQueryName = stripPhaseSuffix(name);
+      const enc = encodeURIComponent(baseQueryName);
       const nid = nidMap.get(name) || 0;
       const stPoTask = fetchJsonTimeout(
         `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${enc}`,
@@ -425,13 +479,7 @@ async function handleSteamVerify(res, reqUrl) {
       return;
     }
 
-    const tokens = normQ
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 8)
-      .map((tok) =>
-        tok === 'fn' ? 'factory' : tok === 'mw' ? 'minimal' : tok === 'ft' ? 'field' : tok === 'ww' ? 'well' : tok === 'bs' ? 'battle' : tok
-      );
+    const tokens = expandSearchTokens(normQ);
 
     const [cfLiveRes, cfOrdRes, steamRes, buffRes, ypRes] = await Promise.allSettled([
       fetchJsonTimeout('https://csfloat.com/api/v1/listings/price-list', 10000),
@@ -457,26 +505,75 @@ async function handleSteamVerify(res, reqUrl) {
     const allNames = new Set([...cfMap.keys(), ...Object.keys(steamObj)]);
     const hits = [];
     for (const mhn of allNames) {
-      const normName = normalizeLookupText(mhn);
-      if (!tokens.every((tok) => normName.includes(tok))) continue;
       const cfInfo = cfMap.get(mhn);
       const cfOrd = cfOrdObj[mhn];
       const st = steamObj[mhn];
       const bObj = buffObj[mhn];
-      const cfPrice = cfInfo?.cf || Number(cfOrd?.starting_at?.price) || Number(cfOrd?.price) || 0;
+      const ypNode = ypObj[mhn];
+
+      const baseCfPrice = cfInfo?.cf || Number(cfOrd?.starting_at?.price) || Number(cfOrd?.price) || 0;
       const st24 = Number(st?.last_24h) || 0;
       const st7 = Number(st?.last_7d) || 0;
       const st30 = Number(st?.last_30d) || 0;
       const st90 = Number(st?.last_90d) || 0;
       const steamUsd = st24 > 0 ? st24 : st7 > 0 ? st7 : st30;
-      const ypNode = ypObj[mhn];
-      const ypPrice = Number(ypNode?.starting_at?.price ?? ypNode) || 0;
-      const ypBuyOrder = Number(ypNode?.highest_order?.price) || 0;
-      if (cfPrice <= 0 && steamUsd <= 0 && ypPrice <= 0) continue;
-
-      const bPrice = Number(bObj?.starting_at?.price) || 0;
+      const baseYpPrice = Number(ypNode?.starting_at?.price ?? ypNode) || 0;
+      const baseBPrice = Number(bObj?.starting_at?.price) || 0;
       const isEstSteam = steamUsd <= 0;
-      const effSteam = steamUsd > 0 ? steamUsd : round2(Math.min(1850, Math.max(cfPrice, ypPrice, bPrice) * 1.25));
+      const sharedEffSteam = steamUsd > 0 ? steamUsd : round2(Math.min(1850, Math.max(baseCfPrice, baseYpPrice, baseBPrice) * 1.25));
+
+      const doppAsks = cfOrd?.starting_at?.doppler;
+      if (doppAsks && typeof doppAsks === 'object' && Object.keys(doppAsks).length > 0) {
+        const cheapestPhCf = Math.min(...Object.values(doppAsks).map((v) => Number(v) || Infinity));
+        for (const [ph, rawAsk] of Object.entries(doppAsks)) {
+          const fullName = `${mhn} - ${ph}`;
+          const normPhName = normalizeLookupText(fullName);
+          if (!tokens.every((tok) => normPhName.includes(tok))) continue;
+          const phCf = Number(rawAsk) || 0;
+          const phYp = Number(ypNode?.starting_at?.doppler?.[ph]) || 0;
+          const phBf = Number(bObj?.starting_at?.doppler?.[ph]) || 0;
+          if (phCf <= 0 && phYp <= 0) continue;
+          const isGem = GEM_PHASE_SET.has(ph);
+          const isPrem = isGem || (Number.isFinite(cheapestPhCf) && phCf > cheapestPhCf * 1.05);
+          hits.push({
+            exact: normPhName === normQ ? 1 : 0,
+            n: fullName,
+            mhn,
+            ph,
+            c: inferCategory(mhn),
+            w: inferWearCode(mhn),
+            r: mhn.startsWith('★') ? 'Covert' : 'Classified',
+            rc: mhn.startsWith('★') ? '#eb4b4b' : '#d32ce6',
+            st: mhn.includes('StatTrak') ? 1 : 0,
+            sv: mhn.includes('Souvenir') ? 1 : 0,
+            ...(isGem ? { isGem: 1 } : {}),
+            ...(isPrem ? { phPrem: 1 } : {}),
+            img: '',
+            s: round2(sharedEffSteam),
+            s7: round2(st7 || sharedEffSteam),
+            s30: round2(st30 || sharedEffSteam),
+            s90: round2(st90 || sharedEffSteam),
+            ...(isEstSteam ? { sEst: 1 } : {}),
+            cf: round2(phCf),
+            cfo: round2(Number(cfOrd?.highest_order?.doppler?.[ph]) || 0),
+            q: cfInfo?.q > 0 ? Math.max(1, Math.round(cfInfo.q * (isGem ? 0.04 : 0.22))) : 0,
+            yp: round2(phYp),
+            ypo: round2(Number(ypNode?.highest_order?.doppler?.[ph]) || 0),
+            b: round2(phBf),
+            bo: round2(Number(bObj?.highest_order?.doppler?.[ph]) || 0),
+            v24: 0,
+            v7: 0,
+            v30: 0,
+            mv: 0,
+            liveLookup: true
+          });
+        }
+        continue;
+      }
+
+      const normName = normalizeLookupText(mhn);
+      if (!tokens.every((tok) => normName.includes(tok))) continue;
+      if (baseCfPrice <= 0 && steamUsd <= 0 && baseYpPrice <= 0) continue;
 
       hits.push({
         exact: normName === normQ ? 1 : 0,
@@ -488,17 +585,17 @@ async function handleSteamVerify(res, reqUrl) {
         st: mhn.includes('StatTrak') ? 1 : 0,
         sv: mhn.includes('Souvenir') ? 1 : 0,
         img: '',
-        s: round2(effSteam),
-        s7: round2(st7 || effSteam),
-        s30: round2(st30 || effSteam),
-        s90: round2(st90 || effSteam),
+        s: round2(sharedEffSteam),
+        s7: round2(st7 || sharedEffSteam),
+        s30: round2(st30 || sharedEffSteam),
+        s90: round2(st90 || sharedEffSteam),
         ...(isEstSteam ? { sEst: 1 } : {}),
-        cf: round2(cfPrice),
+        cf: round2(baseCfPrice),
         cfo: round2(Number(cfOrd?.highest_order?.price) || 0),
         q: cfInfo?.q || 0,
-        yp: round2(ypPrice),
-        ypo: round2(ypBuyOrder),
-        b: round2(bPrice),
+        yp: round2(baseYpPrice),
+        ypo: round2(Number(ypNode?.highest_order?.price) || 0),
+        b: round2(baseBPrice),
         bo: round2(Number(bObj?.highest_order?.price) || 0),
         v24: 0,
         v7: 0,

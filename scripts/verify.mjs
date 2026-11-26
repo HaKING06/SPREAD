@@ -382,15 +382,31 @@ async function main() {
       fail(`SPREAD Agent V6 Basket Optimizer failed: autoOk=${autoOk}, split1x3Ok=${split1x3Ok}`);
     }
 
-    // 5b-V7. Global High-Tier Knife Coverage, Monte Carlo, Auto-Rebalancer (3->2) & Owned-Skin Optimizer
+    // 5b-V7 & V10. Full Doppler & Gamma Doppler Phase Library, Monte Carlo, Auto-Rebalancer (3->2) & Owned-Skin Optimizer
     const findItem = (name) => mergedSample.find((x) => x.n.toLowerCase() === String(name).toLowerCase()) || null;
-    const karambitDoppler = mergedSample.find((x) => x.n === '★ Karambit | Doppler (Factory New)');
-    if (karambitDoppler && karambitDoppler.cf > 400 && karambitDoppler.q > 20) {
+    const karaPhases = ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4', 'Ruby', 'Sapphire', 'Black Pearl'].map((ph) =>
+      findItem(`★ Karambit | Doppler (Factory New) - ${ph}`)
+    );
+    const karaEmerald = findItem('★ Karambit | Gamma Doppler (Factory New) - Emerald');
+    const all7KaraOk =
+      karaPhases.every((x) => x && x.cf > 400 && x.def === 507 && x.pi > 400 && x.nid > 0 && x.img) &&
+      karaEmerald &&
+      karaEmerald.cf > 2000 &&
+      karaEmerald.isGem === 1 &&
+      karaPhases[4].cf > karaPhases[0].cf * 3 && // Ruby >> Phase 1!
+      karaPhases[4].s === karaPhases[0].s; // Shared Steam base floor (Ruby must NEVER inflate Steam est!)
+    const totalDopplerItems = mergedSample.filter((x) => Boolean(x.ph)).length;
+    const karambitDoppler = karaPhases[0];
+    // Verify Leg 2 Guard: NO Ruby/Sapphire/Emerald/Black Pearl/Phase 2 gem overpay ever appears in Leg 2 recommendations!
+    const noGemInLeg2 =
+      adv800.strategies.every((st) => !st.pair?.leg2?.item?.isGem && !st.pair?.leg2?.item?.phPrem) &&
+      (!split1x3?.plan || split1x3.plan.leg2Lines.every((l) => !l.item.isGem && !l.item.phPrem));
+    if (all7KaraOk && totalDopplerItems >= 300 && noGemInLeg2) {
       pass(
-        `V7 High-Tier Knife Catalog verified: ★ Karambit | Doppler (FN) present (CF $${karambitDoppler.cf}, ${karambitDoppler.q} listings, sEst=${karambitDoppler.sEst || 0}).`
+        `V10.0 Full Doppler Phase Library verified: ${totalDopplerItems} phases | Karambit P1=$${karaPhases[0].cf}, P2=$${karaPhases[1].cf}, Sapphire=$${karaPhases[5].cf}, Ruby=$${karaPhases[4].cf}, Emerald=$${karaEmerald.cf} | Leg-2 Gem Guard OK.`
       );
     } else {
-      fail('V7 High-Tier Knife Catalog missing ★ Karambit | Doppler (Factory New)!');
+      fail(`V10.0 Doppler Phase check failed: total=${totalDopplerItems}, all7KaraOk=${all7KaraOk}, noGemInLeg2=${noGemInLeg2}`);
     }
 
     if (split1x3?.plan) {
@@ -813,11 +829,12 @@ async function main() {
           }
         } else if (ep.startsWith('/api/item-lookup')) {
           const j = await res.json();
-          const hit = (j.items || []).find((x) => x.n === '★ Karambit | Doppler (Factory New)');
-          if (j.ok && hit && hit.cf > 400) {
-            pass(`Live /api/item-lookup -> found ${j.items.length} matches incl. ${hit.n} ($${hit.cf}, ${hit.q} listed).`);
+          const hitP1 = (j.items || []).find((x) => x.n === '★ Karambit | Doppler (Factory New) - Phase 1');
+          const hitRuby = (j.items || []).find((x) => x.n === '★ Karambit | Doppler (Factory New) - Ruby');
+          if (j.ok && hitP1 && hitP1.cf > 400 && hitRuby && hitRuby.cf > hitP1.cf * 3) {
+            pass(`Live /api/item-lookup -> found ${j.items.length} phase matches incl. P1 ($${hitP1.cf}) & Ruby ($${hitRuby.cf}).`);
           } else {
-            fail(`Live /api/item-lookup missed Karambit Doppler FN: ${JSON.stringify(j).slice(0, 180)}`);
+            fail(`Live /api/item-lookup missed Karambit Doppler FN phases: ${JSON.stringify(j).slice(0, 220)}`);
           }
         } else if (ep.startsWith('/api/steam-verify?mkt=YOUPIN')) {
           const j = await res.json();

@@ -45,11 +45,11 @@ export function initAboutView(app) {
           : `${app.items.length.toLocaleString('en-US')} bundled skins + on-demand live lookup for rare knives & Dopplers`
       },
       {
-        title: 'SPREAD Agent V9 • Meta-Arbitrator',
+        title: 'SPREAD Agent V10 • Meta-Arbitrator & Doppler Phases',
         status: 'OK',
         sub: tr
-          ? 'Tekli vs. Sepet canlı kafa kafaya kıyaslama, yönlü likidite (Steam / Nakit Pazar), 500 senaryolu Monte Carlo CVaR ve oto-dengeleme'
-          : 'Live Single vs. Basket head-to-head arbitrator, directional liquidity (Steam / Cash Market), 500-trial Monte Carlo CVaR & auto-rebalancer'
+          ? '350+ canlı Doppler/Gamma Doppler fazı (Phase 1–4, Ruby, Sapphire, Emerald, Black Pearl), Tekli vs. Sepet Meta-Hakem ve 500 sim. Monte Carlo CVaR'
+          : '350+ live Doppler/Gamma Doppler phases (Phase 1–4, Ruby, Sapphire, Emerald, Black Pearl), Single vs. Basket Meta-Arbitrator & 500-sim Monte Carlo CVaR'
       },
       {
         title: 'Youpin898 Live Order Book + Direct IDs',

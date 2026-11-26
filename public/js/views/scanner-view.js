@@ -2,7 +2,7 @@
  * SPREAD (spread.haking.tr) — Live 4,500-Item CS2 Market Scanner & Auto-Pair Finder
  */
 
-import { MARKETPLACES, buildImageUrl, steamMarketUrl } from '../core/config.js';
+import { DOPPLER_PHASE_META, MARKETPLACES, buildImageUrl, steamMarketUrl } from '../core/config.js';
 import { clampNumber, cleanText, clearNode, el } from '../core/security.js';
 import { evaluateItemMetrics, findOptimalPairs } from '../core/math-engine.js';
 import { fmtMoneyFromUsd, fmtMult, fmtPct, toUsd } from '../core/formatters.js';
@@ -323,7 +323,10 @@ export function initScannerView(app) {
               el(
                 'div',
                 { className: 'item-cell-name' },
-                el('span', null, item.n)
+                el('span', null, item.n),
+                item.ph && DOPPLER_PHASE_META[item.ph]
+                  ? el('span', { className: `phase-tag ${DOPPLER_PHASE_META[item.ph].cls}`, style: { marginLeft: '6px' } }, item.ph)
+                  : null
               ),
               el(
                 'div',
@@ -334,7 +337,7 @@ export function initScannerView(app) {
                 el('span', null, '•'),
                 el(
                   'a',
-                  { href: steamMarketUrl(item.n), target: '_blank', rel: 'noopener noreferrer', className: 'txt-muted' },
+                  { href: steamMarketUrl(item.n, item), target: '_blank', rel: 'noopener noreferrer', className: 'txt-muted' },
                   'Steam'
                 ),
                 el('span', null, '/'),

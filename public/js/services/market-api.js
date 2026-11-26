@@ -82,6 +82,7 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       st24Checked: Boolean(p.st24Checked),
       stMed: Number(p.stMed) || 0,
       stBuyOrd: Number(p.stBuyOrd) || 0,
+      stSellOrd: Number(p.stSellOrd) || 0,
       stSellCnt: Number(p.stSellCnt) || 0,
       stBuyCnt: Number(p.stBuyCnt) || 0,
       isCustom: false
@@ -203,6 +204,7 @@ export class MarketService {
             ...(rec.sold24hChecked ? { st24: rec.volume24h, st24Checked: true } : {}),
             ...(rec.medianUsd > 0 ? { stMed: rec.medianUsd } : {}),
             ...(rec.steamBuyOrderUsd > 0 ? { stBuyOrd: rec.steamBuyOrderUsd } : {}),
+            ...(rec.steamSellOrderUsd > 0 ? { stSellOrd: rec.steamSellOrderUsd } : {}),
             ...(rec.steamSellCount > 0 ? { stSellCnt: rec.steamSellCount } : {}),
             ...(rec.steamBuyCount > 0 ? { stBuyCnt: rec.steamBuyCount } : {})
           };

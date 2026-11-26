@@ -1039,6 +1039,74 @@
   color: var(--amber);
 }
 
+/* V10.0 Doppler & Gamma Doppler Phase Badges (Phase 1-4, Ruby, Sapphire, Emerald, Black Pearl) */
+.phase-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--border-med);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.phase-tag.phase-p1 {
+  border-color: rgba(192, 72, 168, 0.55);
+  background: rgba(192, 72, 168, 0.16);
+  color: #e879d4;
+}
+
+.phase-tag.phase-p2 {
+  border-color: rgba(244, 63, 146, 0.6);
+  background: rgba(244, 63, 146, 0.18);
+  color: #fb71b5;
+}
+
+.phase-tag.phase-p3 {
+  border-color: rgba(45, 212, 191, 0.52);
+  background: rgba(45, 212, 191, 0.14);
+  color: #5eead4;
+}
+
+.phase-tag.phase-p4 {
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.18);
+  color: #60a5fa;
+}
+
+.phase-tag.phase-ruby {
+  border-color: rgba(239, 68, 68, 0.72);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.28), rgba(185, 28, 28, 0.18));
+  color: #ff6b7a;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.22);
+}
+
+.phase-tag.phase-sapphire {
+  border-color: rgba(56, 139, 255, 0.78);
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.3), rgba(56, 189, 248, 0.18));
+  color: #7cc4ff;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.24);
+}
+
+.phase-tag.phase-emerald {
+  border-color: rgba(16, 217, 129, 0.75);
+  background: linear-gradient(90deg, rgba(16, 217, 129, 0.28), rgba(5, 150, 105, 0.18));
+  color: #34f5a8;
+  box-shadow: 0 0 8px rgba(16, 217, 129, 0.24);
+}
+
+.phase-tag.phase-bp {
+  border-color: rgba(168, 85, 247, 0.72);
+  background: linear-gradient(90deg, rgba(109, 40, 217, 0.34), rgba(30, 27, 75, 0.45));
+  color: #d8b4fe;
+  box-shadow: 0 0 8px rgba(147, 51, 234, 0.24);
+}
+
 .agent-main-col {
   display: flex;
   flex-direction: column;

@@ -149,6 +149,7 @@ async function main() {
   }
 
   const metaMap = new Map();
+  const phaseMetaMap = new Map(); // key: `${mhn}::${phase}` -> { img, def, pi, c, wp, w, r, rc, st, sv, ph }
 
   for (const c of crates) {
     const mhn = c?.market_hash_name || c?.name;
@@ -167,8 +168,8 @@ async function main() {
 
   for (const s of skins) {
     const mhn = s?.market_hash_name || s?.name;
-    if (!mhn || metaMap.has(mhn)) continue;
-    metaMap.set(mhn, {
+    if (!mhn) continue;
+    const baseRec = {
       n: mhn,
       c: s.category?.name || 'Skin',
       wp: s.weapon?.name || '',
@@ -178,7 +179,19 @@ async function main() {
       st: s.stattrak ? 1 : 0,
       sv: s.souvenir ? 1 : 0,
       img: stripImagePrefix(s.image)
-    });
+    };
+    if (s.phase) {
+      phaseMetaMap.set(`${mhn}::${s.phase}`, {
+        ...baseRec,
+        mhn,
+        ph: s.phase,
+        def: Number(s.weapon?.weapon_id) || 0,
+        pi: Number(s.paint_index) || 0
+      });
+    }
+    if (!metaMap.has(mhn)) {
+      metaMap.set(mhn, baseRec);
+    }
   }
 
   for (const a of agents) {
@@ -196,8 +209,12 @@ async function main() {
     });
   }
 
+  const GEM_PHASES = new Set(['Ruby', 'Sapphire', 'Emerald', 'Black Pearl']);
+  const PHASE_ORDER = ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4', 'Ruby', 'Sapphire', 'Emerald', 'Black Pearl'];
+
   const catalogItems = [];
   const snapshotPrices = {};
+  let dopplerPhaseCount = 0;
 
   for (const [mhn, meta] of metaMap.entries()) {
     const stObj = steamPrices[mhn];
@@ -221,12 +238,107 @@ async function main() {
 
     const sp = spMap.get(mhn) || { v24: 0, v7: 0, v30: 0, vm: 0 };
     const mv = mcsMap.get(mhn) || 0;
+    const nid = Number(steamNameIds?.[mhn]) || 0;
+    const ypId = Number(mpIds?.[mhn]?.youpin_id) || 0;
+
+    // V10.0 FULL DOPPLER & GAMMA DOPPLER PHASE EXPANSION (Phase 1-4, Ruby, Sapphire, Emerald, Black Pearl)
+    const cfDopplerAsks = cfOrd?.starting_at?.doppler;
+    const ypDopplerAsks = ypObj?.starting_at?.doppler;
+    const bfDopplerAsks = b163Obj?.starting_at?.doppler;
+    if (!meta.st && cfDopplerAsks && typeof cfDopplerAsks === 'object' && Object.keys(cfDopplerAsks).length > 0) {
+      const phaseKeys = Array.from(
+        new Set([
+          ...Object.keys(cfDopplerAsks),
+          ...Object.keys(ypDopplerAsks || {}),
+          ...Object.keys(bfDopplerAsks || {})
+        ])
+      ).sort((a, b) => {
+        const ia = PHASE_ORDER.indexOf(a);
+        const ib = PHASE_ORDER.indexOf(b);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+      });
+
+      const isEstSteam = steamUsd <= 0.02;
+      // CRITICAL: Steam Market shares ONE floor across all phases; base floor ALWAYS derives from cheapest base phase!
+      const baseFloorRef = Math.min(
+        ...[cfPrice, b163Price, ypPrice].filter((v) => v > 0)
+      ) || cfPrice || b163Price || ypPrice;
+      const sharedSteamUsd = isEstSteam
+        ? round2(Math.min(1850, Math.max(cfPrice, b163Price || baseFloorRef) * 1.32))
+        : steamUsd;
+      const cheapestPhaseCf = Math.min(
+        ...phaseKeys.map((ph) => Number(cfDopplerAsks[ph]) || Infinity)
+      );
+
+      let expandedAny = false;
+      for (const ph of phaseKeys) {
+        const pMeta = phaseMetaMap.get(`${mhn}::${ph}`);
+        const phCf = Number(cfDopplerAsks[ph]) || 0;
+        const phCfo = Number(cfOrd?.highest_order?.doppler?.[ph]) || 0;
+        const phYp = Number(ypDopplerAsks?.[ph]) || 0;
+        const phYpo = Number(ypObj?.highest_order?.doppler?.[ph]) || 0;
+        const phBf = Number(bfDopplerAsks?.[ph]) || 0;
+        const phBfo = Number(b163Obj?.highest_order?.doppler?.[ph]) || 0;
+        if (phCf <= 0.02 && phYp <= 0.02) continue;
+        const phImg = pMeta?.img || meta.img;
+        if (!phImg) continue;
+
+        const isGem = GEM_PHASES.has(ph);
+        // Any gem OR phase priced >5% above cheapest phase carries P2P overpay (guard against Leg 2 Steam Buy!)
+        const isPremiumPhase = isGem || (Number.isFinite(cheapestPhaseCf) && phCf > cheapestPhaseCf * 1.05);
+        const phaseQty = cfQty > 0 ? Math.max(1, Math.round(cfQty * (isGem ? 0.04 : 0.22))) : 0;
+        const phaseName = `${mhn} - ${ph}`;
+
+        catalogItems.push({
+          n: phaseName,
+          mhn,
+          ph,
+          c: pMeta?.c || meta.c,
+          wp: pMeta?.wp || meta.wp || '',
+          w: pMeta?.w || meta.w,
+          r: pMeta?.r || meta.r,
+          rc: pMeta?.rc || meta.rc,
+          st: 0,
+          sv: 0,
+          img: phImg,
+          ...(pMeta?.def ? { def: pMeta.def } : {}),
+          ...(pMeta?.pi ? { pi: pMeta.pi } : {}),
+          ...(isGem ? { isGem: 1 } : {}),
+          ...(isPremiumPhase ? { phPrem: 1 } : {}),
+          ...(nid > 0 ? { nid } : {}),
+          ...(ypId > 0 ? { ypId } : {})
+        });
+
+        snapshotPrices[phaseName] = {
+          s: round2(sharedSteamUsd),
+          s7: round2(st7 || sharedSteamUsd),
+          s30: round2(st30 || sharedSteamUsd),
+          s90: round2(st90 || sharedSteamUsd),
+          ...(isEstSteam ? { sEst: 1 } : {}),
+          cf: phCf > 0 ? round2(phCf) : 0,
+          cfo: phCfo > 0 ? round2(phCfo) : 0,
+          q: phaseQty,
+          yp: phYp > 0 ? round2(phYp) : 0,
+          ypo: phYpo > 0 ? round2(phYpo) : 0,
+          b: phBf > 0 ? round2(phBf) : 0,
+          bo: phBfo > 0 ? round2(phBfo) : 0,
+          v24: isGem ? 0 : sp.v24,
+          v7: isGem ? Math.min(sp.v7, 2) : sp.v7,
+          v30: isGem ? Math.min(sp.v30, 8) : sp.v30,
+          vm: sp.vm > 0 ? round2(sp.vm) : 0,
+          mv: isGem ? Math.min(mv, 5) : mv
+        };
+        expandedAny = true;
+        dopplerPhaseCount += 1;
+      }
+      if (expandedAny) continue; // Replace ambiguous phase-less Doppler entry with exact phases
+    }
 
     const isContainer = meta.c === 'Case' || meta.c === 'Capsule';
     const isHighTier = meta.c === 'Knives' || meta.c === 'Gloves';
     const hasMarketPrice = cfPrice > 0.02 || ypPrice > 0.02;
     if (!hasMarketPrice || !meta.img) continue;
-    // Allow high-tier knives/gloves (e.g. Karambit Doppler, Butterfly Doppler) even when CSGOTrader steam.json is null!
+    // Allow high-tier knives/gloves even when CSGOTrader steam.json is null
     const isEstimatedSteam = steamUsd <= 0.02;
     if (isEstimatedSteam && !(isHighTier && cfQty >= 10)) continue;
     if (!isContainer && !isHighTier && cfQty < 4 && ypPrice <= 0) continue;
@@ -236,8 +348,6 @@ async function main() {
       : steamUsd;
     if (finalSteamUsd > 20000) continue;
 
-    const nid = Number(steamNameIds?.[mhn]) || 0;
-    const ypId = Number(mpIds?.[mhn]?.youpin_id) || 0;
     catalogItems.push({
       ...meta,
       ...(nid > 0 ? { nid } : {}),
@@ -265,19 +375,20 @@ async function main() {
     };
   }
 
-  // Prioritize items with REAL sales velocity + guarantee high-tier knives/gloves (Karambit/Butterfly/M9/Doppler) stay bundled!
+  // Prioritize items with REAL sales velocity + guarantee ALL Doppler/Gamma Doppler phases & high-tier knives stay bundled!
   catalogItems.sort((a, b) => {
     const pa = snapshotPrices[a.n];
     const pb = snapshotPrices[b.n];
-    const tierBoostA = a.c === 'Case' ? 500 : (a.c === 'Knives' || a.c === 'Gloves') && !a.st ? 420 : 0;
-    const tierBoostB = b.c === 'Case' ? 500 : (b.c === 'Knives' || b.c === 'Gloves') && !b.st ? 420 : 0;
+    const tierBoostA = a.ph ? 620 : a.c === 'Case' ? 500 : (a.c === 'Knives' || a.c === 'Gloves') && !a.st ? 420 : 0;
+    const tierBoostB = b.ph ? 620 : b.c === 'Case' ? 500 : (b.c === 'Knives' || b.c === 'Gloves') && !b.st ? 420 : 0;
     const scoreA = (pa.v7 || 0) * 10 + (pa.mv || 0) * 1.5 + (pa.q || 0) * 0.5 + tierBoostA;
     const scoreB = (pb.v7 || 0) * 10 + (pb.mv || 0) * 1.5 + (pb.q || 0) * 0.5 + tierBoostB;
     return scoreB - scoreA;
   });
 
-  const MAX_ITEMS = 5500;
+  const MAX_ITEMS = 6000;
   const trimmedCatalog = catalogItems.slice(0, MAX_ITEMS);
+  console.log(`[OK] Expanded ${dopplerPhaseCount} exact Doppler / Gamma Doppler phase variants (Phase 1-4, Ruby, Sapphire, Emerald, Black Pearl).`);
   const trimmedPrices = {};
   for (const item of trimmedCatalog) {
     trimmedPrices[item.n] = snapshotPrices[item.n];
@@ -296,11 +407,12 @@ async function main() {
     fs.writeFile(
       path.join(DATA_DIR, 'catalog.json'),
       JSON.stringify({
-        schemaVersion: 2,
+        schemaVersion: 3,
         source: 'ByMykel/CSGO-API',
         updatedAt: nowIso,
         imgPrefix: STEAM_IMG_PREFIX,
         count: trimmedCatalog.length,
+        dopplerPhases: dopplerPhaseCount,
         items: trimmedCatalog
       }),
       'utf8'
@@ -308,11 +420,11 @@ async function main() {
     fs.writeFile(
       path.join(DATA_DIR, 'market-snapshot.json'),
       JSON.stringify({
-        schemaVersion: 2,
+        schemaVersion: 3,
         sources: {
-          csfloat: 'csfloat.com/api/v1/listings/price-list + csgotrader',
+          csfloat: 'csfloat.com/api/v1/listings/price-list + csgotrader (incl. Doppler phases)',
           steam: 'prices.csgotrader.app/latest/steam.json',
-          youpin: 'prices.csgotrader.app/latest/youpin.json',
+          youpin: 'prices.csgotrader.app/latest/youpin898.json (incl. Doppler phases)',
           salesVelocity: 'api.skinport.com/v1/sales/history + market.csgo.com',
           fx: 'open.er-api.com/v6/latest/USD'
         },

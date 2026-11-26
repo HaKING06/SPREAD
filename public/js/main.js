@@ -63,14 +63,23 @@ class SpreadApp {
 
   rebuildItemIndex() {
     this.itemIndex.clear();
+    this.baseMhnIndex = new Map();
     for (const item of this.items) {
       this.itemIndex.set(item.n.toLowerCase(), item);
+      if (item.mhn) {
+        const bk = item.mhn.toLowerCase();
+        const prev = this.baseMhnIndex.get(bk);
+        if (!prev || (!item.isGem && (prev.isGem || (item.cf > 0 && (prev.cf <= 0 || item.cf < prev.cf))))) {
+          this.baseMhnIndex.set(bk, item);
+        }
+      }
     }
   }
 
   findItemByName(name) {
     if (!name) return null;
-    return this.itemIndex.get(name.toLowerCase().trim()) || null;
+    const key = name.toLowerCase().trim();
+    return this.itemIndex.get(key) || this.baseMhnIndex?.get(key) || null;
   }
 
   saveSettings() {

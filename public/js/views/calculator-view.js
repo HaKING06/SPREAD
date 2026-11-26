@@ -2,7 +2,7 @@
  * SPREAD (spread.haking.tr) — 2-Leg Trade Desk Calculator + Smart Capital Advisor View
  */
 
-import { MARKETPLACES, STORAGE_KEYS, buildImageUrl, steamMarketUrl } from '../core/config.js';
+import { DOPPLER_PHASE_META, MARKETPLACES, STORAGE_KEYS, buildImageUrl, steamMarketUrl } from '../core/config.js';
 import { clearNode, el } from '../core/security.js';
 import {
   analyzeCapitalStrategies,
@@ -319,13 +319,36 @@ export function initCalculatorView(app) {
           : null
         : null;
 
+    const phMeta = found?.ph ? DOPPLER_PHASE_META[found.ph] : null;
+    const stSellOrd = Number(found?.stSellOrd) || 0;
+
     const tags = el(
       'div',
       { className: 'leg-preview-tags' },
       found?.w ? el('span', { className: `wear-tag wear-${found.w}` }, found.w) : null,
+      phMeta ? el('span', { className: `phase-tag ${phMeta.cls}` }, found.ph) : null,
       primaryVolChip,
       buySupplyChip,
-      found?.sEst && legNum === 1
+      found?.isGem || found?.phPrem
+        ? el(
+            'span',
+            {
+              className: 'pill pill-amber',
+              style: { fontSize: '10px', padding: '1px 6px' },
+              title: tr
+                ? 'Steam Pazarı Doppler fazlarını/gemleri (Ruby, Sapphire, Emerald, Black Pearl, Phase 2) ayrı fiyatlamaz; P2P nakit pazarında satmak genelde Steam arbitrajından çok daha kârlıdır.'
+                : 'Steam Market does not separate Doppler phases/gems (Ruby, Sapphire, Emerald, Black Pearl, Phase 2); direct P2P cash sale usually beats Steam.'
+            },
+            found.isGem
+              ? tr
+                ? `💎 ${found.ph} Gem • Steam Faz Fiyatlamaz`
+                : `💎 ${found.ph} Gem • No Steam Overpay`
+              : tr
+                ? `⚠ ${found.ph} Overpay • Steam Taban Fiyatı`
+                : `⚠ ${found.ph} Overpay • Base Steam Floor`
+          )
+        : null,
+      found?.sEst && legNum === 1 && stSellOrd <= 0
         ? el(
             'span',
             {
@@ -336,6 +359,31 @@ export function initCalculatorView(app) {
                 : 'No recent Steam sale record for this rare skin — verify & edit the Steam sell price manually.'
             },
             tr ? '⚠ Tahmini Steam Fiyatı' : '⚠ Est. Steam Price'
+          )
+        : null,
+      legNum === 1 && found?.sEst && stSellOrd > 0
+        ? el(
+            'button',
+            {
+              type: 'button',
+              className: 'pill pill-mint',
+              style: { fontSize: '10px', cursor: 'pointer' },
+              title: tr
+                ? 'Steam canlı en düşük satış ilanı fiyatını uygula (itemordershistogram)'
+                : 'Apply live Steam lowest sell listing price (itemordershistogram)',
+              onClick: () => {
+                app.settings.leg1.steamUsd = stSellOrd;
+                app.saveSettings();
+                syncInputsFromSettings();
+                renderMetricsOnly(true);
+                app.toast(
+                  isTr()
+                    ? `Canlı Steam en düşük ilan fiyatı (${money(stSellOrd)}) uygulandı.`
+                    : `Applied live Steam lowest ask (${money(stSellOrd)}).`
+                );
+              }
+            },
+            `${tr ? 'Canlı Steam Ask' : 'Live Steam Ask'}: ${money(stSellOrd)}`
           )
         : null,
       legNum === 1 && stBuyOrd > 0
@@ -456,7 +504,7 @@ export function initCalculatorView(app) {
       el(
         'a',
         {
-          href: steamMarketUrl(itemName),
+          href: steamMarketUrl(itemName, found),
           target: '_blank',
           rel: 'noopener noreferrer',
           className: 'btn btn-sm btn-ghost',
@@ -1074,6 +1122,7 @@ export function initCalculatorView(app) {
     const renderBlueprintLine = (line, isLeg1) => {
       const it = line.item;
       const wearShort = it.w ? it.w.replace(/[^A-Z]/g, '').slice(0, 2) || it.w : '';
+      const phMeta = it.ph ? DOPPLER_PHASE_META[it.ph] : null;
       const daysVol = Number(line.daysOfVol) || 0;
       const absCls = daysVol > 0 && daysVol <= 2.2 ? 'is-fast' : daysVol > 4.5 ? 'is-heavy' : '';
       const absText =
@@ -1138,6 +1187,7 @@ export function initCalculatorView(app) {
             'div',
             { className: 'plan-line-meta' },
             wearShort ? el('span', { className: 'pill pill-muted', style: { fontSize: '9.5px', padding: '0 5px' } }, wearShort) : null,
+            phMeta ? el('span', { className: `phase-tag ${phMeta.cls}` }, it.ph) : null,
             absText ? el('span', { className: `absorption-pill ${absCls}` }, absText) : null,
             instBuyOrd > 0
               ? el(
@@ -1160,7 +1210,7 @@ export function initCalculatorView(app) {
           el(
             'a',
             {
-              href: isLeg1 ? mkt.searchUrl(it.n, it) : steamMarketUrl(it.n),
+              href: isLeg1 ? mkt.searchUrl(it.n, it) : steamMarketUrl(it.n, it),
               target: '_blank',
               rel: 'noopener noreferrer',
               className: 'btn btn-sm btn-ghost',
@@ -1172,7 +1222,7 @@ export function initCalculatorView(app) {
           el(
             'a',
             {
-              href: isLeg1 ? steamMarketUrl(it.n) : mkt.searchUrl(it.n, it),
+              href: isLeg1 ? steamMarketUrl(it.n, it) : mkt.searchUrl(it.n, it),
               target: '_blank',
               rel: 'noopener noreferrer',
               className: 'btn btn-sm btn-ghost txt-muted',
@@ -1990,6 +2040,9 @@ export function initCalculatorView(app) {
                       'div',
                       { className: 'leg-preview-tags' },
                       found?.w ? el('span', { className: `wear-tag wear-${found.w}` }, found.w) : null,
+                      found?.ph && DOPPLER_PHASE_META[found.ph]
+                        ? el('span', { className: `phase-tag ${DOPPLER_PHASE_META[found.ph].cls}` }, found.ph)
+                        : null,
                       primaryPill,
                       legNum === 1 && !isYoupin && found?.q > 0
                         ? el('span', { className: 'txt-muted num', style: { fontSize: '10px' } }, `${tr ? 'Alış stoğu' : 'Supply'}: ${found.q}`)
@@ -2056,7 +2109,7 @@ export function initCalculatorView(app) {
                     el(
                       'a',
                       {
-                        href: steamMarketUrl(line.name),
+                        href: steamMarketUrl(line.name, found),
                         target: '_blank',
                         rel: 'noopener noreferrer',
                         className: 'btn btn-sm btn-ghost',

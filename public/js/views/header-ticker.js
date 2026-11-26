@@ -9,7 +9,7 @@
  *  - Category Filter
  */
 
-import { buildImageUrl } from '../core/config.js';
+import { DOPPLER_PHASE_META, buildImageUrl } from '../core/config.js';
 import { clearNode, el } from '../core/security.js';
 import { evaluateItemMetrics } from '../core/math-engine.js';
 import { fmtMoneyFromUsd, fmtPct, fmtRelativeTime, fromUsd, toUsd } from '../core/formatters.js';
@@ -151,12 +151,23 @@ export function initCommandPalette(app) {
     const rawQuery = (input?.value || '').trim();
     const normQuery = normalizeSearch(rawQuery);
     lastRenderedQuery = normQuery;
-    const tokens = normQuery
-      .split(' ')
-      .filter(Boolean)
-      .map((tok) =>
-        tok === 'fn' ? 'factory' : tok === 'mw' ? 'minimal' : tok === 'ft' ? 'field' : tok === 'ww' ? 'well' : tok === 'bs' ? 'battle' : tok
-      );
+    const tokens = [];
+    for (const tok of normQuery.split(' ').filter(Boolean)) {
+      if (tok === 'fn') tokens.push('factory');
+      else if (tok === 'mw') tokens.push('minimal');
+      else if (tok === 'ft') tokens.push('field');
+      else if (tok === 'ww') tokens.push('well');
+      else if (tok === 'bs') tokens.push('battle');
+      else if (tok === 'p1') tokens.push('phase', '1');
+      else if (tok === 'p2') tokens.push('phase', '2');
+      else if (tok === 'p3') tokens.push('phase', '3');
+      else if (tok === 'p4') tokens.push('phase', '4');
+      else if (tok === 'bp') tokens.push('black', 'pearl');
+      else if (tok === 'sap' || tok === 'saphire') tokens.push('sapphire');
+      else if (tok === 'em') tokens.push('emerald');
+      else if (tok === 'rub') tokens.push('ruby');
+      else tokens.push(tok);
+    }
     const minDisp = parseFloat(minInp?.value);
     const maxDisp = parseFloat(maxInp?.value);
     const minUsd = Number.isFinite(minDisp) && minDisp > 0 ? toUsd(minDisp, cur, fx) : 0;
@@ -187,7 +198,7 @@ export function initCommandPalette(app) {
       if (seenNames.has(item.n)) continue;
       if (category !== 'ALL' && item.c !== category) continue;
       if (tokens.length > 0) {
-        const hay = normalizeSearch(`${item.n} ${item.c} ${item.w} ${item.r}`);
+        const hay = normalizeSearch(`${item.n} ${item.ph || ''} ${item.c} ${item.w} ${item.r}`);
         if (!tokens.every((tok) => hay.includes(tok))) continue;
       }
 
@@ -202,7 +213,7 @@ export function initCommandPalette(app) {
         if (s.marketplace === 'CSFLOAT' && item.q < 12) continue;
         if (m.isSpiky) continue;
         if (sortBy === 'LEG1_DESC' && m.leg1ProfitPct > 70) continue;
-        if (sortBy === 'LEG2_ASC' && m.leg2LossPct < -6) continue;
+        if (sortBy === 'LEG2_ASC' && (m.leg2LossPct < -6 || item.isGem || item.phPrem)) continue;
       }
 
       seenNames.add(item.n);
@@ -237,7 +248,7 @@ export function initCommandPalette(app) {
         : `${matches.length.toLocaleString(tr ? 'tr-TR' : 'en-US')} ${tr ? 'sonuç' : 'results'}`;
     }
 
-    const slice = matches.slice(0, 40);
+    const slice = matches.slice(0, 60);
     if (slice.length === 0) {
       list.appendChild(
         el(
@@ -258,7 +269,8 @@ export function initCommandPalette(app) {
     const mktShort = s.marketplace === 'YOUPIN' ? 'YP' : 'CF';
     for (const { item, m } of slice) {
       const l1Cls = m.leg1ProfitPct > 0 ? 'txt-mint' : 'txt-crimson';
-      const l2Cls = m.leg2LossPct <= 10 ? 'txt-mint' : m.leg2LossPct <= 15 ? 'txt-amber' : 'txt-crimson';
+      const l2Cls = item.isGem || item.phPrem ? 'txt-amber' : m.leg2LossPct <= 10 ? 'txt-mint' : m.leg2LossPct <= 15 ? 'txt-amber' : 'txt-crimson';
+      const phMeta = item.ph ? DOPPLER_PHASE_META[item.ph] : null;
 
       const row = el(
         'div',
@@ -274,7 +286,13 @@ export function initCommandPalette(app) {
           el(
             'div',
             { className: 'item-cell-info' },
-            el('div', { className: 'item-cell-name' }, item.n, item.liveLookup ? el('span', { className: 'pill pill-ice', style: { fontSize: '9.5px', padding: '1px 5px', marginLeft: '6px' } }, tr ? 'CANLI GLOBAL' : 'LIVE GLOBAL') : null),
+            el(
+              'div',
+              { className: 'item-cell-name' },
+              item.n,
+              phMeta ? el('span', { className: `phase-tag ${phMeta.cls}`, style: { marginLeft: '6px' } }, item.ph) : null,
+              item.liveLookup ? el('span', { className: 'pill pill-ice', style: { fontSize: '9.5px', padding: '1px 5px', marginLeft: '6px' } }, tr ? 'CANLI GLOBAL' : 'LIVE GLOBAL') : null
+            ),
             el(
               'div',
               { className: 'item-cell-sub num' },

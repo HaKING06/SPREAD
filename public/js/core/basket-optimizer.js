@@ -719,6 +719,8 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
     }
 
     // Leg 2 pool (high liquidity, low cashout loss, strong order-book turnover & Bid/Ask on active market)
+    // CRITICAL V10 GUARD: NEVER buy Doppler Gems or overpay phases (Ruby/Sapphire/Emerald/BP/Phase 2) on Steam for Leg 2!
+    const isUnsafeDopplerL2 = Boolean(item.isGem || item.phPrem);
     const bidAskOk = vel.bidAskPct === 0 || vel.bidAskPct >= (isCSFloat ? 85 : 88);
     const l2TierOk = minSpeed === 'MODERATE' ? allowedTiers.has(vel.tier) : vel.tier === 'A' || vel.tier === 'B';
     const l2NoKnife = !vel.isKnifeOrGlove || (cap >= 1500 && vel.sold7d >= 8 && qty >= 60);
@@ -727,6 +729,7 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
     const l2NotAnom = m.leg2LossPct >= 3.0 || (vel.tier === 'A' && vel.mktVol >= 150 && m.leg2LossPct >= 0.5);
 
     if (
+      !isUnsafeDopplerL2 &&
       l2TierOk &&
       l2NoKnife &&
       bidAskOk &&
@@ -2058,7 +2061,7 @@ export function runMonteCarloSimulation({
     const tier = getCapitalTierInfo(effectiveCap);
     const l2Pool = [];
     for (const item of items) {
-      if (item.sEst || item.st || item.sv) continue;
+      if (item.sEst || item.st || item.sv || item.isGem || item.phPrem) continue;
       if (leg1Names.has(item.n.toLowerCase())) continue;
       const qty = Number(item.q) || 0;
       if (isCSFloat && qty < 14) continue;

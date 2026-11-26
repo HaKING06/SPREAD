@@ -1014,7 +1014,8 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
         }
       }
 
-      // Leg 2 eligibility: strictly eliminate thin-book FN float-overpay anomalies & enforce real Bid/Ask on BOTH CSFloat & Youpin898
+      // Leg 2 eligibility: strictly eliminate thin-book FN float-overpay anomalies, Doppler gems/overpay phases, & enforce real Bid/Ask
+      const isUnsafeDopplerL2 = Boolean(item.isGem || item.phPrem);
       const bidAskOk = vel.bidAskPct === 0 || vel.bidAskPct >= (isCSFloat ? 83 : 88);
       const l2AllowedTier = minSpeed === 'MODERATE' ? allowedTiers.has(vel.tier) : vel.tier === 'A' || vel.tier === 'B';
       const l2NoKnifeExit = !vel.isKnifeOrGlove || (cap >= 1500 && vel.sold7d >= 8 && qty >= 60);
@@ -1024,6 +1025,7 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
       const l2NotAnomaly = m.leg2LossPct >= 3.0 || (vel.tier === 'A' && vel.mktVol >= 150 && m.leg2LossPct >= 0.5);
 
       if (
+        !isUnsafeDopplerL2 &&
         l2AllowedTier &&
         l2NoKnifeExit &&
         bidAskOk &&
@@ -1041,6 +1043,7 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
     // Gentle fallback for strict narrow filter combos
     if (leg1Pool.length < 2) {
       for (const item of items) {
+        if (item.sEst) continue;
         if (cleanOnly && (item.st || item.sv || item.c === 'Capsule')) continue;
         if (style === 'CASES' && item.c !== 'Case') continue;
         const m = evaluateItemMetrics(item, opts);
@@ -1056,6 +1059,7 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
 
     if (leg2Pool.length < 3) {
       for (const item of items) {
+        if (item.sEst || item.isGem || item.phPrem) continue;
         if (cleanOnly && (item.st || item.sv || item.c === 'Capsule')) continue;
         const m = evaluateItemMetrics(item, opts);
         if (!m.hasValidMarket || m.isSpiky || m.velocity.tier === 'D') continue;
@@ -1519,6 +1523,7 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
 
     for (const item of items) {
       if (item.n.toLowerCase() === l1NameLower) continue;
+      if (item.sEst || item.isGem || item.phPrem) continue;
       const qty = Number(item.q) || 0;
       if (isCSFloat && qty < 12) continue;
       if (item.st || item.sv) continue;
