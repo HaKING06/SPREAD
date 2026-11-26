@@ -167,12 +167,36 @@
 
 .leg-preview-row {
   display: flex;
-  align-items: center;
-  gap: 13px;
+  flex-direction: column;
+  gap: 8px;
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-hair);
   background: var(--bg-inset);
+}
+
+.leg-preview-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.leg-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.leg-steam-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-hair);
+  width: 100%;
 }
 
 .leg-preview-meta {

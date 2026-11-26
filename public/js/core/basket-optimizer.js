@@ -1034,11 +1034,17 @@ export function evaluateModeArbitration(singlePair, basketRes, singleMc, basketM
   const q1 = singlePair.c1.q1;
   const q2 = singlePair.c1.q2;
 
-  // 1. Exact Leg 1 Steam Liquidity Clearance Audit
-  const isL1SteamZeroTrap = Boolean(l1Item?.st24Checked && Number(l1Item.st24) === 0 && (l1Vel?.steamBidAskPct || 0) < 92);
-  const l1Daily = l1Item?.st24Checked
-    ? Math.max(0.15, Number(l1Item.st24) || 0)
-    : Math.max(0.3, Number(l1Vel?.estDailySales) || 0.5);
+  // 1. Exact Leg 1 Steam Liquidity Clearance Audit (V11.1 Real Steam 7d/30d History Aware)
+  const isL1SteamZeroTrap = Boolean(
+    l1Item?.stHist
+      ? (Number(l1Vel?.st7 ?? l1Item.st7) || 0) <= 4 && (l1Vel?.steamBidAskPct || 0) < 94
+      : l1Item?.st24Checked && Number(l1Item.st24) === 0 && (l1Vel?.steamBidAskPct || 0) < 92
+  );
+  const l1Daily = l1Item?.stHist
+    ? Math.max(0.08, ((Number(l1Vel?.st7 ?? l1Item.st7) || 0) / 7) * 0.65 + ((Number(l1Vel?.st30 ?? l1Item.st30) || 0) / 30) * 0.35)
+    : l1Item?.st24Checked
+      ? Math.max(0.15, Number(l1Item.st24) || 0)
+      : Math.max(0.3, Number(l1Vel?.estDailySales) || 0.5);
   const l1DaysOfVol = Math.round((q1 / Math.max(0.15, l1Daily)) * 10) / 10;
   const l1Fast =
     !isL1SteamZeroTrap &&

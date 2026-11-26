@@ -284,17 +284,17 @@ export function initScannerView(app) {
         'td',
         { className: 'ta-right num' },
         el(
-          'div',
-          {
-            style: { fontWeight: '600' },
-            title: m.hasRealSteamSales
-              ? tr
-                ? `Gerçek Steam satış geçmişinden hesaplanan satış fiyatı (Son satış: ${money(m.stLast)} • En düşük ilan: ${money(m.steamAskUsd)})`
-                : `Realistic Steam clearing price from real sales history (Last sale: ${money(m.stLast)} • Lowest ask: ${money(m.steamAskUsd)})`
-              : ''
-          },
-          money(filterState.mode === 'LEG2' ? m.steamUsd : m.steamSellUsd || m.steamUsd)
-        ),
+            'div',
+            {
+              style: { fontWeight: '600' },
+              title: m.hasRealSteamSales
+                ? tr
+                  ? `Gerçek Steam satış geçmişinden hesaplanan satış fiyatı (Son satış: ${money(m.stLast)} • En düşük ilan: ${money(m.steamAskUsd)})`
+                  : `Realistic Steam clearing price from real sales history (Last sale: ${money(m.stLast)} • Lowest ask: ${money(m.steamAskUsd)})`
+                : ''
+            },
+            money(filterState.mode === 'LEG2' ? m.steamUsd : m.steamSellUsd || m.steamUsd)
+          ),
         m.hasRealSteamSales && m.askOverSalePct >= 4 && filterState.mode !== 'LEG2'
           ? el(
             'div',

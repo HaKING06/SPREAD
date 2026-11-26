@@ -217,7 +217,97 @@ export function initCalculatorView(app) {
     return tr ? `${d}g` : `${d}d`;
   }
 
-  function renderRecentSteamSalesTape(st7, st30, stSales, money, tr, onPickPrice) {
+  /**
+   * V11.1 Unified Self-Consistent Steam Telemetry Resolver:
+   * - Never overwrites verified snapshot 7d/30d history with 0 when Edge HTML fetch returns histLive=false!
+   * - Never contradicts the recent sales tape (enforces st24 >= tape24, st7 >= max(tape7, st24), st30 >= max(tape30, st7))!
+   * - Computes live relative age from the actual transaction UNIX timestamp.
+   */
+  function resolveSteamTelemetry(found, liveRec) {
+    const useLiveHist =
+      Boolean(liveRec?.histLive) &&
+      (Number(liveRec.sold30d) > 0 || (Array.isArray(liveRec.recentSales) && liveRec.recentSales.length > 0));
+    const stSales = useLiveHist && Array.isArray(liveRec.recentSales) && liveRec.recentSales.length
+      ? liveRec.recentSales
+      : Array.isArray(found?.stSales)
+        ? found.stSales
+        : [];
+    const stHist = useLiveHist || Boolean(found?.stHist) || stSales.length > 0;
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    let tape24 = 0;
+    let tape7 = 0;
+    let tape30 = 0;
+    for (const r of stSales) {
+      const tSec = Number(r?.t) || 0;
+      const qRow = Math.max(1, Number(r?.q) || 1);
+      if (tSec >= nowSec - 86400) tape24 += qRow;
+      if (tSec >= nowSec - 7 * 86400) tape7 += qRow;
+      if (tSec >= nowSec - 30 * 86400) tape30 += qRow;
+    }
+
+    const liveHas24 = Boolean(liveRec?.sold24hChecked) && Number.isFinite(Number(liveRec?.volume24h));
+    const st24Checked = useLiveHist || liveHas24 || Boolean(found?.st24Checked) || stHist;
+    let st24Val = 0;
+    if (useLiveHist) {
+      st24Val = Math.max(Number(liveRec.volume24h) || 0, tape24);
+    } else if (liveHas24) {
+      const lv = Number(liveRec.volume24h) || 0;
+      const fv = Number(found?.st24) || 0;
+      st24Val = lv > 0 ? Math.max(lv, tape24) : tape24 > 0 ? Math.max(fv, tape24) : 0;
+    } else if (st24Checked) {
+      st24Val = Math.max(Number(found?.st24) || 0, tape24);
+    }
+
+    const raw7 = useLiveHist ? Number(liveRec.sold7d) || 0 : Number(found?.st7) || 0;
+    const raw30 = useLiveHist ? Number(liveRec.sold30d) || 0 : Number(found?.st30) || 0;
+    const st7Val = stHist ? Math.max(raw7, tape7, st24Val) : 0;
+    const st30Val = stHist ? Math.max(raw30, tape30, st7Val) : 0;
+
+    const lastEntry = stSales.length > 0 ? stSales[stSales.length - 1] : null;
+    const stLastVal =
+      (useLiveHist ? Number(liveRec.lastSaleUsd) || 0 : Number(found?.stLast) || 0) ||
+      (lastEntry ? Number(lastEntry.p) || 0 : 0);
+    const stLastHVal =
+      lastEntry && Number(lastEntry.t) > 0
+        ? Math.max(0, (nowSec - Number(lastEntry.t)) / 3600)
+        : useLiveHist
+          ? Number(liveRec.lastSaleAgeH) || 0
+          : Number(found?.stLastH) || 0;
+
+    const stAvg7Val = useLiveHist ? Number(liveRec.avg7Usd) || 0 : Number(found?.stAvg7) || 0;
+    const stBuyOrd = Number(liveRec?.steamBuyOrderUsd || found?.stBuyOrd) || 0;
+    const stSellOrd = Number(liveRec?.steamSellOrderUsd || liveRec?.lowestUsd || found?.stSellOrd) || 0;
+    const stSellCnt = Number(liveRec?.steamSellCount || found?.stSellCnt) || 0;
+    const stMed = Number(liveRec?.medianUsd || found?.stMed) || 0;
+    const steamAskVal = stSellOrd > 0 ? stSellOrd : Number(found?.s) || 0;
+    let stRealVal = useLiveHist ? Number(liveRec.realisticSellUsd) || 0 : Number(found?.stReal) || 0;
+    if (stRealVal > 0 && steamAskVal > 0 && stRealVal > steamAskVal) {
+      stRealVal = Math.round(steamAskVal * 100) / 100;
+    }
+    const askGapPct = stHist && stRealVal > 0 && steamAskVal > stRealVal ? ((steamAskVal - stRealVal) / stRealVal) * 100 : 0;
+
+    return {
+      stHist,
+      st24Checked,
+      st24Val,
+      st7Val,
+      st30Val,
+      stLastVal,
+      stLastHVal,
+      stAvg7Val,
+      stRealVal,
+      stBuyOrd,
+      stSellOrd,
+      stSellCnt,
+      stMed,
+      steamAskVal,
+      askGapPct,
+      stSales
+    };
+  }
+
+  function renderRecentSteamSalesTape(st7, st30, stAvg7, stSales, money, tr, onPickPrice) {
     if (!Array.isArray(stSales) || stSales.length === 0) return null;
     const nowSec = Math.floor(Date.now() / 1000);
     const chips = stSales.slice(-4).map((entry, idx, arr) => {
@@ -226,20 +316,21 @@ export function initCalculatorView(app) {
       const tSec = Number(entry?.t) || 0;
       const ageH = tSec > 0 ? Math.max(0, (nowSec - tSec) / 3600) : 0;
       const isLatest = idx === arr.length - 1;
+      const ageTxt = ageH > 0 ? ` · ${formatSaleAge(ageH, tr)}` : '';
       return el(
         'button',
         {
           type: 'button',
           className: `steam-sale-chip ${isLatest ? 'is-latest' : ''}`,
-          style: { cursor: 'pointer' },
           title: tr
             ? `Gerçekleşen Steam satışı: ${money(p)} (${q} adet, ~${formatSaleAge(ageH, true)} önce) — tıklayıp 1. adım fiyatına uygula`
             : `Actual Steam sale: ${money(p)} (${q} sold, ~${formatSaleAge(ageH, false)} ago) — click to apply to Step 1`,
-          onClick: () => onPickPrice(p)
+          onClick: () => onPickPrice(p, tr ? 'Seçilen Steam satış fiyatı' : 'Selected Steam sale price')
         },
-        `${money(p)}${q > 1 ? ` ×${q}` : ''}${isLatest && ageH > 0 ? ` · ${formatSaleAge(ageH, tr)}` : ''}`
+        `${money(p)}${q > 1 ? ` ×${q}` : ''}${ageTxt}`
       );
     });
+    const avgPart = stAvg7 > 0 ? ` • ${tr ? '7g Ort' : '7d Avg'}: ${money(stAvg7)}` : '';
     return el(
       'div',
       { className: 'steam-sales-tape num' },
@@ -247,10 +338,135 @@ export function initCalculatorView(app) {
         'strong',
         null,
         tr
-          ? `📊 Son Steam Satışları (7g: ${st7} • 30g: ${st30}):`
-          : `📊 Recent Steam Sales (7d: ${st7} • 30d: ${st30}):`
+          ? `📊 Son Steam Satışları (7g: ${st7} • 30g: ${st30}${avgPart}):`
+          : `📊 Recent Steam Sales (7d: ${st7} • 30d: ${st30}${avgPart}):`
       ),
       chips
+    );
+  }
+
+  function renderLeg1SteamDeck(st, found, activeSteamUsd, money, tr, onApply) {
+    const presetBtns = [];
+    const isSel = (v) => v > 0 && Math.abs((Number(activeSteamUsd) || 0) - v) <= 0.025;
+
+    if (st.stHist && st.stRealVal > 0) {
+      const active = isSel(st.stRealVal);
+      presetBtns.push(
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `steam-preset-btn pill-mint ${active ? 'is-selected' : ''}`,
+            title: tr
+              ? `Gerçek son satış + 7g ağırlıklı ortalamaya göre makul Steam satış fiyatı${st.stAvg7Val > 0 ? ` (7g ort: ${money(st.stAvg7Val)})` : ''} — tıklayıp uygula`
+              : `Realistic Steam clearing price blended from last actual sale & 7d weighted avg${st.stAvg7Val > 0 ? ` (7d avg: ${money(st.stAvg7Val)})` : ''} — click to apply`,
+            onClick: () => onApply(st.stRealVal, tr ? 'Gerçekçi Steam satış fiyatı' : 'Realistic Steam clearing price')
+          },
+          `${active ? '✓ ' : ''}${tr ? 'Gerçekçi Satış' : 'Realistic Sell'}: ${money(st.stRealVal)}`
+        )
+      );
+    }
+
+    if (st.stHist && st.stLastVal > 0) {
+      const active = isSel(st.stLastVal);
+      presetBtns.push(
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `steam-preset-btn pill-ice ${active ? 'is-selected' : ''}`,
+            title: tr
+              ? `Steam'de gerçekleşen en son satış (${st.stLastHVal > 0 ? `~${formatSaleAge(st.stLastHVal, true)} önce` : 'güncel'}) — tıklayıp uygula`
+              : `Last actual sale on Steam (${st.stLastHVal > 0 ? `~${formatSaleAge(st.stLastHVal, false)} ago` : 'recent'}) — click to apply`,
+            onClick: () => onApply(st.stLastVal, tr ? 'Son Steam satış fiyatı' : 'Last Steam sale price')
+          },
+          `${active ? '✓ ' : ''}${tr ? 'Son Satış' : 'Last Sale'}: ${money(st.stLastVal)}`
+        )
+      );
+    }
+
+    if (st.stHist && st.steamAskVal > 0 && Math.abs(st.steamAskVal - st.stRealVal) >= 0.25) {
+      const active = isSel(st.steamAskVal);
+      presetBtns.push(
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `steam-preset-btn ${st.askGapPct >= 5 ? 'pill-amber' : 'pill-muted'} ${active ? 'is-selected' : ''}`,
+            title: tr
+              ? `Steam'deki aktif en düşük satış ilanı (${st.askGapPct >= 4 ? `gerçekçi satışın +%${st.askGapPct.toFixed(1)} üstünde, satılması uzun sürebilir` : 'son satışlara yakın'})`
+              : `Lowest active Steam sell listing (${st.askGapPct >= 4 ? `+${st.askGapPct.toFixed(1)}% above realistic sell, may sit unsold` : 'close to recent sales'})`,
+            onClick: () => onApply(st.steamAskVal, tr ? 'Steam en düşük ilan fiyatı' : 'Steam lowest ask price')
+          },
+          `${active ? '✓ ' : ''}${tr ? 'En Düşük İlan' : 'Lowest Ask'}: ${money(st.steamAskVal)}${st.askGapPct >= 4 ? ` (+${tr ? '%' : ''}${st.askGapPct.toFixed(1)}${tr ? '' : '%'})` : ''}`
+        )
+      );
+    } else if (!st.stHist && found?.sEst && st.stSellOrd > 0) {
+      const active = isSel(st.stSellOrd);
+      presetBtns.push(
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `steam-preset-btn pill-mint ${active ? 'is-selected' : ''}`,
+            title: tr
+              ? 'Steam canlı en düşük satış ilanı fiyatını uygula (itemordershistogram)'
+              : 'Apply live Steam lowest sell listing price (itemordershistogram)',
+            onClick: () => onApply(st.stSellOrd, tr ? 'Canlı Steam en düşük ilan fiyatı' : 'Live Steam lowest ask')
+          },
+          `${active ? '✓ ' : ''}${tr ? 'Canlı Steam Ask' : 'Live Steam Ask'}: ${money(st.stSellOrd)}`
+        )
+      );
+    }
+
+    if (st.stBuyOrd > 0) {
+      const active = isSel(st.stBuyOrd);
+      presetBtns.push(
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `steam-preset-btn pill-gold ${active ? 'is-selected' : ''}`,
+            title: tr
+              ? 'Steam en yüksek alım emri (0 saniyede anında Steam satışı testi için tıkla)'
+              : 'Live Steam highest buy order (click to test 0-second instant Steam sell)',
+            onClick: () => onApply(st.stBuyOrd, tr ? 'Steam anında alım emri' : 'Steam instant buy order')
+          },
+          `${active ? '✓ ' : ''}${tr ? 'Steam Anında Sat' : 'Steam Instant'}: ${money(st.stBuyOrd)}`
+        )
+      );
+    }
+
+    if (!st.stHist && st.stMed > 0 && st.stMed < (Number(activeSteamUsd) || 0) * 0.96) {
+      const active = isSel(st.stMed);
+      presetBtns.push(
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `steam-preset-btn pill-amber ${active ? 'is-selected' : ''}`,
+            title: tr
+              ? 'Son 24 saatte gerçekleşen medyan Steam satış fiyatını uygula (daha hızlı satış testi)'
+              : 'Apply actual 24h Steam median sold price (realistic fast-sell check)',
+            onClick: () => onApply(st.stMed, tr ? 'Steam hızlı satış medyanı' : 'Steam fast-sell median')
+          },
+          `${active ? '✓ ' : ''}${tr ? 'Steam Medyan' : 'Steam Median'}: ${money(st.stMed)}`
+        )
+      );
+    }
+
+    const salesTape =
+      st.stHist && st.stSales.length > 0
+        ? renderRecentSteamSalesTape(st.st7Val, st.st30Val, st.stAvg7Val, st.stSales, money, tr, onApply)
+        : null;
+
+    if (presetBtns.length === 0 && !salesTape) return null;
+
+    return el(
+      'div',
+      { className: 'leg-steam-deck' },
+      presetBtns.length > 0 ? el('div', { className: 'steam-presets-row' }, presetBtns) : null,
+      salesTape
     );
   }
 
@@ -278,26 +494,7 @@ export function initCalculatorView(app) {
     const fx = app.market.fxRates;
     const money = (u) => fmtMoneyFromUsd(u, cur, fx);
 
-    const stHist = Boolean(liveSteam?.histLive || found?.stHist);
-    const stBuyOrd = Number(liveSteam?.steamBuyOrderUsd || found?.stBuyOrd) || 0;
-    const stSellOrd = Number(liveSteam?.steamSellOrderUsd || liveSteam?.lowestUsd || found?.stSellOrd) || 0;
-    const stSellCnt = Number(liveSteam?.steamSellCount || found?.stSellCnt) || 0;
-    const st24Checked = Boolean(liveSteam?.sold24hChecked || found?.st24Checked || stHist);
-    const st24Val = st24Checked ? Number(liveSteam?.volume24h ?? found?.st24) || 0 : 0;
-    const st7Val = stHist ? Number(liveSteam?.sold7d ?? found?.st7) || 0 : 0;
-    const st30Val = stHist ? Number(liveSteam?.sold30d ?? found?.st30) || 0 : 0;
-    const stLastVal = Number(liveSteam?.lastSaleUsd || found?.stLast) || 0;
-    const stLastHVal = Number(liveSteam?.lastSaleAgeH ?? found?.stLastH) || 0;
-    const stAvg7Val = Number(liveSteam?.avg7Usd || found?.stAvg7) || 0;
-    const stRealVal = Number(liveSteam?.realisticSellUsd || found?.stReal) || 0;
-    const stSales = Array.isArray(liveSteam?.recentSales) && liveSteam.recentSales.length
-      ? liveSteam.recentSales
-      : Array.isArray(found?.stSales)
-        ? found.stSales
-        : [];
-    const stMed = Number(liveSteam?.medianUsd || found?.stMed) || 0;
-    const steamAskVal = stSellOrd > 0 ? stSellOrd : Number(found?.s) || 0;
-    const askGapPct = stHist && stRealVal > 0 && steamAskVal > stRealVal ? ((steamAskVal - stRealVal) / stRealVal) * 100 : 0;
+    const st = resolveSteamTelemetry(found, liveSteam);
     const instantCashoutUsd = isYoupin ? Number(found?.ypo) || 0 : Number(found?.cfo) || 0;
 
     const applyLeg1SteamPrice = (usdVal, labelTxt) => {
@@ -309,38 +506,38 @@ export function initCalculatorView(app) {
       app.toast(tr ? `${labelTxt} (${money(usdVal)}) uygulandı.` : `Applied ${labelTxt} (${money(usdVal)}).`);
     };
 
-    // V11 DIRECTIONAL TELEMETRY:
-    //   - Leg 1 (Sell on STEAM): REAL Steam 7d/30d/24h sales history + realistic clearing price + last sale + lowest ask + instant buy-order!
+    // V11.1 DIRECTIONAL TELEMETRY:
+    //   - Leg 1 (Sell on STEAM): REAL self-consistent Steam 7d/30d/24h sales history + full-width price preset bar & recent sales tape!
     //   - Leg 2 (Sell on CSFloat/Youpin): REAL CSFloat 24h/7d OR Youpin Bid/Ask + P2P 24h/7d + 1-click Cashout Bid + Steam Buy-Order Discount!
     let primaryVolChip = null;
     if (legNum === 1) {
-      if (stHist) {
-        const cls = st7Val >= 25 ? 'pill-mint' : st7Val >= 6 ? 'pill-ice' : 'pill-amber';
+      if (st.stHist) {
+        const cls = st.st7Val >= 25 ? 'pill-mint' : st.st7Val >= 6 ? 'pill-ice' : 'pill-amber';
         primaryVolChip = el(
           'span',
           {
             className: `pill ${cls}`,
             style: { fontSize: '10px', padding: '1px 6px' },
             title: tr
-              ? `Steam'in GERÇEK aşınma-eşleşmeli satış grafiği: 7 günde ${st7Val}, 30 günde ${st30Val}, son 24 saatte ${st24Val} adet satıldı.${stAvg7Val > 0 ? ` 7g ort: ${money(stAvg7Val)}` : ''}`
-              : `REAL wear-matched Steam sales history: ${st7Val} sold in 7d, ${st30Val} in 30d, ${st24Val} in 24h.${stAvg7Val > 0 ? ` 7d avg: ${money(stAvg7Val)}` : ''}`
+              ? `Steam'in GERÇEK aşınma-eşleşmeli satış grafiği: 7 günde ${st.st7Val}, 30 günde ${st.st30Val}, son 24 saatte ${st.st24Val} adet satıldı.${st.stAvg7Val > 0 ? ` 7g ort: ${money(st.stAvg7Val)}` : ''}`
+              : `REAL wear-matched Steam sales history: ${st.st7Val} sold in 7d, ${st.st30Val} in 30d, ${st.st24Val} in 24h.${st.stAvg7Val > 0 ? ` 7d avg: ${money(st.stAvg7Val)}` : ''}`
           },
-          `${st7Val <= 4 ? '⚠ ' : ''}${tr
-            ? `Steam 7g: ${st7Val.toLocaleString('tr-TR')} satış • 30g: ${st30Val.toLocaleString('tr-TR')}${st24Val > 0 ? ` • 24s: ${st24Val}` : ' • 24s: 0'}`
-            : `Steam 7d: ${st7Val.toLocaleString('en-US')} sold • 30d: ${st30Val.toLocaleString('en-US')}${st24Val > 0 ? ` • 24h: ${st24Val}` : ' • 24h: 0'}`}`
+          `${st.st7Val <= 4 ? '⚠ ' : ''}${tr
+            ? `Steam 7g: ${st.st7Val.toLocaleString('tr-TR')} satış • 30g: ${st.st30Val.toLocaleString('tr-TR')} • 24s: ${st.st24Val}`
+            : `Steam 7d: ${st.st7Val.toLocaleString('en-US')} sold • 30d: ${st.st30Val.toLocaleString('en-US')} • 24h: ${st.st24Val}`}`
         );
-      } else if (st24Checked) {
-        const cls = st24Val >= 15 ? 'pill-mint' : st24Val >= 3 ? 'pill-ice' : 'pill-amber';
+      } else if (st.st24Checked) {
+        const cls = st.st24Val >= 15 ? 'pill-mint' : st.st24Val >= 3 ? 'pill-ice' : 'pill-amber';
         primaryVolChip = el(
           'span',
           {
             className: `pill ${cls}`,
             style: { fontSize: '10px', padding: '1px 6px' },
             title: tr
-              ? `1. Adımda Steam'de satacağın için GERÇEK canlı Steam 24s satış adedi ve aktif Steam ilan sayısı gösterilir${stMed > 0 ? ` (Medyan: ${money(stMed)})` : ''}.`
-              : `Because Step 1 sells on Steam, this shows REAL live Steam 24h sold count & active Steam sell listings${stMed > 0 ? ` (Median: ${money(stMed)})` : ''}.`
+              ? `1. Adımda Steam'de satacağın için GERÇEK canlı Steam 24s satış adedi ve aktif Steam ilan sayısı gösterilir${st.stMed > 0 ? ` (Medyan: ${money(st.stMed)})` : ''}.`
+              : `Because Step 1 sells on Steam, this shows REAL live Steam 24h sold count & active Steam sell listings${st.stMed > 0 ? ` (Median: ${money(st.stMed)})` : ''}.`
           },
-          `${st24Val === 0 ? '⚠ ' : ''}${tr ? `Steam 24s: ${st24Val.toLocaleString('tr-TR')} satış` : `Steam 24h: ${st24Val.toLocaleString('en-US')} sold`}${stSellCnt > 0 ? ` • ${stSellCnt.toLocaleString(tr ? 'tr-TR' : 'en-US')} ${tr ? 'ilan' : 'listed'}` : ''}`
+          `${st.st24Val === 0 ? '⚠ ' : ''}${tr ? `Steam 24s: ${st.st24Val.toLocaleString('tr-TR')} satış` : `Steam 24h: ${st.st24Val.toLocaleString('en-US')} sold`}${st.stSellCnt > 0 ? ` • ${st.stSellCnt.toLocaleString(tr ? 'tr-TR' : 'en-US')} ${tr ? 'ilan' : 'listed'}` : ''}`
         );
       } else if (found) {
         primaryVolChip = el(
@@ -431,7 +628,7 @@ export function initCalculatorView(app) {
               : `⚠ ${found.ph} Overpay • Base Steam Floor`
         )
         : null,
-      found?.sEst && legNum === 1 && !stHist && stSellOrd <= 0
+      found?.sEst && legNum === 1 && !st.stHist && st.stSellOrd <= 0
         ? el(
           'span',
           {
@@ -443,160 +640,76 @@ export function initCalculatorView(app) {
           },
           tr ? '⚠ Tahmini Steam Fiyatı' : '⚠ Est. Steam Price'
         )
-        : null,
-      legNum === 1 && stHist && stRealVal > 0
-        ? el(
-          'button',
-          {
-            type: 'button',
-            className: 'pill pill-mint',
-            style: { fontSize: '10px', cursor: 'pointer' },
-            title: tr
-              ? `Gerçek son satış + 7g ağırlıklı ortalamaya göre makul Steam satış fiyatı${stAvg7Val > 0 ? ` (7g ort: ${money(stAvg7Val)})` : ''} — tıklayıp uygula`
-              : `Realistic Steam clearing price blended from last actual sale & 7d weighted avg${stAvg7Val > 0 ? ` (7d avg: ${money(stAvg7Val)})` : ''} — click to apply`,
-            onClick: () => applyLeg1SteamPrice(stRealVal, tr ? 'Gerçekçi Steam satış fiyatı' : 'Realistic Steam clearing price')
-          },
-          `${tr ? 'Gerçekçi Satış' : 'Realistic Sell'}: ${money(stRealVal)}`
-        )
-        : null,
-      legNum === 1 && stHist && stLastVal > 0
-        ? el(
-          'button',
-          {
-            type: 'button',
-            className: 'pill pill-ice',
-            style: { fontSize: '10px', cursor: 'pointer' },
-            title: tr
-              ? `Steam'de gerçekleşen en son satış (${stLastHVal > 0 ? `~${formatSaleAge(stLastHVal, true)} önce` : 'güncel'}) — tıklayıp uygula`
-              : `Last actual sale on Steam (${stLastHVal > 0 ? `~${formatSaleAge(stLastHVal, false)} ago` : 'recent'}) — click to apply`,
-            onClick: () => applyLeg1SteamPrice(stLastVal, tr ? 'Son Steam satış fiyatı' : 'Last Steam sale price')
-          },
-          `${tr ? 'Son Satış' : 'Last Sale'}: ${money(stLastVal)}`
-        )
-        : null,
-      legNum === 1 && stHist && steamAskVal > 0 && Math.abs(steamAskVal - stRealVal) >= 0.5
-        ? el(
-          'button',
-          {
-            type: 'button',
-            className: `pill ${askGapPct >= 5 ? 'pill-amber' : 'pill-muted'}`,
-            style: { fontSize: '10px', cursor: 'pointer' },
-            title: tr
-              ? `Steam'deki aktif en düşük satış ilanı (${askGapPct >= 4 ? `gerçekçi satışın +%${askGapPct.toFixed(1)} üstünde, satılması uzun sürebilir` : 'son satışlara yakın'})`
-              : `Lowest active Steam sell listing (${askGapPct >= 4 ? `+${askGapPct.toFixed(1)}% above realistic sell, may sit unsold` : 'close to recent sales'})`,
-            onClick: () => applyLeg1SteamPrice(steamAskVal, tr ? 'Steam en düşük ilan fiyatı' : 'Steam lowest ask price')
-          },
-          `${tr ? 'En Düşük İlan' : 'Lowest Ask'}: ${money(steamAskVal)}${askGapPct >= 4 ? ` (+${tr ? '%' : ''}${askGapPct.toFixed(1)}${tr ? '' : '%'})` : ''}`
-        )
-        : null,
-      legNum === 1 && !stHist && found?.sEst && stSellOrd > 0
-        ? el(
-          'button',
-          {
-            type: 'button',
-            className: 'pill pill-mint',
-            style: { fontSize: '10px', cursor: 'pointer' },
-            title: tr
-              ? 'Steam canlı en düşük satış ilanı fiyatını uygula (itemordershistogram)'
-              : 'Apply live Steam lowest sell listing price (itemordershistogram)',
-            onClick: () => applyLeg1SteamPrice(stSellOrd, tr ? 'Canlı Steam en düşük ilan fiyatı' : 'Live Steam lowest ask')
-          },
-          `${tr ? 'Canlı Steam Ask' : 'Live Steam Ask'}: ${money(stSellOrd)}`
-        )
-        : null,
-      legNum === 1 && stBuyOrd > 0
-        ? el(
-          'button',
-          {
-            type: 'button',
-            className: 'pill pill-gold',
-            style: { fontSize: '10px', cursor: 'pointer' },
-            title: tr
-              ? 'Steam en yüksek alım emri (0 saniyede anında Steam satışı testi için tıkla)'
-              : 'Live Steam highest buy order (click to test 0-second instant Steam sell)',
-            onClick: () => applyLeg1SteamPrice(stBuyOrd, tr ? 'Steam anında alım emri' : 'Steam instant buy order')
-          },
-          `${tr ? 'Steam Anında Sat' : 'Steam Instant Sell'}: ${money(stBuyOrd)}`
-        )
-        : null,
-      legNum === 1 && !stHist && stMed > 0 && stMed < app.settings.leg1.steamUsd * 0.96
-        ? el(
-          'button',
-          {
-            type: 'button',
-            className: 'pill pill-amber',
-            style: { fontSize: '10px', cursor: 'pointer' },
-            title: tr
-              ? 'Son 24 saatte gerçekleşen medyan Steam satış fiyatını uygula (daha hızlı satış testi)'
-              : 'Apply actual 24h Steam median sold price (realistic fast-sell check)',
-            onClick: () => applyLeg1SteamPrice(stMed, tr ? 'Steam hızlı satış medyanı' : 'Steam fast-sell median')
-          },
-          `${tr ? 'Steam Medyan' : 'Steam Median'}: ${money(stMed)}`
-        )
-        : null,
-      legNum === 2 && stBuyOrd > 0 && stBuyOrd < app.settings.leg2.steamUsd * 0.985
-        ? el(
-          'button',
-          {
-            type: 'button',
-            className: 'pill pill-ice',
-            style: { fontSize: '10px', cursor: 'pointer' },
-            title: tr
-              ? '2. adımda Steam ilanı yerine Buy Order (alım emri) ile daha ucuza alma senaryosunu test et'
-              : 'Test buying Leg 2 cheaper via Steam Buy Order instead of paying instant ask',
-            onClick: () => {
-              const bidBuy = Math.round((stBuyOrd + 0.01) * 100) / 100;
-              app.settings.leg2.steamUsd = bidBuy;
-              app.saveSettings();
-              syncInputsFromSettings();
-              renderMetricsOnly(true);
-              app.toast(
-                isTr()
-                  ? `Steam Emirle Al fiyatı (${money(bidBuy)}) uygulandı.`
-                  : `Applied Steam Buy-Order purchase price (${money(bidBuy)}).`
-              );
-            }
-          },
-          `${tr ? 'Steam Emirle Al' : 'Steam Buy Order'}: ${money(stBuyOrd)}`
-        )
-        : null,
-      legNum === 2 && instantCashoutUsd > 0
-        ? el(
-          'button',
-          {
-            type: 'button',
-            className: 'pill pill-gold',
-            style: { fontSize: '10px', cursor: 'pointer' },
-            title: tr
-              ? `${mkt.name} en yüksek alım emri (anında satış) fiyatını uygula`
-              : `Apply ${mkt.name} highest buy order (instant sell) price`,
-            onClick: () => {
-              app.settings.leg2.marketUsd = instantCashoutUsd;
-              app.saveSettings();
-              syncInputsFromSettings();
-              renderMetricsOnly(true);
-              app.toast(
-                isTr()
-                  ? `${mkt.name} anında satış fiyatı (${money(instantCashoutUsd)}) uygulandı.`
-                  : `Applied ${mkt.name} instant buy order (${money(instantCashoutUsd)}).`
-              );
-            }
-          },
-          `${mkt.shortName} ${tr ? 'Anında Sat' : 'Instant Bid'}: ${money(instantCashoutUsd)}`
-        )
         : null
     );
 
-    const salesTape =
-      legNum === 1 && stHist && stSales.length > 0
-        ? renderRecentSteamSalesTape(st7Val, st30Val, stSales, money, tr, (picked) =>
-          applyLeg1SteamPrice(picked, tr ? 'Seçilen Steam satış fiyatı' : 'Selected Steam sale price')
-        )
-        : null;
+    let bottomDeck = null;
+    if (legNum === 1) {
+      bottomDeck = renderLeg1SteamDeck(st, found, app.settings.leg1.steamUsd, money, tr, applyLeg1SteamPrice);
+    } else {
+      const l2Btns = [];
+      if (st.stBuyOrd > 0 && st.stBuyOrd < app.settings.leg2.steamUsd * 0.985) {
+        l2Btns.push(
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'steam-preset-btn pill-ice',
+              title: tr
+                ? '2. adımda Steam ilanı yerine Buy Order (alım emri) ile daha ucuza alma senaryosunu test et'
+                : 'Test buying Leg 2 cheaper via Steam Buy Order instead of paying instant ask',
+              onClick: () => {
+                const bidBuy = Math.round((st.stBuyOrd + 0.01) * 100) / 100;
+                app.settings.leg2.steamUsd = bidBuy;
+                app.saveSettings();
+                syncInputsFromSettings();
+                renderMetricsOnly(true);
+                app.toast(
+                  isTr()
+                    ? `Steam Emirle Al fiyatı (${money(bidBuy)}) uygulandı.`
+                    : `Applied Steam Buy-Order purchase price (${money(bidBuy)}).`
+                );
+              }
+            },
+            `${tr ? 'Steam Emirle Al' : 'Steam Buy Order'}: ${money(st.stBuyOrd)}`
+          )
+        );
+      }
+      if (instantCashoutUsd > 0) {
+        const activeBid = Math.abs(app.settings.leg2.marketUsd - instantCashoutUsd) <= 0.025;
+        l2Btns.push(
+          el(
+            'button',
+            {
+              type: 'button',
+              className: `steam-preset-btn pill-gold ${activeBid ? 'is-selected' : ''}`,
+              title: tr
+                ? `${mkt.name} en yüksek alım emri (anında satış) fiyatını uygula`
+                : `Apply ${mkt.name} highest buy order (instant sell) price`,
+              onClick: () => {
+                app.settings.leg2.marketUsd = instantCashoutUsd;
+                app.saveSettings();
+                syncInputsFromSettings();
+                renderMetricsOnly(true);
+                app.toast(
+                  isTr()
+                    ? `${mkt.name} anında satış fiyatı (${money(instantCashoutUsd)}) uygulandı.`
+                    : `Applied ${mkt.name} instant buy order (${money(instantCashoutUsd)}).`
+                );
+              }
+            },
+            `${activeBid ? '✓ ' : ''}${mkt.shortName} ${tr ? 'Anında Sat' : 'Instant Bid'}: ${money(instantCashoutUsd)}`
+          )
+        );
+      }
+      if (l2Btns.length > 0) {
+        bottomDeck = el('div', { className: 'leg-steam-deck' }, el('div', { className: 'steam-presets-row' }, l2Btns));
+      }
+    }
 
     const links = el(
       'div',
-      { style: { display: 'flex', alignItems: 'center', gap: '6px', flexShrink: '0' } },
+      { className: 'leg-preview-actions' },
       el(
         'button',
         {
@@ -630,17 +743,21 @@ export function initCalculatorView(app) {
       )
     );
 
-    box.appendChild(thumb);
     box.appendChild(
       el(
         'div',
-        { className: 'leg-preview-meta' },
-        el('div', { className: 'leg-preview-name', title: itemName }, itemName),
-        tags,
-        salesTape
+        { className: 'leg-preview-top' },
+        thumb,
+        el(
+          'div',
+          { className: 'leg-preview-meta' },
+          el('div', { className: 'leg-preview-name', title: itemName }, itemName),
+          tags
+        ),
+        links
       )
     );
-    box.appendChild(links);
+    if (bottomDeck) box.appendChild(bottomDeck);
   }
 
   /**
@@ -2041,23 +2158,7 @@ export function initCalculatorView(app) {
       const found = app.findItemByName(line.name);
       const vel = computeVelocityProfile(found, s.marketplace, legNum);
       const liveRec = liveSteamMap[`${s.marketplace}:${line.name}`];
-      const stHist = Boolean(liveRec?.histLive || found?.stHist);
-      const stBuyOrd = Number(liveRec?.steamBuyOrderUsd || found?.stBuyOrd) || 0;
-      const stSellOrd = Number(liveRec?.steamSellOrderUsd || liveRec?.lowestUsd || found?.stSellOrd) || 0;
-      const stSellCnt = Number(liveRec?.steamSellCount || found?.stSellCnt) || 0;
-      const st24Checked = Boolean(liveRec?.sold24hChecked || found?.st24Checked || stHist);
-      const st24Val = st24Checked ? Number(liveRec?.volume24h ?? found?.st24) || 0 : 0;
-      const st7Val = stHist ? Number(liveRec?.sold7d ?? found?.st7) || 0 : 0;
-      const st30Val = stHist ? Number(liveRec?.sold30d ?? found?.st30) || 0 : 0;
-      const stLastVal = Number(liveRec?.lastSaleUsd || found?.stLast) || 0;
-      const stRealVal = Number(liveRec?.realisticSellUsd || found?.stReal) || 0;
-      const stSales = Array.isArray(liveRec?.recentSales) && liveRec.recentSales.length
-        ? liveRec.recentSales
-        : Array.isArray(found?.stSales)
-          ? found.stSales
-          : [];
-      const steamAskVal = stSellOrd > 0 ? stSellOrd : Number(found?.s) || 0;
-      const askGapPct = stHist && stRealVal > 0 && steamAskVal > stRealVal ? ((steamAskVal - stRealVal) / stRealVal) * 100 : 0;
+      const st = resolveSteamTelemetry(found, liveRec);
       const instantBidUsd = isYoupin ? Number(found?.ypo) || 0 : Number(found?.cfo) || 0;
       const imgUrl = buildImageUrl(found?.img);
       const rarityColor = found?.rc || '#f0b90b';
@@ -2121,31 +2222,31 @@ export function initCalculatorView(app) {
         }
       });
 
-      // Directional V11 Basket Pill: Leg 1 = Real Steam 7d/30d Sales History; Leg 2 = Active Cashout Market speed!
+      // Directional V11.1 Basket Pill: Leg 1 = Real self-consistent Steam 7d/30d Sales History; Leg 2 = Active Cashout Market speed!
       const primaryPill =
-        legNum === 1 && stHist
+        legNum === 1 && st.stHist
           ? el(
             'span',
             {
-              className: `pill ${st7Val >= 25 ? 'pill-mint' : st7Val >= 6 ? 'pill-ice' : 'pill-amber'}`,
+              className: `pill ${st.st7Val >= 25 ? 'pill-mint' : st.st7Val >= 6 ? 'pill-ice' : 'pill-amber'}`,
               style: { fontSize: '10px', padding: '1px 6px' },
               title: tr
-                ? `Gerçek Steam satış geçmişi: 7g ${st7Val} • 30g ${st30Val} • 24s ${st24Val}${stLastVal > 0 ? ` • Son satış ${money(stLastVal)}` : ''}`
-                : `Real Steam sales history: 7d ${st7Val} • 30d ${st30Val} • 24h ${st24Val}${stLastVal > 0 ? ` • Last sale ${money(stLastVal)}` : ''}`
+                ? `Gerçek Steam satış geçmişi: 7g ${st.st7Val} • 30g ${st.st30Val} • 24s ${st.st24Val}${st.stLastVal > 0 ? ` • Son satış ${money(st.stLastVal)}` : ''}`
+                : `Real Steam sales history: 7d ${st.st7Val} • 30d ${st.st30Val} • 24h ${st.st24Val}${st.stLastVal > 0 ? ` • Last sale ${money(st.stLastVal)}` : ''}`
             },
-            `${st7Val <= 4 ? '⚠ ' : ''}${tr ? `Steam 7g: ${st7Val} satış • 30g: ${st30Val}` : `Steam 7d: ${st7Val} sold • 30d: ${st30Val}`}${st24Val > 0 ? ` • ${tr ? '24s' : '24h'}: ${st24Val}` : ''}`
+            `${st.st7Val <= 4 ? '⚠ ' : ''}${tr ? `Steam 7g: ${st.st7Val} satış • 30g: ${st.st30Val} • 24s: ${st.st24Val}` : `Steam 7d: ${st.st7Val} sold • 30d: ${st.st30Val} • 24h: ${st.st24Val}`}`
           )
-          : legNum === 1 && st24Checked
+          : legNum === 1 && st.st24Checked
             ? el(
               'span',
               {
-                className: `pill ${st24Val >= 15 ? 'pill-mint' : st24Val >= 3 ? 'pill-ice' : 'pill-amber'}`,
+                className: `pill ${st.st24Val >= 15 ? 'pill-mint' : st.st24Val >= 3 ? 'pill-ice' : 'pill-amber'}`,
                 style: { fontSize: '10px', padding: '1px 6px' },
                 title: tr
                   ? '1. Adım Steam satışı: canlı Steam 24s satış adedi ve aktif Steam ilan sayısı'
                   : 'Step 1 Steam sell: live Steam 24h sold count & active Steam sell listings'
               },
-              `${st24Val === 0 ? '⚠ ' : ''}${tr ? `Steam 24s: ${st24Val} satış` : `Steam 24h: ${st24Val} sold`}${stSellCnt > 0 ? ` • ${stSellCnt} ${tr ? 'ilan' : 'listed'}` : ''}`
+              `${st.st24Val === 0 ? '⚠ ' : ''}${tr ? `Steam 24s: ${st.st24Val} satış` : `Steam 24h: ${st.st24Val} sold`}${st.stSellCnt > 0 ? ` • ${st.stSellCnt} ${tr ? 'ilan' : 'listed'}` : ''}`
             )
             : found
               ? el(
@@ -2155,9 +2256,9 @@ export function initCalculatorView(app) {
               )
               : null;
 
-      const basketSalesTape =
-        legNum === 1 && stHist && stSales.length > 0
-          ? renderRecentSteamSalesTape(st7Val, st30Val, stSales, money, tr, (picked) => applyBasketLeg1Steam(picked))
+      const basketSteamDeck =
+        legNum === 1
+          ? renderLeg1SteamDeck(st, found, line.steamUsd, money, tr, (picked) => applyBasketLeg1Steam(picked))
           : null;
 
       const itemCard = el(
@@ -2194,59 +2295,7 @@ export function initCalculatorView(app) {
               legNum === 1 && isYoupin && vel.bidAskPct > 0
                 ? el('span', { className: 'txt-muted num', style: { fontSize: '10px' } }, `YP Bid ${tr ? '%' : ''}${vel.bidAskPct.toFixed(1)}${tr ? '' : '%'}`)
                 : null,
-              legNum === 1 && stHist && stRealVal > 0
-                ? el(
-                  'button',
-                  {
-                    type: 'button',
-                    className: 'pill pill-mint',
-                    style: { fontSize: '10px', cursor: 'pointer' },
-                    title: tr ? 'Gerçek son satışlara göre makul Steam satış fiyatını uygula' : 'Apply realistic Steam clearing price based on recent sales',
-                    onClick: () => applyBasketLeg1Steam(stRealVal)
-                  },
-                  `${tr ? 'Gerçekçi' : 'Realistic'}: ${money(stRealVal)}`
-                )
-                : null,
-              legNum === 1 && stHist && stLastVal > 0
-                ? el(
-                  'button',
-                  {
-                    type: 'button',
-                    className: 'pill pill-ice',
-                    style: { fontSize: '10px', cursor: 'pointer' },
-                    title: tr ? 'Steam son gerçekleşen satış fiyatını uygula' : 'Apply last actual Steam sale price',
-                    onClick: () => applyBasketLeg1Steam(stLastVal)
-                  },
-                  `${tr ? 'Son Satış' : 'Last Sale'}: ${money(stLastVal)}`
-                )
-                : null,
-              legNum === 1 && stHist && steamAskVal > 0 && Math.abs(steamAskVal - stRealVal) >= 0.5
-                ? el(
-                  'button',
-                  {
-                    type: 'button',
-                    className: `pill ${askGapPct >= 5 ? 'pill-amber' : 'pill-muted'}`,
-                    style: { fontSize: '10px', cursor: 'pointer' },
-                    title: tr ? 'Steam aktif en düşük satış ilanı fiyatını uygula' : 'Apply Steam lowest active ask listing price',
-                    onClick: () => applyBasketLeg1Steam(steamAskVal)
-                  },
-                  `${tr ? 'En Düşük İlan' : 'Lowest Ask'}: ${money(steamAskVal)}${askGapPct >= 4 ? ` (+${tr ? '%' : ''}${askGapPct.toFixed(1)}${tr ? '' : '%'})` : ''}`
-                )
-                : null,
-              legNum === 1 && stBuyOrd > 0
-                ? el(
-                  'button',
-                  {
-                    type: 'button',
-                    className: 'pill pill-gold',
-                    style: { fontSize: '10px', cursor: 'pointer' },
-                    title: tr ? 'Steam en yüksek alım emri (0 saniyede anında Steam satışı)' : 'Live Steam highest buy order (0-second instant Steam sell)',
-                    onClick: () => applyBasketLeg1Steam(stBuyOrd)
-                  },
-                  `${tr ? 'Steam Anında Sat' : 'Steam Instant'}: ${money(stBuyOrd)}`
-                )
-                : null,
-              legNum === 2 && stBuyOrd > 0 && stBuyOrd < line.steamUsd * 0.985
+              legNum === 2 && st.stBuyOrd > 0 && st.stBuyOrd < line.steamUsd * 0.985
                 ? el(
                   'button',
                   {
@@ -2255,12 +2304,12 @@ export function initCalculatorView(app) {
                     style: { fontSize: '10px', cursor: 'pointer' },
                     title: tr ? '2. adımda Steam Buy-Order ile daha ucuza alma senaryosunu uygula' : 'Apply cheaper Steam Buy-Order purchase price for Step 2',
                     onClick: () => {
-                      rawArr[idx].steamUsd = Math.round((stBuyOrd + 0.01) * 100) / 100;
+                      rawArr[idx].steamUsd = Math.round((st.stBuyOrd + 0.01) * 100) / 100;
                       app.saveSettings();
                       renderMetricsOnly(false, true);
                     }
                   },
-                  `${tr ? 'Steam Emirle Al' : 'Steam Buy Order'}: ${money(stBuyOrd)}`
+                  `${tr ? 'Steam Emirle Al' : 'Steam Buy Order'}: ${money(st.stBuyOrd)}`
                 )
                 : null,
               legNum === 2 && instantBidUsd > 0
@@ -2376,7 +2425,7 @@ export function initCalculatorView(app) {
               : null
           )
         ),
-        basketSalesTape,
+        basketSteamDeck,
         el(
           'div',
           { className: 'desk-basket-inputs-3col' },

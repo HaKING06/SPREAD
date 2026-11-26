@@ -10,7 +10,7 @@ export const BRAND = {
   supportEmail: 'spread@haking.tr',
   buyMeACoffeeUrl: 'https://buymeacoffee.com/haking',
   steamTradeDonateUrl: 'https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7',
-  version: '11.0.0'
+  version: '11.1.0'
 };
 
 export const ROUTES = {
@@ -159,14 +159,14 @@ export const DEFAULT_SETTINGS = {
   }
 };
 
-  export function steamMarketUrl(marketHashName, item = null) {
-    const base = item?.mhn || stripDopplerPhase(marketHashName);
-    return `https://steamcommunity.com/market/listings/730/${encodeURIComponent(base)}`;
-  }
+export function steamMarketUrl(marketHashName, item = null) {
+  const base = item?.mhn || stripDopplerPhase(marketHashName);
+  return `https://steamcommunity.com/market/listings/730/${encodeURIComponent(base)}`;
+}
 
-  export function buildImageUrl(imgField) {
-    if (!imgField || typeof imgField !== 'string') return '/assets/brand/logo-192.png';
-    if (imgField.startsWith('https://')) return imgField;
-    if (imgField.startsWith('/assets/')) return imgField;
-    return STEAM_IMG_PREFIX + imgField;
-  }
+export function buildImageUrl(imgField) {
+  if (!imgField || typeof imgField !== 'string') return '/assets/brand/logo-192.png';
+  if (imgField.startsWith('https://')) return imgField;
+  if (imgField.startsWith('/assets/')) return imgField;
+  return STEAM_IMG_PREFIX + imgField;
+}

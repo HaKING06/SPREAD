@@ -29,8 +29,8 @@ export function initAboutView(app) {
         title: 'Steam Market Live Sales History + Order Book',
         status: isLive ? (feeds.steam !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
         sub: tr
-          ? '1. Adım için gerçek Steam 24s/7g/30g satış geçmişi, son gerçekleşen satış fiyatı, gerçekçi satış hesabı ve anında Steam Buy-Order histogramı'
-          : 'Step 1 real Steam 24h/7d/30d sales history, last actual sale price, realistic clearing-price engine & instant Steam Buy-Order histogram'
+            ? '1. Adım için gerçek Steam 24s/7g/30g satış geçmişi, son gerçekleşen satış fiyatı, gerçekçi satış hesabı ve anında Steam Buy-Order histogramı'
+            : 'Step 1 real Steam 24h/7d/30d sales history, last actual sale price, realistic clearing-price engine & instant Steam Buy-Order histogram'
       },
       {
         title: 'Buff163 Global Cash Anchor',
@@ -48,8 +48,8 @@ export function initAboutView(app) {
         title: 'SPREAD Agent V11 • Clearing-Price & Doppler Phases',
         status: 'OK',
         sub: tr
-          ? 'Gerçek Steam son satışa dayalı fiyatlama (hayali ilan koruması), 350+ canlı Doppler/Gamma Doppler fazı, Tekli vs. Sepet Meta-Hakem ve 500 sim. Monte Carlo CVaR'
-          : 'Real Steam recent-sales clearing engine (phantom ask guard), 350+ live Doppler/Gamma Doppler phases, Single vs. Basket Meta-Arbitrator & 500-sim Monte Carlo CVaR'
+            ? 'Gerçek Steam son satışa dayalı fiyatlama (hayali ilan koruması), 350+ canlı Doppler/Gamma Doppler fazı, Tekli vs. Sepet Meta-Hakem ve 500 sim. Monte Carlo CVaR'
+            : 'Real Steam recent-sales clearing engine (phantom ask guard), 350+ live Doppler/Gamma Doppler phases, Single vs. Basket Meta-Arbitrator & 500-sim Monte Carlo CVaR'
       },
       {
         title: 'Youpin898 Live Order Book + Direct IDs',

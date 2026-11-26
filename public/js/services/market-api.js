@@ -209,20 +209,37 @@ export class MarketService {
         out[n] = rec;
         const it = Array.isArray(liveItemsRef) ? liveItemsRef.find((x) => x.n === n) : null;
         if (rec.live) {
+          const prevRef = it || this.priceMap[n] || {};
+          const nowSec = Math.floor(Date.now() / 1000);
+          const prevTape24 = Array.isArray(prevRef.stSales)
+            ? prevRef.stSales.reduce((acc, r) => acc + (Number(r?.t) >= nowSec - 86400 ? Math.max(1, Number(r?.q) || 1) : 0), 0)
+            : 0;
+          const hasValidHist =
+            Boolean(rec.histLive) &&
+            (Number(rec.sold30d) > 0 || (Array.isArray(rec.recentSales) && rec.recentSales.length > 0));
+          const liveVol24 = Number(rec.volume24h);
+          const canApply24 =
+            hasValidHist ||
+            (Boolean(rec.sold24hChecked) &&
+              Number.isFinite(liveVol24) &&
+              (liveVol24 > 0 || prevTape24 === 0));
+          const liveAsk = Number(rec.steamSellOrderUsd) || Number(rec.lowestUsd) || 0;
           const patch = {
-            ...(rec.sold24hChecked ? { st24: rec.volume24h, st24Checked: true } : {}),
-            ...(rec.histLive
+            ...(canApply24
+              ? { st24: Math.max(0, Math.round(liveVol24), hasValidHist ? 0 : prevTape24), st24Checked: true }
+              : {}),
+            ...(hasValidHist
               ? {
-                  stHist: true,
-                  st7: Number(rec.sold7d) || 0,
-                  st30: Number(rec.sold30d) || 0,
-                  stLast: Number(rec.lastSaleUsd) || 0,
-                  stLastH: Number(rec.lastSaleAgeH) || 0,
-                  stAvg7: Number(rec.avg7Usd) || 0,
-                  stAvg30: Number(rec.avg30Usd) || 0,
-                  stReal: Number(rec.realisticSellUsd) || 0,
-                  stSales: Array.isArray(rec.recentSales) ? rec.recentSales : []
-                }
+                stHist: true,
+                st7: Math.max(Number(rec.sold7d) || 0, Number(rec.volume24h) || 0),
+                st30: Math.max(Number(rec.sold30d) || 0, Number(rec.sold7d) || 0),
+                stLast: Number(rec.lastSaleUsd) || 0,
+                stLastH: Number(rec.lastSaleAgeH) || 0,
+                stAvg7: Number(rec.avg7Usd) || 0,
+                stAvg30: Number(rec.avg30Usd) || 0,
+                stReal: Number(rec.realisticSellUsd) || 0,
+                stSales: Array.isArray(rec.recentSales) ? rec.recentSales : []
+              }
               : {}),
             ...(rec.medianUsd > 0 ? { stMed: rec.medianUsd } : {}),
             ...(rec.steamBuyOrderUsd > 0 ? { stBuyOrd: rec.steamBuyOrderUsd } : {}),
@@ -230,6 +247,17 @@ export class MarketService {
             ...(rec.steamSellCount > 0 ? { stSellCnt: rec.steamSellCount } : {}),
             ...(rec.steamBuyCount > 0 ? { stBuyCnt: rec.steamBuyCount } : {})
           };
+          // Never let cached realistic clearing price exceed a newly-dropped live Steam lowest ask!
+          if (!hasValidHist && liveAsk > 0 && Number(prevRef.stReal) > liveAsk) {
+            patch.stReal = Math.round(liveAsk * 100) / 100;
+          }
+          // When live 24h sales exceed snapshot 7d/30d, keep 7d/30d monotonic!
+          if (!hasValidHist && canApply24 && prevRef.stHist) {
+            if (patch.st24 > (Number(prevRef.st7) || 0)) patch.st7 = patch.st24;
+            if ((patch.st7 || Number(prevRef.st7) || 0) > (Number(prevRef.st30) || 0)) {
+              patch.st30 = patch.st7 || Number(prevRef.st7) || 0;
+            }
+          }
           if (this.priceMap[n]) Object.assign(this.priceMap[n], patch);
           if (it) Object.assign(it, patch);
         }
@@ -254,42 +282,42 @@ export class MarketService {
   }
 
   async fetchLiveFx() {
-          try {
-            const apiFx = await fetchJsonSafe('/api/fx', 8000);
-            if (apiFx?.ok && apiFx.rates) {
-              return { rates: apiFx.rates, updatedAt: apiFx.updatedAt };
-            }
-          } catch {
-            // Fallback to direct CORS-enabled open.er-api.com
-          }
-          const direct = await fetchJsonSafe('https://open.er-api.com/v6/latest/USD', 8000);
-          if (direct?.rates) {
-            return {
-              rates: {
-                USD: 1,
-                TRY: Number(direct.rates.TRY) || DEFAULT_FX_RATES.TRY,
-                CNY: Number(direct.rates.CNY) || DEFAULT_FX_RATES.CNY,
-                EUR: Number(direct.rates.EUR) || DEFAULT_FX_RATES.EUR
-              },
-              updatedAt: direct.time_last_update_utc || new Date().toISOString()
-            };
-          }
-          return null;
-        }
+    try {
+      const apiFx = await fetchJsonSafe('/api/fx', 8000);
+      if (apiFx?.ok && apiFx.rates) {
+        return { rates: apiFx.rates, updatedAt: apiFx.updatedAt };
+      }
+    } catch {
+      // Fallback to direct CORS-enabled open.er-api.com
+    }
+    const direct = await fetchJsonSafe('https://open.er-api.com/v6/latest/USD', 8000);
+    if (direct?.rates) {
+      return {
+        rates: {
+          USD: 1,
+          TRY: Number(direct.rates.TRY) || DEFAULT_FX_RATES.TRY,
+          CNY: Number(direct.rates.CNY) || DEFAULT_FX_RATES.CNY,
+          EUR: Number(direct.rates.EUR) || DEFAULT_FX_RATES.EUR
+        },
+        updatedAt: direct.time_last_update_utc || new Date().toISOString()
+      };
+    }
+    return null;
+  }
 
   async lookupLiveItems(query) {
-          const q = String(query || '').trim();
-          if (q.length < 2) return [];
-          try {
-            const res = await fetchJsonSafe(`/api/item-lookup?q=${encodeURIComponent(q)}`, 8000);
-            if (res?.ok && Array.isArray(res.items)) return res.items;
-          } catch {
-            // Silent fallback
-          }
-          return [];
-        }
+    const q = String(query || '').trim();
+    if (q.length < 2) return [];
+    try {
+      const res = await fetchJsonSafe(`/api/item-lookup?q=${encodeURIComponent(q)}`, 8000);
+      if (res?.ok && Array.isArray(res.items)) return res.items;
+    } catch {
+      // Silent fallback
+    }
+    return [];
+  }
 
-        rebuildWithCustomItems(customItems) {
-          return mergeCatalogAndPrices(this.catalogRaw?.items || [], this.priceMap, customItems);
-        }
-      }
+  rebuildWithCustomItems(customItems) {
+    return mergeCatalogAndPrices(this.catalogRaw?.items || [], this.priceMap, customItems);
+  }
+}

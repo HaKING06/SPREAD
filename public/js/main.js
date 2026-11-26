@@ -152,8 +152,8 @@ class SpreadApp {
       } else {
         arr.push(
           legNum === 1
-            ? { name: item.n, qty: 1, marketUsd: m.marketBuyUsd, steamUsd: m.steamSellUsd || m.steamUsd }
-            : { name: item.n, qty: 1, steamUsd: m.steamUsd, marketUsd: m.marketSellUsd }
+              ? { name: item.n, qty: 1, marketUsd: m.marketBuyUsd, steamUsd: m.steamSellUsd || m.steamUsd }
+              : { name: item.n, qty: 1, steamUsd: m.steamUsd, marketUsd: m.marketSellUsd }
         );
       }
       // Auto-rebalance quantities cleanly when adding an item to the active basket!

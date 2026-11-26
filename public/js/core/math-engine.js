@@ -122,20 +122,35 @@ export function computeVelocityProfile(item, marketplace = 'CSFLOAT', legRole = 
   const cf7 = useLiveCf ? Number(item.cf7) || 0 : 0;
   const cf30 = useLiveCf ? Number(item.cf30) || 0 : 0;
 
-  const stHist = Boolean(item.stHist);
-  const st24 = Number(item.st24) || 0;
+  const stSales = Array.isArray(item.stSales) ? item.stSales : [];
+  const nowSecVel = Math.floor(Date.now() / 1000);
+  let tape24 = 0;
+  let tape7 = 0;
+  let tape30 = 0;
+  for (const r of stSales) {
+    const tSec = Number(r?.t) || 0;
+    const qRow = Math.max(1, Number(r?.q) || 1);
+    if (tSec >= nowSecVel - 86400) tape24 += qRow;
+    if (tSec >= nowSecVel - 7 * 86400) tape7 += qRow;
+    if (tSec >= nowSecVel - 30 * 86400) tape30 += qRow;
+  }
+  const stHist = Boolean(item.stHist) || stSales.length > 0;
+  const st24 = Math.max(Number(item.st24) || 0, tape24);
   const st24Checked = Boolean(item.st24Checked) || stHist;
-  const st7 = Number(item.st7) || 0;
-  const st30 = Number(item.st30) || 0;
-  const stLast = Number(item.stLast) || 0;
-  const stLastH = Number(item.stLastH) || 0;
+  const st7 = stHist ? Math.max(Number(item.st7) || 0, tape7, st24) : 0;
+  const st30 = stHist ? Math.max(Number(item.st30) || 0, tape30, st7) : 0;
+  const lastTapeEntry = stSales.length > 0 ? stSales[stSales.length - 1] : null;
+  const stLast = Number(item.stLast) || (lastTapeEntry ? Number(lastTapeEntry.p) || 0 : 0);
+  const stLastH =
+    lastTapeEntry && Number(lastTapeEntry.t) > 0
+      ? Math.max(0, Math.round((nowSecVel - Number(lastTapeEntry.t)) / 3600))
+      : Number(item.stLastH) || 0;
   const stAvg7 = Number(item.stAvg7) || 0;
   const stAvg30 = Number(item.stAvg30) || 0;
   const stReal = Number(item.stReal) || 0;
   const stSellOrd = Number(item.stSellOrd) || 0;
   const stBuyOrd = Number(item.stBuyOrd) || 0;
   const stSellCnt = Number(item.stSellCnt) || 0;
-  const stSales = Array.isArray(item.stSales) ? item.stSales : [];
 
   const v24 = Number(item.v24) || 0;
   const v7 = Number(item.v7) || 0;
@@ -931,7 +946,7 @@ export function estimateExecutionReality(metrics, item1, item2, opts = {}) {
     );
   }
 
-  if (item1 && q1 > vel1.estWeeklyCap && q1 > 10) {
+  if (item1 && q1 > vel1.estWeeklyCap && (q1 > 10 || (vel1.stHist && q1 > vel1.st7 && q1 >= 2))) {
     const weeksNeeded = Math.min(8, Math.ceil(q1 / Math.max(1, vel1.estWeeklyCap)));
     extraSellSteamDays += weeksNeeded * 3;
     reasons.push(
