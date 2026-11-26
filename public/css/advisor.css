@@ -895,17 +895,148 @@
 
 .spread-agent-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 15px 18px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--gold-border);
   background:
-    radial-gradient(ellipse 60% 100% at 0% 0%, rgba(240, 185, 11, 0.13), transparent 65%),
-    radial-gradient(ellipse 50% 100% at 100% 100%, rgba(16, 217, 129, 0.09), transparent 65%),
+    radial-gradient(ellipse 65% 80% at 0% 0%, rgba(240, 185, 11, 0.12), transparent 65%),
+    radial-gradient(ellipse 55% 70% at 100% 100%, rgba(16, 217, 129, 0.085), transparent 65%),
     var(--bg-inset);
   box-shadow: var(--shadow-sm);
+}
+
+/* V9 Live Agent Mode Pill right next to the Split Mode toggle */
+.mode-agent-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--border-med);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.mode-agent-pill:hover {
+  transform: translateY(-1px);
+}
+
+.mode-agent-pill.is-single {
+  border-color: var(--mint-border);
+  background: var(--mint-soft);
+  color: var(--mint);
+}
+
+.mode-agent-pill.is-basket {
+  border-color: var(--gold-border);
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+
+.mode-agent-pill.is-balanced {
+  border-color: var(--ice-border);
+  background: var(--ice-soft);
+  color: var(--ice);
+}
+
+/* V9 Head-to-Head Mode Arbitrator Verdict Banner (inside Single & Basket cards) */
+.mode-verdict-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-med);
+  background: var(--bg-surface);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.mode-verdict-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 220px;
+  flex: 1 1 260px;
+}
+
+.mode-verdict-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mode-verdict-detail {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.mode-verdict-bar.is-single-win {
+  border-color: var(--mint-border);
+  background: linear-gradient(90deg, rgba(16, 217, 129, 0.14), rgba(240, 185, 11, 0.05) 70%, var(--bg-surface));
+}
+.mode-verdict-bar.is-single-win .mode-verdict-title { color: var(--mint); }
+
+.mode-verdict-bar.is-basket-win {
+  border-color: var(--gold-border);
+  background: linear-gradient(90deg, rgba(240, 185, 11, 0.14), rgba(56, 189, 248, 0.05) 70%, var(--bg-surface));
+}
+.mode-verdict-bar.is-basket-win .mode-verdict-title { color: var(--gold); }
+
+.mode-verdict-bar.is-confirmed {
+  border-color: var(--mint-border);
+  background: var(--mint-soft);
+}
+.mode-verdict-bar.is-confirmed .mode-verdict-title { color: var(--mint); }
+
+.mode-verdict-bar.is-tradeoff {
+  border-color: var(--ice-border);
+  background: var(--ice-soft);
+}
+.mode-verdict-bar.is-tradeoff .mode-verdict-title { color: var(--ice); }
+
+/* V9 Enhanced Blueprint Skin Line Meta Pills (Wear + Instant Floor + Volume Absorption) */
+.plan-line-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+
+.absorption-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid var(--border-hair);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+}
+
+.absorption-pill.is-fast {
+  border-color: var(--mint-border);
+  background: var(--mint-soft);
+  color: var(--mint);
+}
+
+.absorption-pill.is-heavy {
+  border-color: var(--amber-border);
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 
 .agent-main-col {

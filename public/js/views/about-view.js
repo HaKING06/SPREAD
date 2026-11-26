@@ -45,11 +45,11 @@ export function initAboutView(app) {
           : `${app.items.length.toLocaleString('en-US')} bundled skins + on-demand live lookup for rare knives & Dopplers`
       },
       {
-        title: 'SPREAD Agent V8 • Directional Quant',
+        title: 'SPREAD Agent V9 • Meta-Arbitrator',
         status: 'OK',
         sub: tr
-          ? 'Yönlü likidite (1. Adım Steam / 2. Adım Nakit Pazar), 500 senaryolu Monte Carlo CVaR ve paralel sepet oto-dengeleme'
-          : 'Directional liquidity (Step 1 Steam / Step 2 Cash Market), 500-trial Monte Carlo CVaR & parallel basket auto-rebalancer'
+          ? 'Tekli vs. Sepet canlı kafa kafaya kıyaslama, yönlü likidite (Steam / Nakit Pazar), 500 senaryolu Monte Carlo CVaR ve oto-dengeleme'
+          : 'Live Single vs. Basket head-to-head arbitrator, directional liquidity (Steam / Cash Market), 500-trial Monte Carlo CVaR & auto-rebalancer'
       },
       {
         title: 'Youpin898 Live Order Book + Direct IDs',

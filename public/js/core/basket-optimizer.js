@@ -155,6 +155,10 @@ function buildLeg1Line(cand, qty, opts) {
   const slippageUsd = spentUsd * (slipPct / 100);
   const fillDays = estimateLeg1FillDays(cand.item, cand.vel, qty);
   const sigma7d = computeItemVolatility7d(cand.item, cand.m);
+  const dailyPace = cand.item?.st24Checked
+    ? Math.max(0.15, Number(cand.item.st24) || 0)
+    : Math.max(0.25, cand.vel?.estDailySales || 0.5);
+  const daysOfVol = Math.round((qty / dailyPace) * 10) / 10;
   return {
     item: cand.item,
     m: cand.m,
@@ -169,6 +173,8 @@ function buildLeg1Line(cand, qty, opts) {
     slipPct: Math.round(slipPct * 100) / 100,
     slippageUsd,
     fillDays,
+    daysOfVol,
+    dailyPace: Math.round(dailyPace * 10) / 10,
     sigma7d
   };
 }
@@ -190,6 +196,11 @@ function buildLeg2Line(cand, qty, opts) {
   const instantCashUsd = qty * instNetUnit;
   const fillDays = estimateLeg2FillDays(cand.item, cand.vel, qty, opts.useBuyOrderForLeg2);
   const sigma7d = computeItemVolatility7d(cand.item, cand.m);
+  const dailyPace =
+    isCSFloat && cand.item?.cfLive
+      ? Math.max(0.35, Number(cand.item.cf24) || 0, (Number(cand.item.cf7) || 0) / 7)
+      : Math.max(0.35, cand.vel?.estDailySales || 0.5, (Number(cand.vel?.sold7d) || 0) / 7);
+  const daysOfVol = Math.round((qty / dailyPace) * 10) / 10;
   return {
     item: cand.item,
     m: cand.m,
@@ -206,6 +217,8 @@ function buildLeg2Line(cand, qty, opts) {
     slipPct: Math.round(slipPct * 100) / 100,
     slippageUsd,
     fillDays,
+    daysOfVol,
+    dailyPace: Math.round(dailyPace * 10) / 10,
     sigma7d
   };
 }
@@ -217,6 +230,7 @@ function scoreLeg1Basket(lines, cap) {
   let totalSlip = 0;
   let maxFill = 0;
   let buffBonusSum = 0;
+  let steamZeroPenSum = 0;
   for (const l of lines) {
     totalSpent += l.spentUsd;
     totalNetSteam += l.netSteamUsd;
@@ -226,6 +240,9 @@ function scoreLeg1Basket(lines, cap) {
     if (l.m.isBelowBuff) buffBonusSum += 3.2 * w;
     if (l.m.isOverBuff) buffBonusSum -= 4.0 * w;
     if (l.m.trendStatus === 'FALLING') buffBonusSum -= 5.0 * w;
+    if (l.item?.st24Checked && Number(l.item.st24) === 0 && (l.vel?.steamBidAskPct || 0) < 92) {
+      steamZeroPenSum += 8.0 * w;
+    }
   }
   const idleCash = Math.max(0, cap - totalSpent);
   // Estimate steam-to-cash value with ~0.90 conservative M2 proxy for comparing Leg 1 baskets
@@ -239,7 +256,7 @@ function scoreLeg1Basket(lines, cap) {
     estRoi,
     cap
   ).sigma1Pct;
-  return timeAdj * 1.45 + deployBonus + buffBonusSum - sigma1 * 0.45 - Math.max(0, maxFill - 3) * 1.1;
+  return timeAdj * 1.45 + deployBonus + buffBonusSum - steamZeroPenSum - sigma1 * 0.45 - Math.max(0, maxFill - 3) * 1.1;
 }
 
 function maxSafeQtyL1(cand, cap, effectiveMaxQ1, isCSFloat) {
@@ -249,13 +266,12 @@ function maxSafeQtyL1(cand, cap, effectiveMaxQ1, isCSFloat) {
   return Math.max(0, Math.min(byBudget, byBook, byVel, effectiveMaxQ1));
 }
 
-function solveLeg1ForCount(cands, cap, k, opts, effectiveMaxQ1) {
+function solveLeg1TopForCount(cands, cap, k, opts, effectiveMaxQ1, topN = 3) {
   const isCSFloat = opts.marketplace !== 'YOUPIN';
   const top = cands.slice(0, 14);
-  if (top.length < k) return null;
+  if (top.length < k) return [];
 
-  let bestLines = null;
-  let bestScore = -Infinity;
+  const bestByKey = new Map();
 
   const tryLines = (rawPairs) => {
     const valid = rawPairs.filter((x) => x.qty > 0);
@@ -265,9 +281,13 @@ function solveLeg1ForCount(cands, cap, k, opts, effectiveMaxQ1) {
     if (spent > cap + 0.01) return;
     const lines = valid.map((x) => buildLeg1Line(x.cand, x.qty, opts));
     const sc = scoreLeg1Basket(lines, cap);
-    if (sc > bestScore) {
-      bestScore = sc;
-      bestLines = lines;
+    const key = lines
+      .map((l) => l.item.n)
+      .sort()
+      .join('|');
+    const prev = bestByKey.get(key);
+    if (!prev || sc > prev.score) {
+      bestByKey.set(key, { lines, score: sc });
     }
   };
 
@@ -276,10 +296,7 @@ function solveLeg1ForCount(cands, cap, k, opts, effectiveMaxQ1) {
       const q = maxSafeQtyL1(c, cap, effectiveMaxQ1, isCSFloat);
       if (q > 0) tryLines([{ cand: c, qty: q }]);
     }
-    return bestLines;
-  }
-
-  if (k === 2) {
+  } else if (k === 2) {
     const splits = [
       [1.0, 1.0],   // Knapsack remainder: fill A first, then deploy idle cash into B!
       [0.65, 0.35], // Core + secondary diversification
@@ -314,48 +331,50 @@ function solveLeg1ForCount(cands, cap, k, opts, effectiveMaxQ1) {
         }
       }
     }
-    return bestLines;
-  }
-
-  // k === 3
-  const top3 = top.slice(0, 10);
-  const splits3 = [
-    [1.0, 1.0, 1.0],   // Knapsack cascade
-    [0.5, 0.3, 0.2],   // Tiered core-satellite
-    [0.34, 0.33, 0.33] // Equal diversification
-  ];
-  for (let i = 0; i < top3.length; i++) {
-    for (let j = i + 1; j < top3.length; j++) {
-      for (let m = j + 1; m < top3.length; m++) {
-        const triad = [top3[i], top3[j], top3[m]];
-        for (const sp of splits3) {
-          let rem = cap;
-          const picks = [];
-          for (let idx = 0; idx < 3; idx++) {
-            const c = triad[idx];
-            const minFutureCost = triad.slice(idx + 1).reduce((acc, x) => acc + x.m.effBuy, 0);
-            const targetBudget = sp[0] === 1.0 ? Math.max(0, rem - minFutureCost) : Math.min(rem - minFutureCost, cap * sp[idx]);
-            const q = maxSafeQtyL1(c, targetBudget, effectiveMaxQ1, isCSFloat);
-            if (q <= 0) break;
-            picks.push({ cand: c, qty: q });
-            rem -= q * c.m.effBuy;
-          }
-          if (picks.length === 3) {
-            // Greedy pack any leftover cash into best affordable member of triad
-            for (const p of picks) {
-              const extraCap = maxSafeQtyL1(p.cand, rem, effectiveMaxQ1 - p.qty, isCSFloat);
-              if (extraCap > 0) {
-                p.qty += extraCap;
-                rem -= extraCap * p.cand.m.effBuy;
-              }
+  } else {
+    // k === 3
+    const top3 = top.slice(0, 10);
+    const splits3 = [
+      [1.0, 1.0, 1.0],   // Knapsack cascade
+      [0.5, 0.3, 0.2],   // Tiered core-satellite
+      [0.34, 0.33, 0.33] // Equal diversification
+    ];
+    for (let i = 0; i < top3.length; i++) {
+      for (let j = i + 1; j < top3.length; j++) {
+        for (let m = j + 1; m < top3.length; m++) {
+          const triad = [top3[i], top3[j], top3[m]];
+          for (const sp of splits3) {
+            let rem = cap;
+            const picks = [];
+            for (let idx = 0; idx < 3; idx++) {
+              const c = triad[idx];
+              const minFutureCost = triad.slice(idx + 1).reduce((acc, x) => acc + x.m.effBuy, 0);
+              const targetBudget = sp[0] === 1.0 ? Math.max(0, rem - minFutureCost) : Math.min(rem - minFutureCost, cap * sp[idx]);
+              const q = maxSafeQtyL1(c, targetBudget, effectiveMaxQ1, isCSFloat);
+              if (q <= 0) break;
+              picks.push({ cand: c, qty: q });
+              rem -= q * c.m.effBuy;
             }
-            tryLines(picks);
+            if (picks.length === 3) {
+              for (const p of picks) {
+                const extraCap = maxSafeQtyL1(p.cand, rem, effectiveMaxQ1 - p.qty, isCSFloat);
+                if (extraCap > 0) {
+                  p.qty += extraCap;
+                  rem -= extraCap * p.cand.m.effBuy;
+                }
+              }
+              tryLines(picks);
+            }
           }
         }
       }
     }
   }
-  return bestLines;
+
+  return Array.from(bestByKey.values())
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topN)
+    .map((x) => x.lines);
 }
 
 /**
@@ -405,9 +424,15 @@ function allocateSteamAcrossSubset(subset, steamWalletUsd, opts, capitalUsd) {
     }
   }
 
-  // Compute helper metrics for each skin
+  // Compute helper metrics for each skin (respects active marketplace instant Buy Order!)
   const unitInstM2 = subset.map((c) => {
-    const instSell = isCSFloat && c.item.cfo > 0 ? c.item.cfo : c.m.marketSellUsd;
+    const instSell = isCSFloat
+      ? c.item.cfo > 0
+        ? c.item.cfo
+        : c.m.marketSellUsd
+      : c.item.ypo > 0
+        ? c.item.ypo
+        : c.m.marketSellUsd;
     const instNet = calcNetSellUsd(instSell, opts.sellFeePct, opts.withdrawFeePct);
     return c.m.steamUsd > 0 ? instNet / c.m.steamUsd : 0;
   });
@@ -730,7 +755,13 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
     .filter((x) => x.m.effBuy <= cap * 0.42 && x.m.effBuy >= Math.max(3, cap * 0.04))
     .sort((a, b) => b.m.leg1ProfitPct + (b.vel.tier === 'A' ? 4 : 0) - (a.m.leg1ProfitPct + (a.vel.tier === 'A' ? 4 : 0)))
     .slice(0, 8);
-  const l1Cands = Array.from(new Map([...l1ByAlpha, ...l1MidFillers].map((x) => [x.item.n, x])).values());
+  // Guarantee Single-Mode Champion's Leg 1 item is ALWAYS evaluated inside Basket Mode too!
+  const anchorMatch = filters.anchorLeg1Name
+    ? leg1Pool.find((x) => x.item.n.toLowerCase() === String(filters.anchorLeg1Name).toLowerCase())
+    : null;
+  const l1Cands = Array.from(
+    new Map([...(anchorMatch ? [anchorMatch] : []), ...l1ByAlpha, ...l1MidFillers].map((x) => [x.item.n, x])).values()
+  );
 
   const l2ByScore = [...leg2Pool]
     .sort((a, b) => {
@@ -745,28 +776,38 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
     .slice(0, 4);
   const l2Cands = Array.from(new Map([...l2ByScore, ...l2LowClick].map((x) => [x.item.n, x])).values());
 
-  // Solve Leg 1 baskets for k1 = 1, 2, 3
+  // Solve TOP-3 Leg 1 baskets for k1 = 1, 2, 3 (eliminates single-pick blind spots!)
   const l1ByK = {
-    1: solveLeg1ForCount(l1Cands, cap, 1, opts, effectiveMaxQ1),
-    2: cap >= 80 ? solveLeg1ForCount(l1Cands, cap, 2, opts, effectiveMaxQ1) : null,
-    3: cap >= 220 ? solveLeg1ForCount(l1Cands, cap, 3, opts, effectiveMaxQ1) : null
+    1: solveLeg1TopForCount(l1Cands, cap, 1, opts, effectiveMaxQ1, 3),
+    2: cap >= 80 ? solveLeg1TopForCount(l1Cands, cap, 2, opts, effectiveMaxQ1, 3) : [],
+    3: cap >= 220 ? solveLeg1TopForCount(l1Cands, cap, 3, opts, effectiveMaxQ1, 2) : []
   };
 
   // Determine candidate grid for (k1, k2)
   const k1List = buyCountReq > 0 ? [buyCountReq] : cap < 120 ? [1] : cap < 350 ? [1, 2] : [1, 2, 3];
   const k2List = sellCountReq > 0 ? [sellCountReq] : cap < 90 ? [1] : cap < 280 ? [1, 2] : [1, 2, 3, 4];
 
-  // Always compute 1->1 single-pair baseline for transparent side-by-side proof
-  const baseline11 = l1ByK[1] ? solveLeg2ForCount(l2Cands, l1ByK[1], cap, 1, opts, 1, 1) : null;
+  // Always compute best 1->1 single-pair baseline across top Leg 1 candidates for honest side-by-side proof
+  let baseline11 = null;
+  for (const l1Opt of l1ByK[1]) {
+    const b11 = solveLeg2ForCount(l2Cands, l1Opt, cap, 1, opts, 1, 1);
+    if (b11 && (!baseline11 || b11.basketScore > baseline11.basketScore)) baseline11 = b11;
+  }
 
-  // Evaluate requested grid
+  // Evaluate requested grid across top Leg 1 candidates per k1
   const requestedCandidates = [];
   for (const k1 of k1List) {
-    const l1Lines = l1ByK[k1] || l1ByK[Math.max(1, k1 - 1)] || l1ByK[1];
-    if (!l1Lines) continue;
+    const l1Options = l1ByK[k1]?.length > 0 ? l1ByK[k1] : l1ByK[Math.max(1, k1 - 1)]?.length > 0 ? l1ByK[Math.max(1, k1 - 1)] : l1ByK[1];
+    if (!l1Options || l1Options.length === 0) continue;
     for (const k2 of k2List) {
-      const plan = solveLeg2ForCount(l2Cands, l1Lines, cap, k2, opts, buyCountReq, sellCountReq);
-      if (plan) requestedCandidates.push(plan);
+      let bestForCell = null;
+      for (const l1Lines of l1Options) {
+        const plan = solveLeg2ForCount(l2Cands, l1Lines, cap, k2, opts, buyCountReq, sellCountReq);
+        if (plan && (!bestForCell || plan.basketScore > bestForCell.basketScore)) {
+          bestForCell = plan;
+        }
+      }
+      if (bestForCell) requestedCandidates.push(bestForCell);
     }
   }
 
@@ -786,13 +827,14 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
     const autoK2s = cap < 90 ? [1] : cap < 280 ? [1, 2] : [1, 2, 3];
     let bestAuto = null;
     for (const k1 of autoK1s) {
-      const l1Lines = l1ByK[k1];
-      if (!l1Lines) continue;
-      for (const k2 of autoK2s) {
-        if (k1 === selected.k1 && k2 === selected.k2) continue;
-        const alt = solveLeg2ForCount(l2Cands, l1Lines, cap, k2, opts, 0, 0);
-        if (alt && (!bestAuto || alt.basketScore > bestAuto.basketScore)) {
-          bestAuto = alt;
+      const l1Options = l1ByK[k1] || [];
+      for (const l1Lines of l1Options) {
+        for (const k2 of autoK2s) {
+          if (k1 === selected.k1 && k2 === selected.k2) continue;
+          const alt = solveLeg2ForCount(l2Cands, l1Lines, cap, k2, opts, 0, 0);
+          if (alt && (!bestAuto || alt.basketScore > bestAuto.basketScore)) {
+            bestAuto = alt;
+          }
         }
       }
     }
@@ -832,11 +874,12 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
     }
   }
 
-  // Head-to-head proof vs 1->1 single-pair baseline
+  // Head-to-head proof vs 1->1 single-pair baseline (separates Leg 2 exit time from Leg 1!)
   let vsSingle = null;
   if (baseline11 && (selected.k1 > 1 || selected.k2 > 1)) {
     const profitDelta = Math.round((selected.netProfitUsd - baseline11.netProfitUsd) * 100) / 100;
     const daysSaved = Math.max(0, baseline11.maxDays - selected.maxDays);
+    const exitDaysSaved = Math.max(0, baseline11.extraLeg2Days - selected.extraLeg2Days);
     const slipSavedPct =
       baseline11.totalSlippagePct > 0
         ? Math.max(0, Math.round((1 - selected.totalSlippagePct / baseline11.totalSlippagePct) * 100))
@@ -850,17 +893,18 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
       singleProfitUsd: baseline11.netProfitUsd,
       profitDelta,
       daysSaved,
+      exitDaysSaved,
       slipSavedPct,
       riskReductionPct
     };
   }
 
-  // Plain-language executive rationale explaining WHY Agent chose this exact split
+  // Plain-language executive rationale explaining WHY Agent chose this exact split (zero inflated claims!)
   let rationale = '';
   if (selected.k1 === 1 && selected.k2 === 1) {
     rationale = bi(
-      `At this budget, a clean 1 → 1 pair maximizes net profit without over-splitting small capital.`,
-      `Bu bütçede sermayeyi fazla bölmeden tek temiz 1 → 1 çift en yüksek net getiriyi veriyor.`
+      `At this budget, a clean 1 → 1 pair maximizes net profit without over-splitting capital.`,
+      `Bu bütçede sermayeyi gereksiz bölmeden temiz 1 → 1 çift en yüksek net getiriyi veriyor.`
     );
   } else if (vsSingle) {
     const parts = [];
@@ -872,11 +916,18 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
         )
       );
     }
-    if (vsSingle.daysSaved >= 1) {
+    if (vsSingle.exitDaysSaved >= 1) {
       parts.push(
         bi(
-          `parallel selling cuts cashout wait by ${vsSingle.daysSaved}d`,
-          `paralel satışla çıkış süresini ${vsSingle.daysSaved} gün kısaltır`
+          `parallel selling cuts cashout wait by ${vsSingle.exitDaysSaved}d`,
+          `paralel satışla çıkış süresini ${vsSingle.exitDaysSaved} gün kısaltır`
+        )
+      );
+    } else if (vsSingle.daysSaved >= 1) {
+      parts.push(
+        bi(
+          `shortens full cycle by ${vsSingle.daysSaved}d`,
+          `toplam döngüyü ${vsSingle.daysSaved} gün kısaltır`
         )
       );
     }
@@ -895,7 +946,7 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
         selected.k2 > 1
           ? bi(
             `Splitting across ${selected.k2} parallel exits instead of ${vsSingle.singleQ2}x in 1 book: ${parts.join(' • ')}.`,
-            `Tek eşyada ${vsSingle.singleQ2}x yığmak yerine ${selected.k2} paralel çıkışa bölmek: ${parts.join(' • ')}.`
+            `Tek eşyada ${vsSingle.singleQ2}x yerine ${selected.k2} paralel çıkışa bölmek: ${parts.join(' • ')}.`
           )
           : bi(
             `Multi-skin Step 1 basket (${selected.k1} buys → 1 clean exit): ${parts.join(' • ')}.`,
@@ -915,6 +966,329 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
     vsSingle,
     agentBetterAlt,
     rationale
+  };
+}
+
+/**
+ * SPREAD Agent V9 — Head-to-Head Single vs. Multi-Item Basket Meta-Arbitrator!
+ *
+ * Always evaluates BOTH Single Mode (1 -> 1) and Basket Mode (Multi-Item) side-by-side using
+ * exact Profit, 500-Trial EV, CVaR 5% Crash Floor, Directional Liquidity Velocity, and
+ * Order-Book Absorption (days of total market volume) so the Agent can honestly tell the trader:
+ *   - 'PREFER_SINGLE': Single beats Basket by a significant margin AND both legs are genuinely fast/high-volume!
+ *   - 'PREFER_BASKET': Basket beats Single via idle-cash deployment, order-book queue rescue, or crash protection!
+ *   - 'BALANCED_TRADEOFF': Both are close; shows transparent side-by-side pros/cons with zero nagging!
+ *   - 'SINGLE_ONLY': Budget or market naturally favors 1 -> 1 (no multi-item basket formed).
+ */
+export function evaluateModeArbitration(singlePair, basketRes, singleMc, basketMc, capitalUsd, opts = {}, formatMoneyFn = null) {
+  const cap = Math.max(10, Number(capitalUsd) || 200);
+  const fmtUsd =
+    typeof formatMoneyFn === 'function'
+      ? formatMoneyFn
+      : (v, withSign = false) => `${withSign ? (v >= 0 ? '+' : '-') : v < 0 ? '-' : ''}$${Math.abs(v).toFixed(2)}`;
+
+  if (!singlePair || !basketRes || !basketRes.plan) {
+    return {
+      verdict: 'SINGLE_ONLY',
+      profitGapUsd: 0,
+      profitGapPct: 0,
+      singleBanner: null,
+      basketBanner: null,
+      togglePill: '',
+      togglePillCls: ''
+    };
+  }
+
+  const bp = basketRes.plan;
+  if (bp.k1 <= 1 && bp.k2 <= 1) {
+    return {
+      verdict: 'SINGLE_ONLY',
+      profitGapUsd: 0,
+      profitGapPct: 0,
+      singleBanner: null,
+      basketBanner: null,
+      togglePill: '',
+      togglePillCls: ''
+    };
+  }
+
+  const isCSFloat = opts.marketplace !== 'YOUPIN';
+  const l1Item = singlePair.leg1.item;
+  const l2Item = singlePair.leg2.item;
+  const l1Vel = singlePair.leg1.vel;
+  const l2Vel = singlePair.leg2.vel;
+  const q1 = singlePair.c1.q1;
+  const q2 = singlePair.c1.q2;
+
+  // 1. Exact Leg 1 Steam Liquidity Clearance Audit
+  const isL1SteamZeroTrap = Boolean(l1Item?.st24Checked && Number(l1Item.st24) === 0 && (l1Vel?.steamBidAskPct || 0) < 92);
+  const l1Daily = l1Item?.st24Checked
+    ? Math.max(0.15, Number(l1Item.st24) || 0)
+    : Math.max(0.3, Number(l1Vel?.estDailySales) || 0.5);
+  const l1DaysOfVol = Math.round((q1 / Math.max(0.15, l1Daily)) * 10) / 10;
+  const l1Fast =
+    !isL1SteamZeroTrap &&
+    (l1Vel?.tier === 'A' || l1Vel?.tier === 'B') &&
+    (q1 <= 2 || l1DaysOfVol <= 2.6 || (l1Daily >= 4 && l1DaysOfVol <= 3.0));
+
+  // 2. Exact Leg 2 Cashout Market Absorption Audit (e.g. 24x-32x on a 100+/wk, 20+/day skin = ultra-liquid!)
+  const l2Sold7d =
+    isCSFloat && l2Item?.cfLive
+      ? Number(l2Item.cf7) || 0
+      : Math.max(Number(l2Vel?.sold7d) || 0, Math.round((Number(l2Vel?.estDailySales) || 0) * 7));
+  const l2Daily =
+    isCSFloat && l2Item?.cfLive
+      ? Math.max(0.35, Number(l2Item.cf24) || 0, (Number(l2Item.cf7) || 0) / 7)
+      : Math.max(0.35, Number(l2Vel?.estDailySales) || 0.5, l2Sold7d / 7);
+  const l2DaysOfVol = Math.round((q2 / Math.max(0.35, l2Daily)) * 10) / 10;
+  const l2SuperLiquid =
+    (l2Vel?.tier === 'A' || (l2Vel?.tier === 'B' && l2Sold7d >= 55)) &&
+    (q2 <= 10 || (l2Sold7d >= 65 && l2DaysOfVol <= 2.8) || (l2Daily >= 12 && l2DaysOfVol <= 2.8));
+  const l2Congested = !l2SuperLiquid && (q2 >= 14 || l2DaysOfVol >= 3.2);
+
+  // 3. Head-to-Head Quantitative Deltas (+ = Single leads, - = Basket leads)
+  const singleProfitUsd = Math.round((singlePair.c1.netProfit || 0) * 100) / 100;
+  const basketProfitUsd = Math.round((bp.netProfitUsd || 0) * 100) / 100;
+  const profitGapUsd = Math.round((singleProfitUsd - basketProfitUsd) * 100) / 100;
+  const profitGapPct = Math.round(((profitGapUsd / cap) * 100) * 10) / 10;
+
+  const evSingle = singleMc?.evProfitUsd ?? singleProfitUsd;
+  const evBasket = basketMc?.evProfitUsd ?? basketProfitUsd;
+  const evGapUsd = Math.round((evSingle - evBasket) * 100) / 100;
+
+  const cvarSingle = singleMc?.cvar5ProfitUsd ?? 0;
+  const cvarBasket = basketMc?.cvar5ProfitUsd ?? 0;
+  const cvarGapUsd = Math.round((cvarSingle - cvarBasket) * 100) / 100;
+
+  const floorSingle = singlePair.instantFloorProfit ?? 0;
+  const floorBasket = bp.instantFloorProfitUsd ?? 0;
+  const floorGapUsd = Math.round((floorSingle - floorBasket) * 100) / 100;
+
+  const singleMaxDays = singlePair.reality?.maxDays || 16;
+  const basketMaxDays = bp.maxDays || 16;
+  const daysSavedByBasket = singleMaxDays - basketMaxDays;
+
+  const singleSigma = singleMc?.sigma14dPct || 8;
+  const basketSigma = basketMc?.sigma14dPct || bp.risk?.sigma14dPct || 8;
+  const volCutPct = singleSigma > 0 ? Math.max(0, Math.round((1 - basketSigma / singleSigma) * 100)) : 0;
+  const idleCashSavedUsd = Math.round(((singlePair.c1.cashLeftAfterLeg1 || 0) - (bp.idleCashUsd || 0)) * 100) / 100;
+
+  // 4. High-Signal Arbitrator Decision Logic (Strict thresholds -> Zero Spam, Maximum Trust!)
+  const sigProfitThreshold = Math.max(12, cap * 0.018); // e.g. $12 on $200-$650, $16.20 on $900, $27 on $1500
+  const sigEvThreshold = Math.max(8, cap * 0.012);
+  const basketProfitWinThresh = Math.max(10, cap * 0.015);
+
+  const l2PaceStr = bi(
+    `${Math.round(l2Sold7d)}/wk (~${Math.round(l2Daily)}/day)`,
+    `haftada ${Math.round(l2Sold7d)} (~${Math.round(l2Daily)}/gün)`
+  );
+
+  let verdict = 'BALANCED_TRADEOFF';
+  let singleBanner = null;
+  let basketBanner = null;
+  let togglePill = '';
+  let togglePillCls = 'is-balanced';
+
+  const singleStrictlyDominates =
+    profitGapUsd >= sigProfitThreshold &&
+    evGapUsd >= sigEvThreshold &&
+    l1Fast &&
+    l2SuperLiquid &&
+    daysSavedByBasket <= 3;
+
+  const basketProfitWin = profitGapUsd <= -basketProfitWinThresh;
+  const basketQueueRescue =
+    (l2Congested || !l1Fast) &&
+    daysSavedByBasket >= 2 &&
+    profitGapUsd <= Math.max(18, cap * 0.025);
+  const basketCrashShield =
+    (cvarGapUsd <= -Math.max(15, cap * 0.02) || volCutPct >= 18) &&
+    profitGapUsd <= Math.max(10, cap * 0.015);
+
+  if (singleStrictlyDominates) {
+    verdict = 'PREFER_SINGLE';
+    togglePill = bi(
+      `⚡ Agent: Single Mode (${fmtUsd(profitGapUsd, true)})`,
+      `⚡ Agent: Tekli Mod (${fmtUsd(profitGapUsd, true)})`
+    );
+    togglePillCls = 'is-single';
+
+    const l1Note =
+      q1 <= 2
+        ? bi(`${q1}x ${l1Item.n} sells fast on Steam`, `${q1}x ${l1Item.n} Steam'de hızlı satılıyor`)
+        : bi(`${q1}x ${l1Item.n} clears in ~${l1DaysOfVol}d on Steam`, `${q1}x ${l1Item.n} Steam'de ~${l1DaysOfVol}G hacimde eriyor`);
+
+    basketBanner = {
+      tone: 'is-single-win',
+      title: bi(
+        `Agent Advice: Closing Basket Mode earns ${fmtUsd(profitGapUsd, true)} (+${profitGapPct.toFixed(1)}% ROI) more!`,
+        `SPREAD Agent Tavsiyesi: Sepeti kapatıp Tekli Moda geçmek ${fmtUsd(profitGapUsd, true)} (+%${profitGapPct.toFixed(1)} ROI) daha kârlı!`
+      ),
+      detail: bi(
+        `${l1Note}, and Step 2 (${q2}x ${l2Item.n}) moves ${l2PaceStr} (~${l2DaysOfVol}d volume) — no need to split and sacrifice profit.`,
+        `${l1Note} ve 2. adımdaki ${q2}x ${l2Item.n} ${l2PaceStr} satılan (~${l2DaysOfVol}G hacim) çok popüler bir eşya; kârdan feragat edip sepet bölmeye gerek yok.`
+      ),
+      ctaLabel: bi(
+        `Switch to Single Mode (${fmtUsd(singleProfitUsd, true)}) →`,
+        `Tekli Moda Geç (${fmtUsd(singleProfitUsd, true)}) →`
+      ),
+      targetSplitMode: false
+    };
+
+    singleBanner = {
+      tone: 'is-confirmed',
+      title: bi(
+        `Smart Mode Verified: Single Mode beats Basket by ${fmtUsd(profitGapUsd, true)} here — no split needed.`,
+        `Akıllı Mod Onayı: Tekli Mod şu an Sepet Modu'ndan ${fmtUsd(profitGapUsd, true)} daha kârlı — sepete gerek yok.`
+      ),
+      detail: bi(
+        `Exit skin (${q2}x ${l2Item.n}) sells ${l2PaceStr} (~${l2DaysOfVol}d volume), so 1 clean exit clears fast without diluting profit.`,
+        `Çıkış eşyası (${q2}x ${l2Item.n}) ${l2PaceStr} satıldığı için (~${l2DaysOfVol}G hacim) kârı düşürmeden tek eşyada hızla nakde döner.`
+      ),
+      ctaLabel: bi(`Compare Basket (${fmtUsd(basketProfitUsd, true)})`, `Sepeti Gör (${fmtUsd(basketProfitUsd, true)})`),
+      targetSplitMode: true
+    };
+  } else if (basketProfitWin || basketQueueRescue || basketCrashShield) {
+    verdict = 'PREFER_BASKET';
+    const extraUsd = Math.abs(profitGapUsd);
+    togglePill = basketProfitWin
+      ? bi(`⚡ Agent: Basket (${fmtUsd(extraUsd, true)})`, `⚡ Agent: Sepet (${fmtUsd(extraUsd, true)})`)
+      : daysSavedByBasket >= 2
+        ? bi(`⚡ Agent: Basket (-${daysSavedByBasket}d faster)`, `⚡ Agent: Sepet (-${daysSavedByBasket}G hızlı)`)
+        : bi(`⚡ Agent: Basket (-${volCutPct}% risk)`, `⚡ Agent: Sepet (-%${volCutPct} risk)`);
+    togglePillCls = 'is-basket';
+
+    const whyParts = [];
+    if (basketProfitWin) {
+      whyParts.push(
+        bi(
+          `earns ${fmtUsd(extraUsd, true)} more${idleCashSavedUsd >= 20 ? ` by deploying ${fmtUsd(idleCashSavedUsd)} idle cash` : ''}`,
+          `${idleCashSavedUsd >= 20 ? `boşta kalan ${fmtUsd(idleCashSavedUsd)} nakdi değerlendirip ` : ''}${fmtUsd(extraUsd, true)} daha fazla kâr üretir`
+        )
+      );
+    }
+    if (daysSavedByBasket >= 2) {
+      whyParts.push(
+        bi(
+          `cuts sell wait by ${daysSavedByBasket}d via ${bp.k2} parallel books`,
+          `${bp.k2} paralel çıkışla bekleme süresini ${daysSavedByBasket} gün kısaltır`
+        )
+      );
+    }
+    if (l2Congested) {
+      whyParts.push(
+        bi(
+          `avoids dumping ${q2}x into one skin (${l2DaysOfVol}d of volume)`,
+          `tek skine ${q2}x yığmayı (${l2DaysOfVol}G piyasa hacmi) önler`
+        )
+      );
+    }
+    if (volCutPct >= 15) {
+      whyParts.push(bi(`lowers 7D hold risk by ${volCutPct}%`, `7G fiyat riskini %${volCutPct} azaltır`));
+    }
+    if (cvarGapUsd <= -15) {
+      whyParts.push(
+        bi(`lifts worst-5% CVaR floor by ${fmtUsd(Math.abs(cvarGapUsd), true)}`, `en kötü %5 CVaR tabanını ${fmtUsd(Math.abs(cvarGapUsd), true)} güçlendirir`)
+      );
+    }
+
+    singleBanner = {
+      tone: 'is-basket-win',
+      title: bi(
+        `Agent Advice: Multi-Item Basket (${bp.k1} → ${bp.k2}) is stronger at this budget!`,
+        `SPREAD Agent Tavsiyesi: Bu bütçede Sepet Modu (${bp.k1} Al → ${bp.k2} Sat) daha mantıklı!`
+      ),
+      detail: bi(
+        `Basket Mode (${fmtUsd(basketProfitUsd, true)}): ${whyParts.join(' • ')}.`,
+        `Sepet Modu (${fmtUsd(basketProfitUsd, true)}): ${whyParts.join(' • ')}.`
+      ),
+      ctaLabel: bi(
+        `Open Basket Mode (${fmtUsd(basketProfitUsd, true)}) →`,
+        `Sepet Modunu Aç (${fmtUsd(basketProfitUsd, true)}) →`
+      ),
+      targetSplitMode: true
+    };
+
+    basketBanner = {
+      tone: 'is-confirmed',
+      title: bi(
+        `Smart Mode Verified: Basket Mode (${bp.k1} → ${bp.k2}) outperforms Single Mode here.`,
+        `Akıllı Mod Onayı: Sepet Modu (${bp.k1} Al → ${bp.k2} Sat) şu an Tekli Moddan daha avantajlı.`
+      ),
+      detail: bi(
+        `vs Single Mode (${fmtUsd(singleProfitUsd, true)}): ${whyParts.join(' • ')}.`,
+        `Tekli Moda göre (${fmtUsd(singleProfitUsd, true)}): ${whyParts.join(' • ')}.`
+      ),
+      ctaLabel: bi(`Compare Single (${fmtUsd(singleProfitUsd, true)})`, `Tekliyi Gör (${fmtUsd(singleProfitUsd, true)})`),
+      targetSplitMode: false
+    };
+  } else {
+    verdict = 'BALANCED_TRADEOFF';
+    togglePill = bi('⚖ Single ≈ Basket', '⚖ Tekli ≈ Sepet');
+    togglePillCls = 'is-balanced';
+
+    const singleDetail =
+      profitGapUsd > 0
+        ? bi(
+            `Basket (${bp.k1} → ${bp.k2}) returns ${fmtUsd(basketProfitUsd, true)} (${fmtUsd(-profitGapUsd, true)} vs Single)${volCutPct >= 8 ? ` with ${volCutPct}% lower 7D risk` : ''}${daysSavedByBasket >= 1 ? ` & ${daysSavedByBasket}d faster exit` : ''}.`,
+            `Sepet (${bp.k1} Al → ${bp.k2} Sat) ${fmtUsd(basketProfitUsd, true)} verir (${fmtUsd(-profitGapUsd, true)} fark)${volCutPct >= 8 ? ` • 7G riski %${volCutPct} daha düşük` : ''}${daysSavedByBasket >= 1 ? ` • ${daysSavedByBasket}G daha hızlı` : ''}.`
+          )
+        : bi(
+            `Basket (${bp.k1} → ${bp.k2}) returns ${fmtUsd(basketProfitUsd, true)} (${fmtUsd(Math.abs(profitGapUsd), true)} extra) with parallel diversification.`,
+            `Sepet (${bp.k1} Al → ${bp.k2} Sat) paralel bölünmeyle ${fmtUsd(basketProfitUsd, true)} (${fmtUsd(Math.abs(profitGapUsd), true)} ek kâr) sunuyor.`
+          );
+
+    const basketDetail =
+      profitGapUsd > 0
+        ? bi(
+            `Single Mode (${q1}x → ${q2}x) returns ${fmtUsd(singleProfitUsd, true)} (${fmtUsd(profitGapUsd, true)} higher), while Basket reduces concentration & slippage.`,
+            `Tekli Mod (${q1}x → ${q2}x) ${fmtUsd(singleProfitUsd, true)} (${fmtUsd(profitGapUsd, true)} daha yüksek) sunar; Sepet Modu ise riski ve kaymayı böler.`
+          )
+        : bi(
+            `Single Mode returns ${fmtUsd(singleProfitUsd, true)} in 1 clean pair; Basket spreads risk across ${bp.k1 + bp.k2} skins.`,
+            `Tekli Mod tek çiftte ${fmtUsd(singleProfitUsd, true)} sunar; Sepet Modu riski ${bp.k1 + bp.k2} farklı skine yayar.`
+          );
+
+    singleBanner = {
+      tone: 'is-tradeoff',
+      title: bi('Head-to-Head Mode Check (Balanced)', 'Tekli vs. Sepet Kıyaslaması (Dengeli)'),
+      detail: singleDetail,
+      ctaLabel: bi(`Inspect Basket (${fmtUsd(basketProfitUsd, true)}) →`, `Sepette Gör (${fmtUsd(basketProfitUsd, true)}) →`),
+      targetSplitMode: true
+    };
+    basketBanner = {
+      tone: 'is-tradeoff',
+      title: bi('Head-to-Head Mode Check (Balanced)', 'Tekli vs. Sepet Kıyaslaması (Dengeli)'),
+      detail: basketDetail,
+      ctaLabel: bi(`Inspect Single (${fmtUsd(singleProfitUsd, true)}) →`, `Teklide Gör (${fmtUsd(singleProfitUsd, true)}) →`),
+      targetSplitMode: false
+    };
+  }
+
+  return {
+    verdict,
+    profitGapUsd,
+    profitGapPct,
+    evGapUsd,
+    cvarGapUsd,
+    floorGapUsd,
+    daysSavedByBasket,
+    volCutPct,
+    idleCashSavedUsd,
+    l1Fast,
+    l2SuperLiquid,
+    l2Congested,
+    l1Daily: Math.round(l1Daily * 10) / 10,
+    l2Daily: Math.round(l2Daily * 10) / 10,
+    l2Sold7d: Math.round(l2Sold7d),
+    l1DaysOfVol,
+    l2DaysOfVol,
+    singleProfitUsd,
+    basketProfitUsd,
+    singleBanner,
+    basketBanner,
+    togglePill,
+    togglePillCls
   };
 }
 

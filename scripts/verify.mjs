@@ -17,6 +17,7 @@ import {
 } from '../public/js/core/math-engine.js';
 import {
   computeBasketLoopMetrics,
+  evaluateModeArbitration,
   optimizeArbitrageForOwnedLeg1,
   optimizeMultiItemBasket,
   rebalanceBasketLeg,
@@ -498,6 +499,80 @@ async function main() {
     } else {
       fail(`V8.0 directional check failed: ypLiveOk=${ypLiveOk}, idsOk=${idsOk}, dirOk=${dirOk}, l1=${leg1SteamVel.volText}, l1z=${leg1ZeroVel.volText}/${leg1ZeroVel.tier}, l2yp=${leg2YpVel.volText}`);
     }
+
+    // 5b-V9.0. Head-to-Head Single vs Basket Meta-Arbitrator (PREFER_SINGLE, PREFER_BASKET & Anti-Congestion Guard)
+    const adv900 = analyzeCapitalStrategies(mergedSample, opts800, 900);
+    const ap900 = adv900.agentBrief?.pair;
+    const liveFastSingle = ap900
+      ? {
+          ...ap900,
+          leg1: { ...ap900.leg1, item: { ...ap900.leg1.item, st24: 6, st24Checked: true }, vel: { ...ap900.leg1.vel, tier: 'B', estDailySales: 6 } },
+          leg2: { ...ap900.leg2, item: { ...ap900.leg2.item, cfLive: true, cf24: 22, cf7: 139 }, vel: { ...ap900.leg2.vel, tier: 'A', sold7d: 139, estDailySales: 20 } },
+          c1: { ...ap900.c1, q1: 6, q2: 24, netProfit: 405.04 },
+          reality: { minDays: 15, maxDays: 17 }
+        }
+      : null;
+    const weakerBasket900 = {
+      plan: {
+        k1: 2, k2: 2, netProfitUsd: 347.47, instantFloorProfitUsd: 302.06,
+        minDays: 14, maxDays: 15, idleCashUsd: 16.12, risk: { sigma14dPct: 9.3, popPct: 99.9 }
+      }
+    };
+    const vPreferSingle = evaluateModeArbitration(
+      liveFastSingle,
+      weakerBasket900,
+      { evProfitUsd: 400.86, cvar5ProfitUsd: 241.45, sigma14dPct: 11.5 },
+      { evProfitUsd: 337.52, cvar5ProfitUsd: 176.06, sigma14dPct: 9.3 },
+      900,
+      opts800
+    );
+
+    // Scenario B: Live $200 CSFloat Basket deploying idle cash (+$81.93 vs +$67.51) -> MUST recommend PREFER_BASKET!
+    const adv200 = analyzeCapitalStrategies(mergedSample, opts800, 200);
+    const b200 = optimizeMultiItemBasket(mergedSample, opts800, 200, { buyCount: 0, sellCount: 0, anchorLeg1Name: adv200.agentBrief?.pair?.leg1?.item?.n || '' });
+    const vPreferBasket = evaluateModeArbitration(
+      adv200.agentBrief?.pair,
+      b200,
+      { evProfitUsd: adv200.agentBrief?.pair?.c1?.netProfit || 65, cvar5ProfitUsd: 20, sigma14dPct: 10 },
+      { evProfitUsd: b200?.plan?.netProfitUsd || 80, cvar5ProfitUsd: 30, sigma14dPct: 8.5 },
+      200,
+      opts800
+    );
+
+    // Scenario C: High profit gap (+$58) BUT slow congested exit (32x on 12/wk skin) -> MUST NOT recommend PREFER_SINGLE!
+    const congestedSingle = liveFastSingle
+      ? {
+          ...liveFastSingle,
+          leg2: { ...liveFastSingle.leg2, item: { ...liveFastSingle.leg2.item, cfLive: true, cf24: 1, cf7: 12 }, vel: { ...liveFastSingle.leg2.vel, tier: 'B', sold7d: 12, estDailySales: 1.7 } },
+          c1: { ...liveFastSingle.c1, q2: 32 }
+        }
+      : null;
+    const vCongested = evaluateModeArbitration(
+      congestedSingle,
+      weakerBasket900,
+      { evProfitUsd: 400, cvar5ProfitUsd: 240, sigma14dPct: 11.5 },
+      { evProfitUsd: 340, cvar5ProfitUsd: 180, sigma14dPct: 9.3 },
+      900,
+      opts800
+    );
+
+    if (
+      vPreferSingle.verdict === 'PREFER_SINGLE' &&
+      vPreferSingle.basketBanner?.targetSplitMode === false &&
+      vPreferSingle.togglePillCls === 'is-single' &&
+      vPreferBasket.verdict === 'PREFER_BASKET' &&
+      vPreferBasket.singleBanner?.targetSplitMode === true &&
+      vPreferBasket.togglePillCls === 'is-basket' &&
+      vCongested.verdict !== 'PREFER_SINGLE'
+    ) {
+      pass(
+        `V9.0 Meta-Arbitrator verified: $900 Fast Single (139/wk) -> ${vPreferSingle.verdict} (+$${vPreferSingle.profitGapUsd}) | $200 Idle-Cash -> ${vPreferBasket.verdict} (+$${Math.abs(vPreferBasket.profitGapUsd)}) | Slow 32x Guard -> ${vCongested.verdict}.`
+      );
+    } else {
+      fail(
+        `V9.0 Meta-Arbitrator failed: single=${vPreferSingle.verdict}, basket=${vPreferBasket.verdict}, congested=${vCongested.verdict}`
+      );
+    }
   }
 
   // 5c. Runtime View Render Test (DOM Shim — catches TDZ, ReferenceError, empty scanner table in BOTH EN & TR!)
@@ -633,9 +708,13 @@ async function main() {
         const scannerRows = idMap.get('scannerTableBody')?.children?.length || 0;
         const tickerChips = idMap.get('tickerTrack')?.children?.length || 0;
         const stratCards = idMap.get('advisorStrategiesGrid')?.children?.length || 0;
-        const agentChildren = idMap.get('spreadAgentCard')?.children?.length || 0;
-        if (scannerRows < 20 || tickerChips < 4 || stratCards < 2 || agentChildren < 2 || tourCount < 8) {
-          fail(`Runtime render [${lang}] insufficient DOM nodes: scannerRows=${scannerRows}, tickerChips=${tickerChips}, stratCards=${stratCards}, agent=${agentChildren}, tourSteps=${tourCount}`);
+        const agentNode = idMap.get('spreadAgentCard');
+        const agentChildren = agentNode?.children?.length || 0;
+        const countImgs = (n) => (!n ? 0 : (n.tagName === 'IMG' ? 1 : 0) + (n.children || []).reduce((a, c) => a + countImgs(c), 0));
+        const agentImgs = countImgs(agentNode);
+        const modePillTxt = idMap.get('splitModeAgentPill')?.textContent || '';
+        if (scannerRows < 20 || tickerChips < 4 || stratCards < 2 || agentChildren < 3 || agentImgs < 2 || !modePillTxt || tourCount < 8) {
+          fail(`Runtime render [${lang}] insufficient DOM nodes: scannerRows=${scannerRows}, tickerChips=${tickerChips}, stratCards=${stratCards}, agent=${agentChildren}, agentImgs=${agentImgs}, modePill="${modePillTxt}", tourSteps=${tourCount}`);
           runtimeOk = false;
         }
       } catch (err) {
