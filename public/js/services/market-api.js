@@ -61,6 +61,7 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       s7: Number(p.s7) || Number(p.s) || 0,
       s30: Number(p.s30) || Number(p.s) || 0,
       s90: Number(p.s90) || Number(p.s) || 0,
+      sEst: Boolean(p.sEst),
       cf: Number(p.cf) || 0,
       cfo: Number(p.cfo) || 0,
       q: Number(p.q) || 0,
@@ -226,6 +227,18 @@ export class MarketService {
       };
     }
     return null;
+  }
+
+  async lookupLiveItems(query) {
+    const q = String(query || '').trim();
+    if (q.length < 2) return [];
+    try {
+      const res = await fetchJsonSafe(`/api/item-lookup?q=${encodeURIComponent(q)}`, 8000);
+      if (res?.ok && Array.isArray(res.items)) return res.items;
+    } catch {
+      // Silent fallback
+    }
+    return [];
   }
 
   rebuildWithCustomItems(customItems) {

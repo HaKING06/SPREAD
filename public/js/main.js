@@ -6,6 +6,7 @@
 import { MARKETPLACES } from './core/config.js';
 import { el } from './core/security.js';
 import { evaluateItemMetrics, findOptimalPairs } from './core/math-engine.js';
+import { rebalanceBasketLeg } from './core/basket-optimizer.js';
 import { detectInitialLanguage, isTr, setLang, t } from './core/i18n.js';
 import {
   parseSharedSetupFromUrl,
@@ -146,12 +147,28 @@ class SpreadApp {
             : { name: item.n, qty: 1, steamUsd: m.steamUsd, marketUsd: m.marketSellUsd }
         );
       }
+      // Auto-rebalance quantities cleanly when adding an item to the active basket!
+      const evalRebalOpts = {
+        marketplace: s.marketplace,
+        buyFeePct: s.buyFeePct,
+        sellFeePct: s.sellFeePct,
+        withdrawFeePct: s.withdrawFeePct,
+        steamFeeMode: s.steamFeeMode,
+        steamCustomFeePct: s.steamCustomFeePct,
+        useBuyOrderForLeg2: s.useBuyOrderForLeg2
+      };
+      if (legNum === 1) {
+        s.activeBasket.leg1 = rebalanceBasketLeg(s.activeBasket.leg1, s.activeBasket.leg2, 1, s.capitalUsd, evalRebalOpts, (n) => this.findItemByName(n));
+        s.activeBasket.leg2 = rebalanceBasketLeg(s.activeBasket.leg1, s.activeBasket.leg2, 2, s.capitalUsd, evalRebalOpts, (n) => this.findItemByName(n));
+      } else {
+        s.activeBasket.leg2 = rebalanceBasketLeg(s.activeBasket.leg1, s.activeBasket.leg2, 2, s.capitalUsd, evalRebalOpts, (n) => this.findItemByName(n));
+      }
       this.saveSettings();
       this.views.calculator?.render();
       this.toast(
         isTr()
-          ? `"${item.n}" ${legNum}. Adım sepetine eklendi.`
-          : `"${item.n}" added to Step ${legNum} basket.`
+          ? `"${item.n}" ${legNum}. Adım sepetine eklendi ve adetler otomatik dengelendi.`
+          : `"${item.n}" added to Step ${legNum} basket and quantities auto-rebalanced.`
       );
       return;
     }

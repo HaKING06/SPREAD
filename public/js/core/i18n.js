@@ -13,7 +13,7 @@ export const DICT = {
   en: {
     // Meta & Routes
     'route.calculator.title': 'SPREAD — CS2 Arbitrage Calculator & Live Spread Terminal | spread.haking.tr',
-    'route.scanner.title': 'Live CS2 Skin Arbitrage Scanner (4,500+ Items) — SPREAD',
+    'route.scanner.title': 'Live CS2 Skin Arbitrage Scanner (5,500+ Items) — SPREAD',
     'route.tracker.title': '14-Day CS2 Trade Hold Cycle Tracker — SPREAD',
     'route.academy.title': 'What is CS2 Steam Arbitrage? Complete Guide & Fee Lab — SPREAD',
     'route.about.title': 'About SPREAD — Architecture, Live Data & Zero-Login Security',
@@ -75,7 +75,7 @@ export const DICT = {
 
     // Strategy Advisor
     'adv.title': '⚡ SPREAD Agent — Smart Strategy Advisor',
-    'adv.allItems': 'Browse All 4,500+ Skins →',
+    'adv.allItems': 'Browse All 5,500+ Skins →',
     'adv.howFilters': 'ⓘ Filter Guide',
     'adv.style.ALL': 'Best Mix',
     'adv.style.LOW_QTY': 'Few Items (≤10)',
@@ -119,6 +119,13 @@ export const DICT = {
     'split.addItem': '+ Add Skin',
     'split.backSingle': 'Single Mode',
     'split.qtyLbl': 'Qty',
+    'split.rebalance': '⚖ Auto-Rebalance',
+    'owned.optBtn': '⚡ Best Arbitrage for This Skin',
+    'mob.desk': 'Desk',
+    'mob.scan': 'Scanner',
+    'mob.track': 'Tracker',
+    'mob.guide': 'Guide',
+    'mob.about': 'Trust',
 
     // Timeline & Reality
     'tl.meta': 'Estimated Realistic Cycle Duration (7+7D Trade Hold + Buy/Sell Speed)',
@@ -267,7 +274,7 @@ export const DICT = {
     'about.t4.t': 'Real Sales Velocity & Anomaly Guard',
     'about.t4.d': 'Unlike naive spread tables that push dead capsules or manipulated floats, SPREAD cross-checks 24h/7d/30d sales volume, Bid/Ask depth, and Steam price history.',
     'about.pipeTitle': 'Live Multi-Source Data Pipeline (Cloudflare Edge)',
-    'about.pipeDesc': 'Every 5 minutes, our open-source Cloudflare Worker aggregates 5 independent public feeds into a normalized 4,500-item quant matrix, plus on-demand live Steam 24h verification:',
+    'about.pipeDesc': 'Every 5 minutes, our open-source Cloudflare Worker aggregates 7 independent public feeds into a normalized 5,500-item quant matrix, plus 20,000+ global live lookup and real CSFloat sales graph verification:',
     'about.mathTitle': 'Quantitative Engine Highlights',
 
     // Filter Guide Modal
@@ -345,7 +352,7 @@ export const DICT = {
   tr: {
     // Meta & Routes
     'route.calculator.title': 'SPREAD — CS2 Arbitraj Hesaplayıcı ve Canlı Spread Terminali | spread.haking.tr',
-    'route.scanner.title': 'Canlı CS2 Skin Arbitraj Tarayıcısı (4.500+ Eşya) — SPREAD',
+    'route.scanner.title': 'Canlı CS2 Skin Arbitraj Tarayıcısı (5.500+ Eşya) — SPREAD',
     'route.tracker.title': '14 Günlük CS2 Aktif Döngü Takibi — SPREAD',
     'route.academy.title': 'CS2 Steam Arbitraj Nedir? Kapsamlı Rehber ve Komisyon Laboratuvarı — SPREAD',
     'route.about.title': 'Hakkında — SPREAD Sistem Mimarisi, Canlı Veriler ve Güvenlik',
@@ -407,7 +414,7 @@ export const DICT = {
 
     // Strategy Advisor
     'adv.title': '⚡ SPREAD Agent — Akıllı Strateji Danışmanı',
-    'adv.allItems': 'Tüm 4.500+ Skini Gör →',
+    'adv.allItems': 'Tüm 5.500+ Skini Gör →',
     'adv.howFilters': 'ⓘ Filtre Rehberi',
     'adv.style.ALL': 'Karma (Önerilen)',
     'adv.style.LOW_QTY': 'Az İşlem (≤10)',
@@ -451,6 +458,13 @@ export const DICT = {
     'split.addItem': '+ Eşya Ekle',
     'split.backSingle': 'Tekli Moda Dön',
     'split.qtyLbl': 'Adet',
+    'split.rebalance': '⚖ Oto Dengele',
+    'owned.optBtn': '⚡ Bu Skin İçin En İyi Arbitrajı Öner',
+    'mob.desk': 'Masa',
+    'mob.scan': 'Tarayıcı',
+    'mob.track': 'Takip',
+    'mob.guide': 'Rehber',
+    'mob.about': 'Güven',
 
     // Timeline & Reality
     'tl.meta': 'Tahmini Gerçekçi Döngü Süresi (7+7G Takas Kilidi + Alım/Satım Hızı)',
@@ -599,7 +613,7 @@ export const DICT = {
     'about.t4.t': 'Gerçek Satış Hızı & Anomali Koruması',
     'about.t4.d': 'Ölü kapsül veya manipüle edilmiş fiyatları öneren basit tabloların aksine 24s/7g/30g satış hacmini, Bid/Ask derinliğini ve 90g fiyat geçmişini çapraz doğrular.',
     'about.pipeTitle': 'Canlı Çok Kaynaklı Veri Hattı (Cloudflare Edge)',
-    'about.pipeDesc': 'Açık kaynaklı Cloudflare Worker\'ımız 5 dakikada bir 5 bağımsız genel piyasa kaynağını 4.500 eşyalık matriste birleştirir ve seçili eşyalar için anlık Steam 24s doğrulaması yapar:',
+    'about.pipeDesc': 'Açık kaynaklı Cloudflare Worker\'ımız 5 dakikada bir 7 bağımsız genel piyasa kaynağını 5.500 eşyalık matriste birleştirir; 20.000+ canlı global arama ve gerçek CSFloat satış grafiği doğrulaması yapar:',
     'about.mathTitle': 'Kantitatif Motor Özellikleri',
 
     // Filter Guide Modal

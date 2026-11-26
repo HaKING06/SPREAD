@@ -136,13 +136,17 @@ async function handleApiMarket(request, env, ctx) {
       const bOrder = Number(bObj?.highest_order?.price) || Number(prev.bo) || 0;
       const mv = mcsMap.has(mhn) ? mcsMap.get(mhn) : Number(prev.mv) || 0;
 
-      if (steamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
+      const isEstSteam = steamUsd <= 0 && (item.c === 'Knives' || item.c === 'Gloves') && cfPrice > 0;
+      const effSteamUsd = isEstSteam ? Number(prev.s) || round2(Math.min(1850, Math.max(cfPrice, bPrice) * 1.32)) : steamUsd;
+
+      if (effSteamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
         liveCount += 1;
         prices[mhn] = {
-          s: round2(steamUsd),
-          s7: round2(st7 || steamUsd),
-          s30: round2(st30 || steamUsd),
-          s90: round2(st90 || steamUsd),
+          s: round2(effSteamUsd),
+          s7: round2(st7 || effSteamUsd),
+          s30: round2(st30 || effSteamUsd),
+          s90: round2(st90 || effSteamUsd),
+          ...(isEstSteam ? { sEst: 1 } : {}),
           cf: cfPrice > 0 ? round2(cfPrice) : 0,
           cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
           q: cfQty,
@@ -345,6 +349,159 @@ async function handleApiFx(request, ctx) {
   }
 }
 
+/**
+ * V7.0 Global Live Item Lookup: searches FULL 20,000+ CS2 market (CSFloat + Steam + Buff163 + Youpin)
+ * so ANY skin — including rare knives, Dopplers, StatTrak™, or >$3,500 items — is always findable!
+ */
+function normalizeLookupText(str) {
+  return String(str || '')
+    .replace(/[★™|()\-_]/g, ' ')
+    .replace(/İ/g, 'i')
+    .replace(/ı/g, 'i')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function inferWearCode(name) {
+  if (name.includes('(Factory New)')) return 'FN';
+  if (name.includes('(Minimal Wear)')) return 'MW';
+  if (name.includes('(Field-Tested)')) return 'FT';
+  if (name.includes('(Well-Worn)')) return 'WW';
+  if (name.includes('(Battle-Scarred)')) return 'BS';
+  return '';
+}
+
+function inferCategory(name) {
+  if (name.startsWith('★') && /Gloves|Wraps/i.test(name)) return 'Gloves';
+  if (name.startsWith('★')) return 'Knives';
+  if (/Case$/i.test(name)) return 'Case';
+  if (/Capsule/i.test(name)) return 'Capsule';
+  if (/^(AK-47|M4A4|M4A1-S|AWP|AUG|SG 553|FAMAS|Galil|SSG 08|SCAR-20|G3SG1)/i.test(name)) return 'Rifles';
+  if (/^(Desert Eagle|USP-S|Glock-18|P250|Five-SeveN|Tec-9|CZ75|Dual Berettas|P2000|R8 Revolver)/i.test(name)) return 'Pistols';
+  return 'Skin';
+}
+
+async function handleItemLookup(request, ctx) {
+  const url = new URL(request.url);
+  const rawQ = (url.searchParams.get('q') || '').trim();
+  const normQ = normalizeLookupText(rawQ);
+  if (normQ.length < 2 || rawQ.length > 130) {
+    return Response.json({ ok: true, items: [] });
+  }
+
+  const cache = caches.default;
+  const cacheKey = new Request(url.origin + '/api/item-lookup?v=1&q=' + encodeURIComponent(normQ), { method: 'GET' });
+  try {
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+  } catch {
+    // Ignore
+  }
+
+  const tokens = normQ
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 8)
+    .map((tok) =>
+      tok === 'fn' ? 'factory' : tok === 'mw' ? 'minimal' : tok === 'ft' ? 'field' : tok === 'ww' ? 'well' : tok === 'bs' ? 'battle' : tok
+    );
+
+  const [cfLiveRes, cfOrdRes, steamRes, buffRes, ypRes] = await Promise.allSettled([
+    fetchJsonWithTimeout(UPSTREAM.csfloatLive, 10000),
+    fetchJsonWithTimeout(UPSTREAM.csfloatOrders, 10000),
+    fetchJsonWithTimeout(UPSTREAM.steam, 10000),
+    fetchJsonWithTimeout(UPSTREAM.buff163, 10000),
+    fetchJsonWithTimeout(UPSTREAM.youpin, 10000)
+  ]);
+
+  const cfLiveArr = cfLiveRes.status === 'fulfilled' && Array.isArray(cfLiveRes.value) ? cfLiveRes.value : [];
+  const cfOrdObj = cfOrdRes.status === 'fulfilled' && cfOrdRes.value ? cfOrdRes.value : {};
+  const steamObj = steamRes.status === 'fulfilled' && steamRes.value ? steamRes.value : {};
+  const buffObj = buffRes.status === 'fulfilled' && buffRes.value ? buffRes.value : {};
+  const ypObj = ypRes.status === 'fulfilled' && ypRes.value ? ypRes.value : {};
+
+  const cfMap = new Map();
+  for (const row of cfLiveArr) {
+    if (row && typeof row.market_hash_name === 'string' && Number.isFinite(row.min_price)) {
+      cfMap.set(row.market_hash_name, { cf: row.min_price / 100, q: Number(row.quantity) || 0 });
+    }
+  }
+
+  // Search across all CSFloat + Steam keys
+  const allNames = new Set([...cfMap.keys(), ...Object.keys(steamObj)]);
+  const hits = [];
+
+  for (const mhn of allNames) {
+    const normName = normalizeLookupText(mhn);
+    if (!tokens.every((tok) => normName.includes(tok))) continue;
+    const cfInfo = cfMap.get(mhn);
+    const cfOrd = cfOrdObj[mhn];
+    const st = steamObj[mhn];
+    const bObj = buffObj[mhn];
+
+    const cfPrice = cfInfo?.cf || Number(cfOrd?.starting_at?.price) || Number(cfOrd?.price) || 0;
+    const st24 = Number(st?.last_24h) || 0;
+    const st7 = Number(st?.last_7d) || 0;
+    const st30 = Number(st?.last_30d) || 0;
+    const st90 = Number(st?.last_90d) || 0;
+    const steamUsd = st24 > 0 ? st24 : st7 > 0 ? st7 : st30;
+    const ypPrice = Number(ypObj[mhn]) || 0;
+    if (cfPrice <= 0 && steamUsd <= 0 && ypPrice <= 0) continue;
+
+    const bPrice = Number(bObj?.starting_at?.price) || 0;
+    const isEstSteam = steamUsd <= 0;
+    const effSteam = steamUsd > 0 ? steamUsd : round2(Math.min(1850, Math.max(cfPrice, bPrice) * 1.25));
+
+    const exact = normName === normQ ? 1 : 0;
+    hits.push({
+      exact,
+      n: mhn,
+      c: inferCategory(mhn),
+      w: inferWearCode(mhn),
+      r: mhn.startsWith('★') ? 'Covert' : 'Classified',
+      rc: mhn.startsWith('★') ? '#eb4b4b' : '#d32ce6',
+      st: mhn.includes('StatTrak') ? 1 : 0,
+      sv: mhn.includes('Souvenir') ? 1 : 0,
+      img: '',
+      s: round2(effSteam),
+      s7: round2(st7 || effSteam),
+      s30: round2(st30 || effSteam),
+      s90: round2(st90 || effSteam),
+      ...(isEstSteam ? { sEst: 1 } : {}),
+      cf: round2(cfPrice),
+      cfo: round2(Number(cfOrd?.highest_order?.price) || 0),
+      q: cfInfo?.q || 0,
+      yp: round2(ypPrice),
+      b: round2(bPrice),
+      bo: round2(Number(bObj?.highest_order?.price) || 0),
+      v24: 0,
+      v7: 0,
+      v30: 0,
+      mv: 0,
+      liveLookup: true
+    });
+  }
+
+  hits.sort((a, b) => b.exact - a.exact || (b.q || 0) - (a.q || 0) || (b.cf || 0) - (a.cf || 0));
+  const out = hits.slice(0, 12).map(({ exact, ...rest }) => rest);
+
+  const response = new Response(JSON.stringify({ ok: true, items: out }), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'public, max-age=300, s-maxage=300',
+      'X-Content-Type-Options': 'nosniff'
+    }
+  });
+  try {
+    ctx.waitUntil(cache.put(cacheKey, response.clone()));
+  } catch {
+    // Ignore
+  }
+  return response;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -355,6 +512,10 @@ export default {
 
     if (url.pathname === '/api/steam-verify' && request.method === 'GET') {
       return handleSteamVerify(request, ctx);
+    }
+
+    if (url.pathname === '/api/item-lookup' && request.method === 'GET') {
+      return handleItemLookup(request, ctx);
     }
 
     if (url.pathname === '/api/fx' && request.method === 'GET') {

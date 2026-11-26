@@ -10,7 +10,7 @@ export const BRAND = {
   supportEmail: 'spread@haking.tr',
   buyMeACoffeeUrl: 'https://buymeacoffee.com/haking',
   steamTradeDonateUrl: 'https://steamcommunity.com/tradeoffer/new/?partner=1800489426&token=jIoKxNd7',
-  version: '6.3.0'
+  version: '7.0.0'
 };
 
 export const ROUTES = {

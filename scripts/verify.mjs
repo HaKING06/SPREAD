@@ -14,7 +14,13 @@ import {
   estimateExecutionReality,
   findBestExitsForLeg1
 } from '../public/js/core/math-engine.js';
-import { computeBasketLoopMetrics, optimizeMultiItemBasket } from '../public/js/core/basket-optimizer.js';
+import {
+  computeBasketLoopMetrics,
+  optimizeArbitrageForOwnedLeg1,
+  optimizeMultiItemBasket,
+  rebalanceBasketLeg,
+  runMonteCarloSimulation
+} from '../public/js/core/basket-optimizer.js';
 import { DICT, setLang, t } from '../public/js/core/i18n.js';
 import { buildShareUrl, parseSharedSetupFromUrl } from '../public/js/core/router-share.js';
 import { validateSettings } from '../public/js/services/vault-storage.js';
@@ -133,6 +139,7 @@ async function main() {
   // 3. Required Brand, Data & Deploy Files
   const requiredFiles = [
     'public/index.html',
+    'public/css/mobile.css',
     'public/_headers',
     'public/_redirects',
     'public/assets/brand/logo.jpg',
@@ -372,6 +379,93 @@ async function main() {
     } else {
       fail(`SPREAD Agent V6 Basket Optimizer failed: autoOk=${autoOk}, split1x3Ok=${split1x3Ok}`);
     }
+
+    // 5b-V7. Global High-Tier Knife Coverage, Monte Carlo, Auto-Rebalancer (3->2) & Owned-Skin Optimizer
+    const findItem = (name) => mergedSample.find((x) => x.n.toLowerCase() === String(name).toLowerCase()) || null;
+    const karambitDoppler = mergedSample.find((x) => x.n === '★ Karambit | Doppler (Factory New)');
+    if (karambitDoppler && karambitDoppler.cf > 400 && karambitDoppler.q > 20) {
+      pass(
+        `V7 High-Tier Knife Catalog verified: ★ Karambit | Doppler (FN) present (CF $${karambitDoppler.cf}, ${karambitDoppler.q} listings, sEst=${karambitDoppler.sEst || 0}).`
+      );
+    } else {
+      fail('V7 High-Tier Knife Catalog missing ★ Karambit | Doppler (Factory New)!');
+    }
+
+    if (split1x3?.plan) {
+      const mc = runMonteCarloSimulation({
+        leg1Lines: split1x3.plan.leg1Lines,
+        leg2Lines: split1x3.plan.leg2Lines,
+        expectedProfitUsd: split1x3.plan.slippageAdjProfitUsd,
+        capitalUsd: 800,
+        instantFloorProfitUsd: split1x3.plan.instantFloorProfitUsd
+      });
+      const mcOk =
+        mc.trials === 500 &&
+        mc.popPct >= 50 &&
+        mc.popPct <= 100 &&
+        Number.isFinite(mc.evProfitUsd) &&
+        Number.isFinite(mc.cvar5ProfitUsd) &&
+        ['A+', 'A', 'B+', 'B', 'C'].includes(mc.riskGrade);
+      if (mcOk) {
+        pass(
+          `V7 500-Trial Fat-Tail Monte Carlo verified: Grade ${mc.riskGrade} | PoP ${mc.popPct}% | EV +$${mc.evProfitUsd} | CVaR 5% $${mc.cvar5ProfitUsd} | Kelly ${mc.kellyPct}%.`
+        );
+      } else {
+        fail(`V7 Monte Carlo returned invalid stats: ${JSON.stringify(mc)}`);
+      }
+
+      // Test 3 -> 2 Auto-Rebalance on Leg 2
+      const l1Desk = split1x3.plan.leg1Lines.map((l) => ({ name: l.item.n, qty: l.qty, marketUsd: l.unitBuyUsd, steamUsd: l.unitSteamUsd }));
+      const l2Desk3 = split1x3.plan.leg2Lines.map((l) => ({ name: l.item.n, qty: l.qty, steamUsd: l.unitSteamUsd, marketUsd: l.unitSellUsd }));
+      const l2AfterDrop = l2Desk3.slice(0, 2);
+      const qtyBeforeRebal = l2AfterDrop.reduce((a, x) => a + x.qty, 0);
+      const l2Rebalanced = rebalanceBasketLeg(l1Desk, l2AfterDrop, 2, 800, opts800, findItem);
+      const qtyAfterRebal = l2Rebalanced.reduce((a, x) => a + x.qty, 0);
+      const rebalMetrics = computeBasketLoopMetrics({
+        capitalUsd: 800,
+        leg1Lines: l1Desk,
+        leg2Lines: l2Rebalanced,
+        buyFeePct: 0,
+        sellFeePct: 2,
+        withdrawFeePct: 0,
+        steamFeeMode: 'EXACT_VALVE'
+      });
+      const steamUtilPct =
+        rebalMetrics.basketDetail.totalSteamEarned1 > 0
+          ? (rebalMetrics.basketDetail.totalSteamSpent2 / rebalMetrics.basketDetail.totalSteamEarned1) * 100
+          : 0;
+      if (qtyAfterRebal > qtyBeforeRebal && steamUtilPct >= 93 && rebalMetrics.basketDetail.overSteamUsd <= 0.01) {
+        pass(
+          `V7 Auto-Rebalancer (3→2 Leg 2) verified: units lifted ${qtyBeforeRebal} → ${qtyAfterRebal} | Steam util ${steamUtilPct.toFixed(1)}% | Profit +$${rebalMetrics.firstCycle.netProfit.toFixed(2)}.`
+        );
+      } else {
+        fail(`V7 Auto-Rebalancer failed: before=${qtyBeforeRebal}, after=${qtyAfterRebal}, steamUtil=${steamUtilPct.toFixed(1)}%, overSteam=${rebalMetrics.basketDetail.overSteamUsd}`);
+      }
+    }
+
+    // Test Owned / Custom Leg 1 Arbitrage Optimizer on Karambit Doppler FN
+    const ownedRes = optimizeArbitrageForOwnedLeg1(
+      mergedSample,
+      [
+        {
+          name: '★ Karambit | Doppler (Factory New)',
+          qty: 1,
+          marketUsd: karambitDoppler?.cf || 843.26,
+          steamUsd: karambitDoppler?.s || 1219.69
+        }
+      ],
+      opts800,
+      850,
+      findItem
+    );
+    if (ownedRes && ownedRes.options.length >= 2 && ownedRes.options[0].mc?.popPct > 0) {
+      const top = ownedRes.options[0];
+      pass(
+        `V7 Owned-Skin Arbitrage Optimizer verified: 1x Karambit Doppler FN → ${ownedRes.options.length} plans | Best=${top.plan.k2} exits (+$${top.plan.netProfitUsd.toFixed(2)}, Grade ${top.mc.riskGrade}, vsDirect ${top.extraVsDirectUsd >= 0 ? '+' : ''}$${top.extraVsDirectUsd.toFixed(2)}).`
+      );
+    } else {
+      fail(`V7 Owned-Skin Arbitrage Optimizer failed: ${JSON.stringify(ownedRes).slice(0, 180)}`);
+    }
   }
 
   // 5c. Runtime View Render Test (DOM Shim — catches TDZ, ReferenceError, empty scanner table in BOTH EN & TR!)
@@ -564,12 +658,14 @@ async function main() {
         ['/about', 200],
         ['/hakkinda', 200],
         ['/css/advisor.css', 200],
+        ['/css/mobile.css', 200],
         ['/js/main.js', 200],
         ['/assets/brand/logo-192.png', 200],
         ['/assets/brand/banner.jpg', 200],
         ['/data/catalog.json', 200],
         ['/api/fx', 200],
         ['/api/market', 200],
+        ['/api/item-lookup?q=karambit%20doppler%20fn', 200],
         ['/api/steam-verify?name=Desert%20Eagle%20%7C%20Conspiracy%20(Factory%20New)', 200],
         ['/server.mjs', 403],
         ['/scripts/sync-catalog.mjs', 403]
@@ -602,6 +698,14 @@ async function main() {
             pass(`Live /api/fx -> 1 USD = ${j.rates.TRY} TRY | ${j.rates.CNY} CNY | ${j.rates.EUR} EUR`);
           } else {
             fail('Live /api/fx invalid payload');
+          }
+        } else if (ep.startsWith('/api/item-lookup')) {
+          const j = await res.json();
+          const hit = (j.items || []).find((x) => x.n === '★ Karambit | Doppler (Factory New)');
+          if (j.ok && hit && hit.cf > 400) {
+            pass(`Live /api/item-lookup -> found ${j.items.length} matches incl. ${hit.n} ($${hit.cf}, ${hit.q} listed).`);
+          } else {
+            fail(`Live /api/item-lookup missed Karambit Doppler FN: ${JSON.stringify(j).slice(0, 180)}`);
           }
         } else if (ep.startsWith('/api/steam-verify')) {
           const j = await res.json();

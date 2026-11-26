@@ -19,19 +19,35 @@ export function initAboutView(app) {
 
     const nodes = [
       {
-        title: 'CSFloat Live + Buy Orders',
+        title: 'CSFloat Live + Real Sales Graph',
         status: isLive ? (feeds.csfloatLive !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
-        sub: tr ? 'Anlık taban fiyat, ilan derinliği & Bid/Ask' : 'Live min ask, listing depth & Bid/Ask'
+        sub: tr
+          ? 'Anlık taban fiyat, buy-order, ilan derinliği + canlı 24s/7g/30g CSFloat satış geçmişi'
+          : 'Live min ask, buy orders, depth + real live 24h/7d/30d CSFloat sales history'
       },
       {
         title: 'Steam Market (24h/7d/30d/90d)',
         status: isLive ? (feeds.steam !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
-        sub: tr ? 'Tarihsel fiyat + canlı /api/steam-verify 24s hacim' : 'Historical averages + live /api/steam-verify 24h volume'
+        sub: tr ? 'Tarihsel fiyat + canlı 24s hacim & medyan doğrulama' : 'Historical averages + live 24h sold volume & median'
       },
       {
         title: 'Buff163 Global Cash Anchor',
         status: isLive ? (feeds.buff163 !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
-        sub: tr ? 'Küresel nakit referans fiyatı & iskontolu giriş sinyali' : 'Global cash benchmark & undervalued entry signal'
+        sub: tr ? 'Küresel nakit referans fiyatı & ortalama dönüş (drift) sinyali' : 'Global cash benchmark & mean-reversion drift signal'
+      },
+      {
+        title: tr ? 'Global 20.000+ Canlı Skin Arama' : 'Global 20,000+ Live Skin Lookup',
+        status: 'OK',
+        sub: tr
+          ? `${app.items.length.toLocaleString('tr-TR')} paketli eşya + nadir bıçak/Doppler için anlık canlı sorgu`
+          : `${app.items.length.toLocaleString('en-US')} bundled skins + on-demand live lookup for rare knives & Dopplers`
+      },
+      {
+        title: 'SPREAD Agent V7 • Monte Carlo & CVaR',
+        status: 'OK',
+        sub: tr
+          ? '500 senaryolu kalın-kuyruklu risk simülasyonu, Kâr İhtimali (PoP %) ve paralel sepet oto-dengeleme'
+          : '500-scenario fat-tail risk simulation, Profit Probability (PoP %) & parallel basket auto-rebalancing'
       },
       {
         title: 'Youpin898 + Open ER-API FX',
@@ -39,21 +55,11 @@ export function initAboutView(app) {
         sub: `1 USD = ₺${app.market.fxRates.TRY.toFixed(2)} | ¥${app.market.fxRates.CNY.toFixed(2)} | €${app.market.fxRates.EUR.toFixed(2)}`
       },
       {
-        title: tr ? 'Gerçek Satış Hızı (Skinport + M.CSGO)' : 'Real Sales Velocity (Skinport + M.CSGO)',
+        title: tr ? 'Skinport + Market.CSGO + ByMykel' : 'Skinport + Market.CSGO + ByMykel',
         status: 'OK',
         sub: tr
-          ? `${velCount.toLocaleString('tr-TR')} / ${app.items.length.toLocaleString('tr-TR')} eşya hacim doğrulamalı`
-          : `${velCount.toLocaleString('en-US')} / ${app.items.length.toLocaleString('en-US')} items volume-verified`
-      },
-      {
-        title: 'ByMykel / CSGO-API',
-        status: 'OK',
-        sub: tr ? 'Resmi CS2 skin görselleri, nadirlik ve aşınma kataloğu' : 'Official CS2 skin imagery, rarities & wear metadata'
-      },
-      {
-        title: tr ? 'Son Senkronizasyon' : 'Last Sync',
-        status: isLive ? 'LIVE' : 'CACHE',
-        sub: fmtRelativeTime(app.market.updatedAt)
+          ? `${velCount.toLocaleString('tr-TR')} eşya hacim doğrulamalı • Son senkronizasyon: ${fmtRelativeTime(app.market.updatedAt)}`
+          : `${velCount.toLocaleString('en-US')} items volume-verified • Last sync: ${fmtRelativeTime(app.market.updatedAt)}`
       }
     ];
 

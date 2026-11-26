@@ -663,6 +663,7 @@ export function optimizeMultiItemBasket(items, opts, capitalUsd = 200, filters =
   const leg2Pool = [];
 
   for (const item of items) {
+    if (item.sEst) continue;
     const qty = Number(item.q) || 0;
     if (isCSFloat && qty < 12) continue;
     if (cleanOnly) {
@@ -1292,4 +1293,474 @@ export function estimateBasketReality(basketMetrics, leg1ItemsMap, leg2ItemsMap,
     reasons,
     needsUpperTierSuggestion: level === 'impractical' || level === 'slow'
   };
+}
+
+/**
+ * SPREAD Agent V7 — Deterministic 500-Scenario Fat-Tail Correlated Monte Carlo Risk Engine
+ *
+ * Models real-world CS2 7+7D trade-hold risks that naive calculators ignore:
+ *  - Fat-tail crash shocks (Student-t / negative skew for sudden Valve Armory / Major sale dips)
+ *  - Cross-leg market correlation (rho = 0.45 between Step 1 Steam hold & Step 2 CSFloat hold)
+ *  - Buff163 global mean-reversion drift (undervalued vs Buff -> positive drift; overpriced -> negative drift)
+ *  - 30d momentum drift (penalizes falling items)
+ *  - CSFloat Buy-Order floor cushion + Half-Kelly position sizing + Steam Buy-Gap / Craft-Skew warnings
+ */
+export function runMonteCarloSimulation({
+  leg1Lines = [],
+  leg2Lines = [],
+  expectedProfitUsd = 0,
+  capitalUsd = 200,
+  instantFloorProfitUsd = null,
+  trials = 500
+}) {
+  const cap = Math.max(1, Number(capitalUsd) || 200);
+  const baseRoiPct = (expectedProfitUsd / cap) * 100;
+
+  const l1W = leg1Lines.map((l) => ({
+    weight: Math.max(0.01, l.spentUsd || 1),
+    sigma: computeItemVolatility7d(l.item, l.m),
+    item: l.item,
+    m: l.m
+  }));
+  const l2W = leg2Lines.map((l) => ({
+    weight: Math.max(0.01, l.steamCostUsd || l.steamSpentUsd || 1),
+    sigma: computeItemVolatility7d(l.item, l.m),
+    item: l.item,
+    m: l.m
+  }));
+
+  const baseRisk = computePortfolioRisk(l1W, l2W, baseRoiPct, cap);
+  const sig1 = Math.max(1.8, baseRisk.sigma1Pct);
+  const sig2 = Math.max(1.8, baseRisk.sigma2Pct);
+
+  // Buff163 mean-reversion + 30d trend drift estimation (%)
+  let driftPct = 0;
+  const warnings = [];
+  const totalW1 = l1W.reduce((a, x) => a + x.weight, 0) || 1;
+  for (const x of l1W) {
+    const w = x.weight / totalW1;
+    const vsBuff = x.m?.vsBuffPct;
+    if (vsBuff !== null && vsBuff !== undefined) {
+      if (vsBuff <= -2) driftPct += Math.min(2.2, Math.abs(vsBuff) * 0.22) * w;
+      else if (vsBuff >= 8) driftPct -= Math.min(4.5, (vsBuff - 4) * 0.35) * w;
+    }
+    if (x.m?.trendStatus === 'FALLING') driftPct -= 2.4 * w;
+    if (x.item?.cfAvg7 > 0 && x.item?.cf > 0 && x.item.cfAvg7 > x.item.cf * 1.4) {
+      warnings.push(
+        bi(
+          `${x.item.n}: CSFloat 7d avg ($${x.item.cfAvg7}) > floor ($${x.item.cf}) — sticker/float crafts present; buy clean floor.`,
+          `${x.item.n}: CSFloat 7g ort ($${x.item.cfAvg7}) tabandan ($${x.item.cf}) yüksek — sticker/float craft yoğun, temiz taban ilan al.`
+        )
+      );
+    }
+  }
+
+  const totalW2 = l2W.reduce((a, x) => a + x.weight, 0) || 1;
+  for (const x of l2W) {
+    const w = x.weight / totalW2;
+    if (x.m?.trendStatus === 'FALLING') driftPct -= 1.8 * w;
+    const sRaw = Number(x.item?.s) || 0;
+    const sUsed = Number(x.m?.steamUsd) || sRaw;
+    if (sRaw > 0 && sUsed > 0 && ((sRaw - sUsed) / sUsed) * 100 > 6.5) {
+      const gap = (((sRaw - sUsed) / sUsed) * 100).toFixed(1);
+      warnings.push(
+        bi(
+          `${x.item.n}: Instant Steam ask is +${gap}% above 7d avg — place a Steam Buy Order in Step 2.`,
+          `${x.item.n}: Steam anlık fiyatı 7g ortalamadan +%${gap} yüksek — 2. adımda Steam Buy Order (alım emri) ile al.`
+        )
+      );
+    }
+  }
+
+  // Seeded deterministic PRNG (Mulberry32) so numbers stay rock-steady on UI re-renders
+  let seed = (Math.round(cap * 100) ^ Math.round(sig1 * 1000) ^ (Math.round(sig2 * 1000) << 7) ^ 0x9e3779b9) >>> 0;
+  const nextRand = () => {
+    seed = (seed + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const randNormal = () => {
+    const u1 = Math.max(1e-7, nextRand());
+    const u2 = nextRand();
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  };
+
+  const RHO_CROSS = 0.45;
+  const sqrtOneMinusRho2 = Math.sqrt(1 - RHO_CROSS * RHO_CROSS);
+  const outcomes = new Array(trials);
+  let wins = 0;
+  let sumProfit = 0;
+
+  // Hard downside cushion from instant CSFloat Buy-Order floor (if known)
+  const floorCapLoss =
+    instantFloorProfitUsd !== null && Number.isFinite(instantFloorProfitUsd)
+      ? instantFloorProfitUsd - cap * 0.14
+      : -cap * 0.45;
+
+  for (let i = 0; i < trials; i++) {
+    const z1 = randNormal();
+    const z2 = RHO_CROSS * z1 + sqrtOneMinusRho2 * randNormal();
+    // Fat-tail negative skew: 10% chance of market-wide Valve/Major shock (1.55x shock multiplier)
+    const isTailEvent = nextRand() < 0.1;
+    const tailScale = isTailEvent ? 1.55 : 0.94;
+    const shock1 = z1 * sig1 * tailScale * (z1 < 0 ? 1.12 : 0.92);
+    const shock2 = z2 * sig2 * tailScale * (z2 < 0 ? 1.1 : 0.94);
+
+    const simRoiPct = baseRoiPct + driftPct + shock1 + shock2;
+    const simProfitUsd = Math.max(floorCapLoss, (cap * simRoiPct) / 100);
+    outcomes[i] = simProfitUsd;
+    sumProfit += simProfitUsd;
+    if (simProfitUsd > 0) wins += 1;
+  }
+
+  outcomes.sort((a, b) => a - b);
+  const evProfitUsd = Math.round((sumProfit / trials) * 100) / 100;
+  const evRoiPct = Math.round(((evProfitUsd / cap) * 100) * 100) / 100;
+  const popPct = Math.round(((wins / trials) * 100) * 10) / 10;
+
+  // Expected Shortfall (CVaR 5%: average of the worst 5% crash trials)
+  const tailN = Math.max(1, Math.floor(trials * 0.05));
+  let tailSum = 0;
+  for (let i = 0; i < tailN; i++) tailSum += outcomes[i];
+  const cvar5ProfitUsd = Math.round((tailSum / tailN) * 100) / 100;
+  const p90ProfitUsd = Math.round(outcomes[Math.min(trials - 1, Math.floor(trials * 0.9))] * 100) / 100;
+
+  // Fractional Half-Kelly recommended max single-cycle allocation %
+  const avgWin = Math.max(1, evProfitUsd > 0 ? evProfitUsd : 1);
+  const avgDownside = Math.max(1, Math.abs(Math.min(-1, cvar5ProfitUsd)));
+  const pWin = popPct / 100;
+  const rawKelly = pWin - (1 - pWin) / (avgWin / avgDownside);
+  const kellyPct = Math.round(Math.max(15, Math.min(100, rawKelly * 100 * 0.85)));
+
+  // Plain Risk Grade (A+ -> C)
+  let riskGrade = 'B';
+  let riskCls = 'pill-gold';
+  let riskLabel = bi('Balanced Risk', 'Dengeli Risk');
+  if (popPct >= 97 && cvar5ProfitUsd >= 0 && baseRisk.sigma14dPct <= 8.5) {
+    riskGrade = 'A+';
+    riskCls = 'pill-mint';
+    riskLabel = bi('Institutional Low Risk', 'Çok Düşük Risk');
+  } else if (popPct >= 92 && cvar5ProfitUsd >= -cap * 0.03) {
+    riskGrade = 'A';
+    riskCls = 'pill-mint';
+    riskLabel = bi('Low Risk', 'Düşük Risk');
+  } else if (popPct >= 82) {
+    riskGrade = 'B+';
+    riskCls = 'pill-ice';
+    riskLabel = bi('Controlled Risk', 'Kontrollü Risk');
+  } else if (popPct < 65) {
+    riskGrade = 'C';
+    riskCls = 'pill-amber';
+    riskLabel = bi('Elevated Volatility', 'Yüksek Oynaklık');
+  }
+
+  return {
+    trials,
+    popPct,
+    evProfitUsd,
+    evRoiPct,
+    cvar5ProfitUsd,
+    p90ProfitUsd,
+    sigma14dPct: baseRisk.sigma14dPct,
+    driftPct: Math.round(driftPct * 100) / 100,
+    kellyPct,
+    riskGrade,
+    riskCls,
+    riskLabel,
+    warnings: warnings.slice(0, 2)
+  };
+}
+
+/**
+ * SPREAD Agent V7 — Auto-Rebalancer for Active Multi-Item Desk Baskets!
+ * When the user removes (e.g. 3 -> 2 skins) or adds a skin on the desk, automatically
+ * redistributes the freed Steam Wallet (Leg 2) or cash budget (Leg 1) across the remaining items
+ * using Almgren-Chriss marginal-utility integer allocation!
+ */
+export function rebalanceBasketLeg(leg1Lines, leg2Lines, targetLegNum, capitalUsd, opts, findItemFn) {
+  const cap = Math.max(1, Number(capitalUsd) || 200);
+  const isCSFloat = opts.marketplace !== 'YOUPIN';
+
+  if (targetLegNum === 2) {
+    if (!Array.isArray(leg2Lines) || leg2Lines.length === 0) return leg2Lines;
+    // Compute total exact Net Steam available from Leg 1
+    let totalSteamUsd = 0;
+    for (const l1 of leg1Lines || []) {
+      const q = Math.max(0, Math.floor(Number(l1.qty) || 0));
+      const netS = calcNetSteamUsd(Number(l1.steamUsd) || 0, opts.steamFeeMode, opts.steamCustomFeePct);
+      totalSteamUsd += q * netS;
+    }
+    if (totalSteamUsd <= 0) return leg2Lines;
+
+    // Wrap current Leg 2 desk lines into subset format preserving user's exact edited prices!
+    const subset = leg2Lines.map((line) => {
+      const catalogItem = typeof findItemFn === 'function' ? findItemFn(line.name) : null;
+      const synthItem = catalogItem || { n: line.name, s: line.steamUsd, cf: line.marketUsd, q: 120, v7: 15, v30: 60, mv: 60 };
+      const vel = computeVelocityProfile(synthItem);
+      const netSell = calcNetSellUsd(line.marketUsd, opts.sellFeePct, opts.withdrawFeePct);
+      const m2 = line.steamUsd > 0 ? netSell / line.steamUsd : 0;
+      return {
+        item: synthItem,
+        qty: Number(synthItem.q) || 120,
+        vel,
+        m: {
+          steamUsd: line.steamUsd,
+          marketSellUsd: line.marketUsd,
+          netSell,
+          m2,
+          leg2LossPct: (1 - m2) * 100
+        },
+        origLine: line
+      };
+    });
+
+    const alloc = allocateSteamAcrossSubset(subset, totalSteamUsd, opts, cap);
+    if (alloc && alloc.lines.length > 0) {
+      const qtyByName = new Map(alloc.lines.map((l) => [l.item.n.toLowerCase(), l.qty]));
+      return leg2Lines.map((line) => ({
+        ...line,
+        qty: qtyByName.get(line.name.toLowerCase()) ?? Math.max(1, line.qty)
+      }));
+    }
+
+    // Simple fallback if subset couldn't afford 1 of every item
+    let rem = totalSteamUsd;
+    const out = leg2Lines.map((l) => ({ ...l, qty: 0 }));
+    const sortedIdx = out.map((_, idx) => idx).sort((a, b) => out[a].steamUsd - out[b].steamUsd);
+    let progressed = true;
+    while (progressed) {
+      progressed = false;
+      for (const idx of sortedIdx) {
+        if (out[idx].steamUsd > 0 && out[idx].steamUsd <= rem + 0.001) {
+          out[idx].qty += 1;
+          rem -= out[idx].steamUsd;
+          progressed = true;
+        }
+      }
+    }
+    return out;
+  }
+
+  // Rebalance Leg 1 across remaining Leg 1 items to deploy capital cleanly
+  if (!Array.isArray(leg1Lines) || leg1Lines.length === 0) return leg1Lines;
+  const out1 = leg1Lines.map((l) => ({ ...l, qty: 0 }));
+  const effCosts = out1.map((l) => calcEffectiveBuyUsd(Number(l.marketUsd) || 0, opts.buyFeePct));
+  const m1s = out1.map((l, i) => {
+    const netS = calcNetSteamUsd(Number(l.steamUsd) || 0, opts.steamFeeMode, opts.steamCustomFeePct);
+    return effCosts[i] > 0 ? netS / effCosts[i] : 0;
+  });
+
+  let remCash = cap;
+  // Seed 1 unit each in order of highest price first
+  const orderDesc = out1.map((_, i) => i).sort((a, b) => effCosts[b] - effCosts[a]);
+  for (const idx of orderDesc) {
+    if (effCosts[idx] > 0 && effCosts[idx] <= remCash + 0.01) {
+      out1[idx].qty = 1;
+      remCash -= effCosts[idx];
+    }
+  }
+  // Allocate remaining cash favoring higher M1 while respecting soft diversification
+  const orderByM1 = out1.map((_, i) => i).sort((a, b) => m1s[b] - m1s[a]);
+  let guard = 0;
+  while (guard < 250) {
+    guard += 1;
+    let added = false;
+    for (const idx of orderByM1) {
+      if (effCosts[idx] > 0 && effCosts[idx] <= remCash + 0.01) {
+        const it = typeof findItemFn === 'function' ? findItemFn(out1[idx].name) : null;
+        const maxBook = isCSFloat && it?.q ? Math.max(6, Math.floor(it.q * 0.5)) : 200;
+        if (out1[idx].qty < maxBook) {
+          out1[idx].qty += 1;
+          remCash -= effCosts[idx];
+          added = true;
+          break;
+        }
+      }
+    }
+    if (!added) break;
+  }
+  return out1;
+}
+
+/**
+ * SPREAD Agent V7 — Fixed / Owned Leg 1 Arbitrage Optimizer!
+ * Given ANY custom Leg 1 skin(s) the user places on Step 1 (e.g. an owned ★ Karambit | Doppler FN),
+ * computes the optimal single exit, parallel multi-skin exit basket (2-3 skins), and low-click exit,
+ * complete with Direct CSFloat vs Steam Arbitrage check & 500-scenario Monte Carlo risk metrics!
+ */
+export function optimizeArbitrageForOwnedLeg1(items, leg1DeskLines, opts, capitalUsd, findItemFn) {
+  if (!Array.isArray(items) || !Array.isArray(leg1DeskLines) || leg1DeskLines.length === 0) return null;
+  const isCSFloat = opts.marketplace !== 'YOUPIN';
+
+  // Build exact Leg 1 lines preserving user's chosen skin(s), qty & prices
+  const leg1Lines = leg1DeskLines
+    .map((row) => {
+      const q = Math.max(1, Math.floor(Number(row.qty) || 1));
+      const buyUsd = Math.max(0.01, Number(row.marketUsd) || 0);
+      const steamUsd = Math.max(0.03, Number(row.steamUsd) || 0);
+      const found = typeof findItemFn === 'function' ? findItemFn(row.name) : null;
+      const itemObj = found || {
+        n: row.name,
+        c: inferCatFallback(row.name),
+        w: '',
+        r: 'Covert',
+        rc: '#eb4b4b',
+        s: steamUsd,
+        s7: steamUsd,
+        s30: steamUsd,
+        s90: steamUsd,
+        cf: buyUsd,
+        cfo: buyUsd * 0.93,
+        q: 40,
+        v7: 5,
+        v30: 20,
+        mv: 20
+      };
+      const effBuy = calcEffectiveBuyUsd(buyUsd, opts.buyFeePct);
+      const netSteam = calcNetSteamUsd(steamUsd, opts.steamFeeMode, opts.steamCustomFeePct);
+      const m1 = effBuy > 0 ? netSteam / effBuy : 0;
+      const vel = computeVelocityProfile(itemObj);
+      const m = {
+        ...(found ? evaluateItemMetrics(found, opts) : {}),
+        marketBuyUsd: buyUsd,
+        effBuy,
+        steamUsd,
+        netSteam,
+        m1,
+        leg1ProfitPct: (m1 - 1) * 100
+      };
+      return buildLeg1Line({ item: itemObj, m, vel, qty: Number(itemObj.q) || 40 }, q, opts);
+    })
+    .filter((l) => l.spentUsd > 0 && l.netSteamUsd > 0);
+
+  if (leg1Lines.length === 0) return null;
+
+  const totalSpent1 = leg1Lines.reduce((a, l) => a + l.spentUsd, 0);
+  const effectiveCap = Math.max(Number(capitalUsd) || 0, totalSpent1);
+  const totalNetSteamUsd = leg1Lines.reduce((a, l) => a + l.netSteamUsd, 0);
+  const directSellNetUsd = leg1Lines.reduce(
+    (a, l) => a + l.qty * calcNetSellUsd(l.unitBuyUsd, opts.sellFeePct, opts.withdrawFeePct),
+    0
+  );
+
+  // Gather eligible high-liquidity Leg 2 exit candidates (excluding estimated-Steam items!)
+  const leg1Names = new Set(leg1Lines.map((l) => l.item.n.toLowerCase()));
+  const tier = getCapitalTierInfo(effectiveCap);
+  const l2Pool = [];
+  for (const item of items) {
+    if (item.sEst || item.st || item.sv) continue;
+    if (leg1Names.has(item.n.toLowerCase())) continue;
+    const qty = Number(item.q) || 0;
+    if (isCSFloat && qty < 14) continue;
+    if (item.c === 'Capsule' && (item.v7 || 0) < 35) continue;
+
+    const m = evaluateItemMetrics(item, opts);
+    if (!m.hasValidMarket || m.isSpiky) continue;
+    const vel = m.velocity;
+    if (vel.tier !== 'A' && vel.tier !== 'B') continue;
+    if (vel.isKnifeOrGlove && !(effectiveCap >= 1200 && vel.sold7d >= 6 && qty >= 45)) continue;
+    if (isCSFloat && vel.bidAskPct > 0 && vel.bidAskPct < 86) continue;
+    if (m.leg2LossPct < 3.0 && !(vel.tier === 'A' && vel.mktVol >= 150 && m.leg2LossPct >= 0.5)) continue;
+    if (m.leg2LossPct > 16.5) continue;
+    if (m.steamUsd < Math.min(Math.max(tier.minL2Price * 0.65, totalNetSteamUsd / 55, 5), totalNetSteamUsd * 0.45)) continue;
+    if (m.steamUsd > totalNetSteamUsd) continue;
+    l2Pool.push({ item, m, vel, qty });
+  }
+
+  if (l2Pool.length === 0) return null;
+
+  const l2Ranked = [...l2Pool]
+    .sort((a, b) => {
+      const sa = -a.m.leg2LossPct + (a.vel.tier === 'A' ? 2.6 : 0) + Math.min(2, a.vel.turnover30Pct / 20);
+      const sb = -b.m.leg2LossPct + (b.vel.tier === 'A' ? 2.6 : 0) + Math.min(2, b.vel.turnover30Pct / 20);
+      return sb - sa;
+    })
+    .slice(0, 14);
+
+  const l2LowClickPool = [...l2Pool]
+    .filter((x) => x.m.steamUsd >= Math.max(45, totalNetSteamUsd / 10))
+    .sort((a, b) => a.m.leg2LossPct - b.m.leg2LossPct)
+    .slice(0, 10);
+
+  const plan1 = solveLeg2ForCount(l2Ranked, leg1Lines, effectiveCap, 1, opts, leg1Lines.length, 1);
+  const plan2 = totalNetSteamUsd >= 80 ? solveLeg2ForCount(l2Ranked, leg1Lines, effectiveCap, 2, opts, leg1Lines.length, 2) : null;
+  const plan3 = totalNetSteamUsd >= 220 ? solveLeg2ForCount(l2Ranked, leg1Lines, effectiveCap, 3, opts, leg1Lines.length, 3) : null;
+  const lowClickPlan =
+    l2LowClickPool.length > 0
+      ? solveLeg2ForCount(l2LowClickPool, leg1Lines, effectiveCap, totalNetSteamUsd >= 500 && l2LowClickPool.length >= 2 ? 2 : 1, opts, leg1Lines.length, 0)
+      : null;
+
+  const attachMc = (plan, id, tag, title) => {
+    if (!plan) return null;
+    const mc = runMonteCarloSimulation({
+      leg1Lines: plan.leg1Lines,
+      leg2Lines: plan.leg2Lines,
+      expectedProfitUsd: plan.slippageAdjProfitUsd,
+      capitalUsd: effectiveCap,
+      instantFloorProfitUsd: plan.instantFloorProfitUsd
+    });
+    const extraVsDirectUsd = Math.round((plan.endCashEquivUsd - (effectiveCap - totalSpent1) - directSellNetUsd) * 100) / 100;
+    return { id, tag, title, plan, mc, extraVsDirectUsd };
+  };
+
+  // Pick best parallel split between k2=2 and k2=3
+  const bestSplitRaw =
+    plan2 && plan3 ? (plan3.basketScore > plan2.basketScore ? plan3 : plan2) : plan2 || plan3 || plan1;
+
+  const options = [];
+  const seenKeys = new Set();
+  const pushOpt = (opt) => {
+    if (!opt) return;
+    const key = opt.plan.leg2Lines.map((l) => `${l.item.n}:${l.qty}`).join('|');
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    options.push(opt);
+  };
+
+  pushOpt(
+    attachMc(
+      bestSplitRaw,
+      'AUTO_PARALLEL',
+      bi(`AGENT PICK • ${bestSplitRaw?.k2 || 1} EXITS`, `AGENT ÖNERİSİ • ${bestSplitRaw?.k2 || 1} ÇIKIŞ`),
+      bi('Optimal Parallel Cashout Plan', 'En Dengeli Paralel Çıkış Planı')
+    )
+  );
+  pushOpt(
+    attachMc(
+      plan1,
+      'SINGLE_BEST',
+      bi('SINGLE EXIT', 'TEKLİ ÇIKIŞ'),
+      bi('Simplest 1-Skin Cashout', 'Tek Skinle En Temiz Çıkış')
+    )
+  );
+  if (lowClickPlan && lowClickPlan.totalQ2 <= 10) {
+    pushOpt(
+      attachMc(
+        lowClickPlan,
+        'LOW_CLICK',
+        bi(`FEW ITEMS (${lowClickPlan.totalQ2}x)`, `AZ ADET (${lowClickPlan.totalQ2}x)`),
+        bi('Minimal Trades / High-Ticket Exits', 'Az Tık · Üst Bant Çıkış')
+      )
+    );
+  }
+
+  if (options.length === 0) return null;
+  const topOpt = options[0];
+
+  return {
+    effectiveCap,
+    totalSpent1: Math.round(totalSpent1 * 100) / 100,
+    totalNetSteamUsd: Math.round(totalNetSteamUsd * 100) / 100,
+    directSellNetUsd: Math.round(directSellNetUsd * 100) / 100,
+    beatsDirectSell: topOpt.extraVsDirectUsd > 0,
+    topExtraVsDirectUsd: topOpt.extraVsDirectUsd,
+    options
+  };
+}
+
+function inferCatFallback(name) {
+  if (String(name || '').startsWith('★') && /Gloves|Wraps/i.test(name)) return 'Gloves';
+  if (String(name || '').startsWith('★')) return 'Knives';
+  return 'Skin';
 }

@@ -17,7 +17,10 @@ import {
   computeBasketLoopMetrics,
   computeSinglePairRisk,
   estimateBasketReality,
-  optimizeMultiItemBasket
+  optimizeArbitrageForOwnedLeg1,
+  optimizeMultiItemBasket,
+  rebalanceBasketLeg,
+  runMonteCarloSimulation
 } from '../core/basket-optimizer.js';
 import { fmtMoneyFromUsd, fmtMult, fmtPct, fromUsd, getCurrencyMeta, toUsd } from '../core/formatters.js';
 import { isTr, t } from '../core/i18n.js';
@@ -259,6 +262,19 @@ export function initCalculatorView(app) {
       found?.w ? el('span', { className: `wear-tag wear-${found.w}` }, found.w) : null,
       primaryVolChip,
       steamVolChip,
+      found?.sEst && legNum === 1
+        ? el(
+            'span',
+            {
+              className: 'pill pill-amber',
+              style: { fontSize: '10px', padding: '1px 6px' },
+              title: tr
+                ? 'Bu nadir skin için son Steam satış verisi boş — Steam satış fiyatını kontrol edip manuel güncelleyebilirsiniz.'
+                : 'No recent Steam sale record for this rare skin — verify & edit the Steam sell price manually.'
+            },
+            tr ? '⚠ Tahmini Steam Fiyatı' : '⚠ Est. Steam Price'
+          )
+        : null,
       found?.q ? el('span', { className: 'num' }, `${found.q} ${tr ? 'ilan' : 'listed'}`) : null,
       legNum === 1 && liveSteam?.live && liveSteam.medianUsd > 0 && liveSteam.medianUsd < app.settings.leg1.steamUsd * 0.96
         ? el(
@@ -466,6 +482,289 @@ export function initCalculatorView(app) {
       );
     }
     host.appendChild(row);
+  }
+
+  function getEvalOpts() {
+    const s = app.settings;
+    return {
+      marketplace: s.marketplace,
+      buyFeePct: s.buyFeePct,
+      sellFeePct: s.sellFeePct,
+      withdrawFeePct: s.withdrawFeePct,
+      steamFeeMode: s.steamFeeMode,
+      steamCustomFeePct: s.steamCustomFeePct,
+      useBuyOrderForLeg2: s.useBuyOrderForLeg2,
+      conservativeSteamPrice: s.conservativeSteamPrice
+    };
+  }
+
+  /**
+   * Renders V7 500-Scenario Monte Carlo Telemetry Strip (Risk Grade, PoP, EV, CVaR 5% + Warnings)
+   */
+  function renderMonteCarloStrip(mc, money, tr) {
+    if (!mc) return null;
+    const cvarCls =
+      mc.cvar5ProfitUsd >= 0
+        ? 'txt-mint'
+        : mc.cvar5ProfitUsd >= -(app.settings.capitalUsd * 0.03)
+        ? 'txt-gold'
+        : 'txt-crimson';
+
+    const wrap = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px' } });
+    wrap.appendChild(
+      el(
+        'div',
+        { className: 'mc-telemetry-bar' },
+        el(
+          'div',
+          { className: 'mc-cell' },
+          el('span', { className: 'mc-cell-lbl' }, tr ? 'V7 Risk Notu' : 'V7 Risk Grade'),
+          el(
+            'span',
+            { className: 'mc-cell-val', style: { display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' } },
+            el('span', { className: `pill ${mc.riskCls}`, style: { padding: '0 6px', fontSize: '10.5px' } }, mc.riskGrade),
+            el('span', { style: { fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' } }, mc.riskLabel)
+          )
+        ),
+        el(
+          'div',
+          { className: 'mc-cell' },
+          el('span', { className: 'mc-cell-lbl' }, tr ? '500 Sim. Kâr Olasılığı' : '500-Sim Profit Prob'),
+          el(
+            'span',
+            { className: `mc-cell-val ${mc.popPct >= 90 ? 'txt-mint' : mc.popPct >= 75 ? 'txt-gold' : 'txt-amber'}` },
+            `${tr ? '%' : ''}${mc.popPct.toFixed(1)}${tr ? '' : '%'}${mc.kellyPct < 95 ? ` • Kelly ${tr ? '%' : ''}${mc.kellyPct}${tr ? '' : '%'}` : ''}`
+          )
+        ),
+        el(
+          'div',
+          { className: 'mc-cell' },
+          el('span', { className: 'mc-cell-lbl' }, tr ? 'Beklenen Değer (EV)' : 'Expected Value (EV)'),
+          el(
+            'span',
+            { className: `mc-cell-val ${mc.evProfitUsd >= 0 ? 'txt-mint' : 'txt-crimson'}` },
+            `${money(mc.evProfitUsd, true)} (${fmtPct(mc.evRoiPct, true)})`
+          )
+        ),
+        el(
+          'div',
+          { className: 'mc-cell' },
+          el('span', { className: 'mc-cell-lbl' }, tr ? 'En Kötü %5 (CVaR)' : 'Worst 5% Crash (CVaR)'),
+          el('span', { className: `mc-cell-val ${cvarCls}` }, money(mc.cvar5ProfitUsd, true))
+        )
+      )
+    );
+
+    if (Array.isArray(mc.warnings) && mc.warnings.length > 0) {
+      for (const w of mc.warnings) {
+        wrap.appendChild(el('div', { className: 'mc-warn-line' }, `⚠ ${w}`));
+      }
+    }
+    return wrap;
+  }
+
+  /**
+   * SPREAD Agent V7 — Owned / Custom Leg 1 Skin Arbitrage Optimizer Panel on Desk
+   */
+  function openOwnedLeg1Optimizer() {
+    const host = document.getElementById('ownedLeg1PlanBox');
+    if (!host) return;
+    const s = app.settings;
+    const tr = isTr();
+    const fx = app.market.fxRates;
+    const cur = s.currency;
+    const money = (u, sign = false) => fmtMoneyFromUsd(u, cur, fx, { withSign: sign });
+    const mkt = MARKETPLACES[s.marketplace] || MARKETPLACES.CSFLOAT;
+
+    const leg1DeskLines =
+      s.activeBasket?.leg1?.length > 0
+        ? s.activeBasket.leg1.map((l) => ({
+            name: l.name,
+            qty: Math.max(1, Number(l.qty) || 1),
+            marketUsd: l.marketUsd,
+            steamUsd: l.steamUsd
+          }))
+        : [
+            {
+              name: s.leg1.name,
+              qty: Math.max(1, app.latestMetrics?.firstCycle?.q1 || 1),
+              marketUsd: s.leg1.marketUsd,
+              steamUsd: s.leg1.steamUsd
+            }
+          ];
+
+    const res = optimizeArbitrageForOwnedLeg1(
+      app.items,
+      leg1DeskLines,
+      getEvalOpts(),
+      s.capitalUsd,
+      (n) => app.findItemByName(n)
+    );
+
+    clearNode(host);
+    if (!res || res.options.length === 0) {
+      host.classList.add('hidden');
+      app.toast(
+        tr
+          ? 'Bu 1. adım eşyası ve fiyatıyla kârlı arbitraj çıkışı bulunamadı. Steam satış fiyatını kontrol edin.'
+          : 'No profitable arbitrage exit found for this Step 1 item & price. Check the Steam sell price.',
+        'warn'
+      );
+      return;
+    }
+
+    host.classList.remove('hidden');
+    const summaryLabel = leg1DeskLines.map((l) => `${l.qty}x ${l.name}`).join(' + ');
+    const verdictPill = res.beatsDirectSell
+      ? el(
+          'span',
+          { className: 'pill pill-mint num' },
+          tr
+            ? `Steam Arbitrajı +${money(res.topExtraVsDirectUsd)} Daha Kârlı (Direkt ${mkt.shortName}: ${money(res.directSellNetUsd)})`
+            : `Steam Arbitrage +${money(res.topExtraVsDirectUsd)} Better (Direct ${mkt.shortName}: ${money(res.directSellNetUsd)})`
+        )
+      : el(
+          'span',
+          { className: 'pill pill-amber num' },
+          tr
+            ? `Dikkat: Direkt ${mkt.shortName} satışı (${money(res.directSellNetUsd)}) daha avantajlı (${money(res.topExtraVsDirectUsd, true)})`
+            : `Heads up: Selling directly on ${mkt.shortName} (${money(res.directSellNetUsd)}) pays more (${money(res.topExtraVsDirectUsd, true)})`
+        );
+
+    host.appendChild(
+      el(
+        'div',
+        { className: 'owned-plan-head' },
+        el(
+          'div',
+          { style: { display: 'flex', flexDirection: 'column', gap: '5px', minWidth: '0', flex: '1' } },
+          el(
+            'div',
+            { className: 'agent-head' },
+            el(
+              'span',
+              { className: 'agent-badge' },
+              el('span', { className: 'agent-pulse' }),
+              tr ? 'SPREAD AGENT V7 • ÖZEL SKİN PLANI' : 'SPREAD AGENT V7 • OWNED SKIN PLAN'
+            ),
+            verdictPill
+          ),
+          el(
+            'div',
+            { style: { fontSize: '12.5px', fontWeight: '600', color: 'var(--text-primary)' } },
+            `${summaryLabel} → ${money(res.totalNetSteamUsd)} Steam Net`
+          )
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className: 'btn btn-sm btn-ghost',
+            onClick: () => host.classList.add('hidden')
+          },
+          '✕'
+        )
+      )
+    );
+
+    const grid = el('div', { className: 'owned-plan-grid' });
+    res.options.forEach((opt, idx) => {
+      const pl = opt.plan;
+      const mc = opt.mc;
+      const card = el(
+        'div',
+        { className: `owned-plan-card ${idx === 0 ? 'is-best' : ''}` },
+        el(
+          'div',
+          { style: { display: 'flex', flexDirection: 'column', gap: '7px' } },
+          el(
+            'div',
+            { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap' } },
+            el('span', { className: `pill ${idx === 0 ? 'pill-mint' : idx === 1 ? 'pill-ice' : 'pill-gold'}` }, opt.tag),
+            el(
+              'span',
+              { className: `num ${pl.netProfitUsd >= 0 ? 'txt-mint' : 'txt-crimson'}`, style: { fontWeight: '700', fontSize: '13.5px' } },
+              `${money(pl.netProfitUsd, true)} (${fmtPct(pl.netRoiPct, true)})`
+            )
+          ),
+          el('div', { style: { fontSize: '12.5px', fontWeight: '700', color: 'var(--text-primary)' } }, opt.title),
+          el(
+            'div',
+            { style: { display: 'flex', flexDirection: 'column', gap: '5px' } },
+            pl.leg2Lines.map((l2) =>
+              el(
+                'div',
+                { style: { display: 'flex', alignItems: 'center', gap: '7px', fontSize: '11.5px' } },
+                el(
+                  'div',
+                  { className: 'pair-mini-thumb', style: { width: '32px', height: '24px', flex: '0 0 32px', '--rarity-color': l2.item.rc || '#b0c3d9' } },
+                  el('img', { src: buildImageUrl(l2.item.img), alt: l2.item.n, loading: 'lazy' })
+                ),
+                el(
+                  'div',
+                  { style: { minWidth: '0', flex: '1' } },
+                  el(
+                    'div',
+                    { style: { fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, title: l2.item.n },
+                    `${l2.qty}x ${l2.item.n}`
+                  ),
+                  el(
+                    'div',
+                    { className: 'txt-muted num', style: { fontSize: '10.5px' } },
+                    `${money(l2.unitSteamUsd)} → ${money(l2.unitSellUsd)} (${fmtPct(l2.m.leg2LossPct, false)} ${t('leg.lossWord').toLowerCase()})`
+                  )
+                )
+              )
+            )
+          ),
+          el(
+            'div',
+            { className: 'agent-reasons' },
+            el('span', { className: `pill ${mc.riskCls}`, style: { fontSize: '10px', padding: '1px 6px' } }, `${tr ? 'Not' : 'Grade'} ${mc.riskGrade}`),
+            el('span', { className: 'agent-chip num' }, `PoP ${tr ? '%' : ''}${mc.popPct.toFixed(1)}${tr ? '' : '%'}`),
+            el('span', { className: 'agent-chip num' }, `CVaR ${money(mc.cvar5ProfitUsd, true)}`),
+            el('span', { className: 'agent-chip num' }, `~${pl.minDays}–${pl.maxDays}${tr ? 'G' : 'd'}`)
+          ),
+          mc.warnings?.[0] ? el('div', { className: 'mc-warn-line' }, `⚠ ${mc.warnings[0]}`) : null
+        ),
+        el(
+          'button',
+          {
+            type: 'button',
+            className: `btn btn-sm ${idx === 0 ? 'btn-primary' : ''}`,
+            style: { width: '100%' },
+            onClick: () => {
+              if (pl.totalSpentUsd > s.capitalUsd + 0.5) {
+                s.capitalUsd = Math.ceil(pl.totalSpentUsd * 100) / 100;
+              }
+              if (pl.k1 === 1 && pl.k2 === 1) {
+                const l1 = pl.leg1Lines[0];
+                const l2 = pl.leg2Lines[0];
+                s.activeBasket = null;
+                s.leg1 = { name: l1.item.n, marketUsd: l1.unitBuyUsd, steamUsd: l1.unitSteamUsd };
+                s.leg2 = { name: l2.item.n, steamUsd: l2.unitSteamUsd, marketUsd: l2.unitSellUsd };
+                app.saveSettings();
+                syncInputsFromSettings();
+                renderMetricsOnly(true, true);
+                app.toast(
+                  tr
+                    ? `Özel skin çıkışı uygulandı: ${l2.qty}x ${l2.item.n} (${money(pl.netProfitUsd, true)})`
+                    : `Custom skin exit applied: ${l2.qty}x ${l2.item.n} (${money(pl.netProfitUsd, true)})`
+                );
+              } else {
+                app.applyBasket(pl);
+              }
+              host.classList.add('hidden');
+            }
+          },
+          tr ? 'Masaya Uygula →' : 'Apply to Desk →'
+        )
+      );
+      grid.appendChild(card);
+    });
+
+    host.appendChild(grid);
+    host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   /**
@@ -726,6 +1025,15 @@ export function initCalculatorView(app) {
             )
           );
 
+          const bpMc = runMonteCarloSimulation({
+            leg1Lines: pl.leg1Lines,
+            leg2Lines: pl.leg2Lines,
+            expectedProfitUsd: pl.slippageAdjProfitUsd,
+            capitalUsd: s.capitalUsd,
+            instantFloorProfitUsd: pl.instantFloorProfitUsd
+          });
+          basketHost.appendChild(renderMonteCarloStrip(bpMc, money, trB));
+
           if (basketRes.agentBetterAlt) {
             const alt = basketRes.agentBetterAlt;
             basketHost.appendChild(
@@ -878,6 +1186,14 @@ export function initCalculatorView(app) {
             : `Profit Prob ${pairRisk.popPct.toFixed(1)}% (±${pairRisk.sigma14dPct.toFixed(1)}%)`
         ];
 
+        const apMc = runMonteCarloSimulation({
+          leg1Lines: [{ item: ap.leg1.item, m: ap.leg1.m, spentUsd: ap.c1.spentM1 }],
+          leg2Lines: [{ item: ap.leg2.item, m: ap.leg2.m, steamCostUsd: ap.c1.q2 * ap.leg2.m.steamUsd }],
+          expectedProfitUsd: ap.c1.netProfit,
+          capitalUsd: s.capitalUsd,
+          instantFloorProfitUsd: ap.instantFloorProfit
+        });
+
         agentHost.appendChild(
           el(
             'div',
@@ -885,11 +1201,11 @@ export function initCalculatorView(app) {
             el(
               'div',
               { className: 'agent-head' },
-              el('span', { className: 'agent-badge' }, el('span', { className: 'agent-pulse' }), 'SPREAD AGENT'),
+              el('span', { className: 'agent-badge' }, el('span', { className: 'agent-pulse' }), 'SPREAD AGENT V7'),
               el(
                 'span',
                 { className: 'txt-muted num', style: { fontSize: '11px' } },
-                trA ? `6 kaynak • ${app.items.length.toLocaleString('tr-TR')} skin tarandı` : `6 feeds • ${app.items.length.toLocaleString('en-US')} skins scanned`
+                trA ? `7 kaynak • ${app.items.length.toLocaleString('tr-TR')} skin tarandı` : `7 feeds • ${app.items.length.toLocaleString('en-US')} skins scanned`
               ),
               el(
                 'span',
@@ -903,6 +1219,7 @@ export function initCalculatorView(app) {
               { className: 'agent-reasons' },
               reasonsWithPop.map((r) => el('span', { className: 'agent-chip num' }, r))
             ),
+            renderMonteCarloStrip(apMc, money, trA),
             brief.knapsackLane2
               ? el(
                   'div',
@@ -1321,11 +1638,61 @@ export function initCalculatorView(app) {
                     type: 'button',
                     className: 'btn btn-sm btn-ghost',
                     style: { padding: '2px 6px', fontSize: '11px', color: 'var(--crimson)' },
-                    title: tr ? 'Bu eşyayı sepetten çıkar' : 'Remove item from basket',
+                    title: tr ? 'Bu eşyayı çıkar ve kalanların adetlerini otomatik yeniden hesapla' : 'Remove item and auto-rebalance remaining quantities',
                     onClick: () => {
+                      const removedName = rawArr[idx]?.name || '';
                       rawArr.splice(idx, 1);
+                      const rebOpts = getEvalOpts();
+                      if (legNum === 1) {
+                        s.activeBasket.leg1 = rebalanceBasketLeg(
+                          s.activeBasket.leg1,
+                          s.activeBasket.leg2,
+                          1,
+                          s.capitalUsd,
+                          rebOpts,
+                          (n) => app.findItemByName(n)
+                        );
+                        s.activeBasket.leg2 = rebalanceBasketLeg(
+                          s.activeBasket.leg1,
+                          s.activeBasket.leg2,
+                          2,
+                          s.capitalUsd,
+                          rebOpts,
+                          (n) => app.findItemByName(n)
+                        );
+                      } else {
+                        s.activeBasket.leg2 = rebalanceBasketLeg(
+                          s.activeBasket.leg1,
+                          s.activeBasket.leg2,
+                          2,
+                          s.capitalUsd,
+                          rebOpts,
+                          (n) => app.findItemByName(n)
+                        );
+                      }
+                      if (s.activeBasket.leg1[0]) {
+                        s.leg1 = {
+                          name: s.activeBasket.leg1[0].name,
+                          marketUsd: s.activeBasket.leg1[0].marketUsd,
+                          steamUsd: s.activeBasket.leg1[0].steamUsd
+                        };
+                      }
+                      if (s.activeBasket.leg2[0]) {
+                        s.leg2 = {
+                          name: s.activeBasket.leg2[0].name,
+                          steamUsd: s.activeBasket.leg2[0].steamUsd,
+                          marketUsd: s.activeBasket.leg2[0].marketUsd
+                        };
+                      }
                       app.saveSettings();
                       renderMetricsOnly(false, true);
+                      const targetArr = legNum === 1 ? s.activeBasket.leg1 : s.activeBasket.leg2;
+                      const totQ = targetArr.reduce((a, x) => a + (Number(x.qty) || 0), 0);
+                      app.toast(
+                        tr
+                          ? `"${removedName}" çıkarıldı → kalan ${targetArr.length} eşyanın adetleri otomatik dengelendi (${totQ} adet).`
+                          : `Removed "${removedName}" → auto-rebalanced remaining ${targetArr.length} item(s) (${totQ} units total).`
+                      );
                     }
                   },
                   '✕'
@@ -1373,17 +1740,42 @@ export function initCalculatorView(app) {
           'span',
           { className: 'txt-muted num', style: { fontSize: '11px' } },
           tr
-            ? `${evalLines.length} eşya aktif • Adet ve fiyatları canlı düzenleyebilirsin`
-            : `${evalLines.length} item(s) active • Live-edit quantities & prices anytime`
+            ? `${evalLines.length} eşya aktif • Çıkarınca adetler otomatik dengelenir`
+            : `${evalLines.length} item(s) active • Auto-rebalances on add/remove`
         ),
         el(
-          'button',
-          {
-            type: 'button',
-            className: 'btn btn-sm',
-            onClick: () => app.openCommandPalette(legNum, null, true)
-          },
-          t('split.addItem')
+          'div',
+          { style: { display: 'flex', gap: '6px', flexWrap: 'wrap' } },
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'btn btn-sm btn-ghost',
+              title: tr ? 'Boşta kalan bütçe/Steam bakiyesini kalan eşyalara otomatik dağıt' : 'Automatically redistribute freed budget/Steam across active items',
+              onClick: () => {
+                const rebOpts = getEvalOpts();
+                if (legNum === 1) {
+                  s.activeBasket.leg1 = rebalanceBasketLeg(s.activeBasket.leg1, s.activeBasket.leg2, 1, s.capitalUsd, rebOpts, (n) => app.findItemByName(n));
+                  s.activeBasket.leg2 = rebalanceBasketLeg(s.activeBasket.leg1, s.activeBasket.leg2, 2, s.capitalUsd, rebOpts, (n) => app.findItemByName(n));
+                } else {
+                  s.activeBasket.leg2 = rebalanceBasketLeg(s.activeBasket.leg1, s.activeBasket.leg2, 2, s.capitalUsd, rebOpts, (n) => app.findItemByName(n));
+                }
+                app.saveSettings();
+                renderMetricsOnly(false, true);
+                app.toast(tr ? `${legNum}. adım adetleri otomatik dengelendi.` : `Step ${legNum} quantities auto-rebalanced.`);
+              }
+            },
+            t('split.rebalance')
+          ),
+          el(
+            'button',
+            {
+              type: 'button',
+              className: 'btn btn-sm',
+              onClick: () => app.openCommandPalette(legNum, null, true)
+            },
+            t('split.addItem')
+          )
         )
       )
     );
@@ -1913,6 +2305,11 @@ export function initCalculatorView(app) {
     syncInputsFromSettings();
     renderMetricsOnly(true);
     app.toast(isTr() ? 'Kur çevirici tutarı 2. Adım satış fiyatına aktarıldı.' : 'FX amount sent to Step 2 sell price.');
+  });
+
+  // Owned / Custom Leg 1 Arbitrage Optimizer Button (V7)
+  document.getElementById('optimizeForLeg1Btn')?.addEventListener('click', () => {
+    openOwnedLeg1Optimizer();
   });
 
   // Track cycle button & Active Basket Desk Banner buttons

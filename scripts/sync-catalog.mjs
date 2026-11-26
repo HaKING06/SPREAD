@@ -213,18 +213,28 @@ async function main() {
     const sp = spMap.get(mhn) || { v24: 0, v7: 0, v30: 0, vm: 0 };
     const mv = mcsMap.get(mhn) || 0;
 
-    if (steamUsd <= 0.02 || (cfPrice <= 0.02 && ypPrice <= 0.02)) continue;
     const isContainer = meta.c === 'Case' || meta.c === 'Capsule';
-    if (!isContainer && cfQty < 4 && ypPrice <= 0) continue;
-    if (steamUsd > 3500 || !meta.img) continue;
+    const isHighTier = meta.c === 'Knives' || meta.c === 'Gloves';
+    const hasMarketPrice = cfPrice > 0.02 || ypPrice > 0.02;
+    if (!hasMarketPrice || !meta.img) continue;
+    // Allow high-tier knives/gloves (e.g. Karambit Doppler, Butterfly Doppler) even when CSGOTrader steam.json is null!
+    const isEstimatedSteam = steamUsd <= 0.02;
+    if (isEstimatedSteam && !(isHighTier && cfQty >= 10)) continue;
+    if (!isContainer && !isHighTier && cfQty < 4 && ypPrice <= 0) continue;
+    if (isHighTier && cfQty < 1 && ypPrice <= 0) continue;
+    const finalSteamUsd = isEstimatedSteam
+      ? round2(Math.min(1850, Math.max(cfPrice, b163Price) * 1.32))
+      : steamUsd;
+    if (finalSteamUsd > 20000) continue;
 
     catalogItems.push(meta);
 
     snapshotPrices[mhn] = {
-      s: round2(steamUsd),
-      s7: round2(st7 || steamUsd),
-      s30: round2(st30 || steamUsd),
-      s90: round2(st90 || steamUsd),
+      s: round2(finalSteamUsd),
+      s7: round2(st7 || finalSteamUsd),
+      s30: round2(st30 || finalSteamUsd),
+      s90: round2(st90 || finalSteamUsd),
+      ...(isEstimatedSteam ? { sEst: 1 } : {}),
       cf: cfPrice > 0 ? round2(cfPrice) : 0,
       cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
       q: cfQty,
@@ -239,16 +249,18 @@ async function main() {
     };
   }
 
-  // Prioritize items with REAL sales velocity (v7 & mv) so top 4,500 are the truly active CS2 market
+  // Prioritize items with REAL sales velocity + guarantee high-tier knives/gloves (Karambit/Butterfly/M9/Doppler) stay bundled!
   catalogItems.sort((a, b) => {
     const pa = snapshotPrices[a.n];
     const pb = snapshotPrices[b.n];
-    const scoreA = (pa.v7 || 0) * 10 + (pa.mv || 0) * 1.5 + (pa.q || 0) * 0.5 + (a.c === 'Case' ? 400 : 0);
-    const scoreB = (pb.v7 || 0) * 10 + (pb.mv || 0) * 1.5 + (pb.q || 0) * 0.5 + (b.c === 'Case' ? 400 : 0);
+    const tierBoostA = a.c === 'Case' ? 500 : (a.c === 'Knives' || a.c === 'Gloves') && !a.st ? 420 : 0;
+    const tierBoostB = b.c === 'Case' ? 500 : (b.c === 'Knives' || b.c === 'Gloves') && !b.st ? 420 : 0;
+    const scoreA = (pa.v7 || 0) * 10 + (pa.mv || 0) * 1.5 + (pa.q || 0) * 0.5 + tierBoostA;
+    const scoreB = (pb.v7 || 0) * 10 + (pb.mv || 0) * 1.5 + (pb.q || 0) * 0.5 + tierBoostB;
     return scoreB - scoreA;
   });
 
-  const MAX_ITEMS = 4500;
+  const MAX_ITEMS = 5500;
   const trimmedCatalog = catalogItems.slice(0, MAX_ITEMS);
   const trimmedPrices = {};
   for (const item of trimmedCatalog) {

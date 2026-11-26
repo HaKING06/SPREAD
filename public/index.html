@@ -3,10 +3,10 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>SPREAD — CS2 Arbitrage Calculator &amp; Live Spread Terminal | spread.haking.tr</title>
   <meta name="description"
-    content="Free, zero-login CS2 Steam arbitrage calculator &amp; live spread scanner for CSFloat, Youpin898, and Steam Community Market. Exact Valve cent fees, 4,500+ skins with 24h/7d sales velocity, Smart Capital Strategy Advisor, and 14-day trade-hold cycle tracker." />
+    content="Free, zero-login CS2 Steam arbitrage calculator &amp; live spread scanner for CSFloat, Youpin898, and Steam Community Market. Exact Valve cent fees, 5,500+ skins with 20,000+ global live lookup, real CSFloat sales velocity, 500-trial Monte Carlo risk engine, and 14-day trade-hold cycle tracker." />
   <meta name="keywords"
     content="CS2 arbitrage, CS2 arbitrage calculator, Steam arbitrage, CSFloat to Steam arbitrage, Youpin898 Steam arbitrage, CS2 spread scanner, Steam market fee calculator, what is CS2 arbitrage, CS2 skin trading profit, Valve 7 day trade protection" />
   <meta name="robots" content="index, follow" />
@@ -60,7 +60,7 @@
           },
           "description": "Zero-login, open-source CS2 two-way arbitrage calculator and live spread scanner comparing CSFloat and Youpin898 against the Steam Community Market with real 24h/7d sales velocity and exact Valve cent fee math.",
           "featureList": [
-            "Live CSFloat, Youpin898 and Steam spread scanner across 4,500+ CS2 skins & cases",
+            "Live CSFloat, Youpin898 and Steam spread scanner across 5,500+ bundled & 20,000+ live-searchable CS2 skins & cases",
             "Smart Capital Strategy Advisor with Confidence Scores and real 24h/7d sales velocity",
             "Exact Valve $0.01 + $0.01 minimum Steam fee solver",
             "14-day two-phase trade-hold cycle tracker with local SHA-256 JSON backup vault",
@@ -155,6 +155,7 @@
   <link rel="stylesheet" href="/css/tracker.css" />
   <link rel="stylesheet" href="/css/academy.css" />
   <link rel="stylesheet" href="/css/advisor.css" />
+  <link rel="stylesheet" href="/css/mobile.css" />
 </head>
 
 <body>
@@ -221,7 +222,7 @@
 
           <!-- Quick Command Search -->
           <button id="openCmdSearchBtn" type="button" class="cmd-search-btn"
-            title="Search 4,500+ CS2 Skins & Price Ranges (Ctrl+K)">
+            title="Search 20,000+ CS2 Skins & Price Ranges (Ctrl+K)">
             <span>⌕</span>
             <span class="cmd-search-text" data-i18n="hdr.search">Search skins...</span>
             <kbd>Ctrl+K</kbd>
@@ -269,7 +270,7 @@
           </a>
           <a href="/scanner" class="nav-tab" data-tab="scanner" style="text-decoration: none;">
             <span data-i18n="nav.scanner">Live Scanner</span>
-            <span class="nav-badge">4,500+</span>
+            <span class="nav-badge">5,500+</span>
           </a>
           <a href="/tracker" class="nav-tab" data-tab="tracker" style="text-decoration: none;">
             <span data-i18n="nav.tracker">Cycle Tracker</span>
@@ -455,7 +456,7 @@
             </button>
             <a href="/scanner" class="btn btn-sm" data-tab="scanner" data-i18n="adv.allItems"
               style="text-decoration: none;">
-              All 4,500+ Items →
+              All 5,500+ Items →
             </a>
           </div>
         </div>
@@ -619,6 +620,9 @@
         </div>
       </div>
 
+      <!-- Owned / Custom Leg 1 Arbitrage Recommendation Panel (V7) -->
+      <div id="ownedLeg1PlanBox" class="owned-plan-panel hidden"></div>
+
       <!-- Side-by-Side Leg 1 & Leg 2 Trade Cards -->
       <div class="legs-grid">
         <!-- LEG 1 -->
@@ -629,7 +633,10 @@
                 <div class="leg-step-badge txt-mint" data-i18n="leg1.badge">LEG 1 • BALANCE BOOST</div>
                 <h2><span class="mkt-name">CSFloat</span> <span data-i18n="leg1.title">Buy → Steam Sell</span></h2>
               </div>
-              <span id="leg1MultBadge" class="pill pill-mint" title="Leg 1 Steam Balance Multiplier">M₁ = 1.0000x</span>
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                <button id="optimizeForLeg1Btn" type="button" class="btn btn-sm btn-mint" data-i18n="owned.optBtn">⚡ Best Arbitrage for This Skin</button>
+                <span id="leg1MultBadge" class="pill pill-mint" title="Leg 1 Steam Balance Multiplier">M₁ = 1.0000x</span>
+              </div>
             </div>
 
             <div id="leg1BasketDeskHost" class="desk-basket-host hidden"></div>
@@ -1467,28 +1474,28 @@
         <h3 style="margin-top: 8px; font-size: 17px;" data-i18n="about.pipeTitle">Live Multi-Source Data Pipeline
           (Cloudflare Edge)</h3>
         <p class="txt-sec" style="font-size: 12.5px; margin-top: 4px;" data-i18n="about.pipeDesc">
-          Every 5 minutes, our open-source Cloudflare Worker aggregates 5 independent public feeds into a normalized
-          4,500-item quant matrix, plus on-demand live Steam 24h verification:
+          Every 5 minutes, our open-source Cloudflare Worker aggregates 7 independent public feeds into a normalized
+          5,500-item quant matrix, plus 20,000+ global live lookup &amp; real CSFloat sales graph verification:
         </p>
 
         <!-- Visual 4-Stage Pipeline Schematic -->
         <div class="arch-pipeline" style="margin-top: 14px;">
           <div class="arch-node is-gold">
             <span class="arch-tag">STAGE 1 • PUBLIC FEEDS</span>
-            <strong>6 Independent Sources</strong>
-            <span class="txt-muted" style="font-size: 11px;">CSFloat • Buff163 • Steam • Youpin • Skinport • M.CSGO</span>
+            <strong>7 Independent Sources</strong>
+            <span class="txt-muted" style="font-size: 11px;">CSFloat Orders &amp; Sales Graph • Buff163 • Steam • Youpin • Skinport • M.CSGO</span>
           </div>
           <div class="arch-arrow">→</div>
           <div class="arch-node is-ice">
             <span class="arch-tag">STAGE 2 • CLOUDFLARE WORKER</span>
-            <strong>Read-Only Edge Proxy</strong>
-            <span class="txt-muted" style="font-size: 11px;">5m Edge Cache • Zero User Data Logged</span>
+            <strong>5,500+ Matrix + 20k Live Lookup</strong>
+            <span class="txt-muted" style="font-size: 11px;">Edge Cache • Global /api/item-lookup • Zero User Data Logged</span>
           </div>
           <div class="arch-arrow">→</div>
           <div class="arch-node is-mint">
-            <span class="arch-tag">STAGE 3 • QUANT ENGINE (CLIENT)</span>
-            <strong>In-Browser Verification</strong>
-            <span class="txt-muted" style="font-size: 11px;">Valve Cent Fee • Anti-Spike • Confidence Score</span>
+            <span class="arch-tag">STAGE 3 • SPREAD AGENT V7 (CLIENT)</span>
+            <strong>Monte Carlo &amp; Auto-Rebalance</strong>
+            <span class="txt-muted" style="font-size: 11px;">500-Trial CVaR • Owned-Skin Optimizer • Valve Cent Math</span>
           </div>
           <div class="arch-arrow">→</div>
           <div class="arch-node is-gold">
@@ -1504,7 +1511,7 @@
 
       <!-- Quantitative Engine Deep-Dive -->
       <div class="panel panel-pad">
-        <span class="pill pill-gold">QUANTITATIVE ENGINE V2</span>
+        <span class="pill pill-gold">SPREAD AGENT V7 • QUANTITATIVE ENGINE</span>
         <h3 style="margin-top: 8px; font-size: 17px;" data-i18n="about.mathTitle">Quantitative Engine Highlights</h3>
 
         <div class="quant-cards-grid" data-lang-only="en" style="margin-top: 12px;">
@@ -1514,19 +1521,30 @@
               rounding instead of naive <code>÷ 1.15</code>, preventing hidden 20%–66% fee traps on low-cost items.</p>
           </div>
           <div class="quant-card">
-            <strong>2. Cash-Equivalent M₂ Accounting</strong>
-            <p>Integer unit purchases always leave fractional Steam Wallet balance. SPREAD discounts leftover Steam
-              credit by <code>M₂</code> so Realistic ROI never inflates above Theoretical ROI.</p>
+            <strong>2. Real CSFloat Sales Graph &amp; 20,000+ Live Lookup</strong>
+            <p>Hydrates verified 24h / 7d / 30d sales directly from CSFloat’s live history graph and searches all 20,000+
+              CS2 skins (including Dopplers &amp; high-tier knives) on demand via <code>/api/item-lookup</code>.</p>
           </div>
           <div class="quant-card">
-            <strong>3. Pattern &amp; Thin-Book Float Guard</strong>
-            <p>Detects pattern-sensitive skins (Doppler, Crimson Web, Case Hardened, Fade) and flags unrealistic &lt;3%
-              Leg 2 conversion gaps caused by 1–2 low-float outliers on thin order books.</p>
+            <strong>3. 500-Trial Fat-Tail Correlated Monte Carlo</strong>
+            <p>Simulates 500 correlated 7+7D trade-hold trajectories with negative-skew market crashes to output real
+              Profit Probability (<code>PoP %</code>), Expected Value (<code>EV</code>), Worst-5% Crash (<code>CVaR</code>),
+              Half-Kelly sizing, and Risk Grade (<code>A+–C</code>).</p>
           </div>
           <div class="quant-card">
-            <strong>4. Confidence / Trust Score (35–99%)</strong>
-            <p>Every recommended strategy earns an honest composite score weighing 24h/7d sales velocity, Bid/Ask spread
-              stability, inventory click burden, and anomaly penalties — and never labels slow knives as "Fast".</p>
+            <strong>4. Multi-Item Parallel Basket &amp; Auto-Rebalancer</strong>
+            <p>Splits high budgets across 2–3 parallel order books using Almgren-Chriss marginal utility. Removing or
+              adding a skin (e.g. <code>3 → 2</code>) immediately re-balances remaining quantities to fill freed Steam credit.</p>
+          </div>
+          <div class="quant-card">
+            <strong>5. Owned / Custom Skin Arbitrage Optimizer</strong>
+            <p>Load any skin you already own into Step 1 and run the Agent to compare Direct CSFloat Cashout vs. optimal
+              Single, Parallel Multi-Item, and Low-Click Steam Arbitrage exits.</p>
+          </div>
+          <div class="quant-card">
+            <strong>6. Buff163 Drift, Buy-Order Gap &amp; Craft-Skew Guard</strong>
+            <p>Flags CSFloat listings inflated by sticker/float crafts, warns when Steam asks exceed 7d averages (buy-order
+              recommended), and applies M₂ cash-equivalent accounting to every leftover Steam cent.</p>
           </div>
         </div>
 
@@ -1537,19 +1555,30 @@
               yuvarlamasını çözer; ucuz eşyalardaki gizli %20–%66 kesinti tuzaklarını anında yakalar.</p>
           </div>
           <div class="quant-card">
-            <strong>2. M₂ Nakit Eşdeğeri Muhasebesi</strong>
-            <p>Tam sayı adet alımlarında Steam cüzdanında her zaman küsurat kalır. SPREAD bu kalanı 1:1 nakit saymaz;
-              <code>M₂</code> dönüşüm oranıyla iskonto ederek gerçekçi kârı gösterir.</p>
+            <strong>2. Canlı CSFloat Satış Grafiği &amp; 20.000+ Global Arama</strong>
+            <p>CSFloat’un gerçek 24s / 7g / 30g satış grafiğini canlı çeker ve Doppler / nadir bıçaklar dahil 20.000+
+              CS2 skininin tamamını <code>/api/item-lookup</code> üzerinden anında masaya yükler.</p>
           </div>
           <div class="quant-card">
-            <strong>3. Desen &amp; Dar Tahta Float Koruması</strong>
-            <p>Desen/float hassasiyeti yüksek skinleri (Doppler, Crimson Web, Case Hardened, Fade) ve 1–2 ilanlık dar
-              tahtalardaki yapay &lt;%3 kayıplı 2. yön anomalilerini otomatik tespit eder.</p>
+            <strong>3. 500 Senaryolu Monte Carlo &amp; Kriz Stres Testi (CVaR)</strong>
+            <p>7+7 günlük takas kilidi boyunca korelasyonlu piyasa çöküşlerini 500 senaryoda simüle ederek Kâr İhtimali
+              (<code>PoP %</code>), Beklenen Değer (<code>EV</code>), En Kötü %5 (<code>CVaR</code>), Half-Kelly ve Risk
+              Notu (<code>A+–C</code>) üretir.</p>
           </div>
           <div class="quant-card">
-            <strong>4. Şeffaf Güven Skoru (%35–%99)</strong>
-            <p>Her strateji; 24s/7g gerçek satış hızı, Bid/Ask derinliği, işlem adedi yorgunluğu ve anomali riskine göre
-              puanlanır. Yavaş satılan bıçaklar asla "Hızlı" etiketiyle gösterilmez.</p>
+            <strong>4. Paralel Çoklu Sepet &amp; Otomatik Adet Dengeleyici</strong>
+            <p>Yüksek bütçeleri 2–3 paralel emir defterine böler. Masada bir eşya çıkardığınızda (<code>3 → 2</code>)
+              veya eklediğinizde boşta kalan Steam bakiyesini kalan skinlere otomatik olarak en kârlı adetle dağıtır.</p>
+          </div>
+          <div class="quant-card">
+            <strong>5. Kendi Skinin İçin Arbitraj Optimizasyonu</strong>
+            <p>Elindeki herhangi bir skini 1. adıma koyduğunda doğrudan CSFloat satışı ile Steam arbitrajını kıyaslar;
+              tekli, paralel çoklu ve az tıklı en kârlı çıkış planlarını tek tıkla masaya uygular.</p>
+          </div>
+          <div class="quant-card">
+            <strong>6. Buff163 Sapma, Buy-Order Boşluğu &amp; Craft Koruması</strong>
+            <p>Sticker/float craft kaynaklı şişik CSFloat fiyatlarını ve Steam anlık fiyat boşluklarını uyarır; kalan
+              tüm Steam küsuratını <code>M₂</code> nakit eşdeğeriyle iskonto ederek dürüst net kâr sunar.</p>
           </div>
         </div>
 
@@ -1982,6 +2011,30 @@
       </div>
     </div>
   </div>
+
+  <!-- Mobile Fixed Bottom Navigation Bar (Visible <= 768px) -->
+  <nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="Mobile Navigation">
+    <a href="/" class="mob-nav-btn is-active" data-tab="calculator">
+      <span class="mob-nav-ico" aria-hidden="true">⚡</span>
+      <span data-i18n="mob.desk">Desk</span>
+    </a>
+    <a href="/scanner" class="mob-nav-btn" data-tab="scanner">
+      <span class="mob-nav-ico" aria-hidden="true">⌕</span>
+      <span data-i18n="mob.scan">Scanner</span>
+    </a>
+    <a href="/tracker" class="mob-nav-btn" data-tab="tracker">
+      <span class="mob-nav-ico" aria-hidden="true">◷</span>
+      <span data-i18n="mob.track">Tracker</span>
+    </a>
+    <a href="/academy" class="mob-nav-btn" data-tab="academy">
+      <span class="mob-nav-ico" aria-hidden="true">◈</span>
+      <span data-i18n="mob.guide">Guide</span>
+    </a>
+    <a href="/about" class="mob-nav-btn" data-tab="about">
+      <span class="mob-nav-ico" aria-hidden="true">ⓘ</span>
+      <span data-i18n="mob.about">About</span>
+    </a>
+  </nav>
 
   <!-- Toast Notification Host -->
   <div id="toastHost" class="toast-host" aria-live="polite"></div>

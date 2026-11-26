@@ -156,7 +156,20 @@ export function initScannerView(app) {
     const evalOpts = getEvalOpts();
     const watchSet = new Set(app.watchlist);
 
-    const tokens = filterState.search.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const normScan = (str) =>
+      String(str || '')
+        .replace(/[★™|()\-_]/g, ' ')
+        .replace(/İ/g, 'i')
+        .replace(/ı/g, 'i')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+    const tokens = normScan(filterState.search)
+      .split(' ')
+      .filter(Boolean)
+      .map((tok) =>
+        tok === 'fn' ? 'factory' : tok === 'mw' ? 'minimal' : tok === 'ft' ? 'field' : tok === 'ww' ? 'well' : tok === 'bs' ? 'battle' : tok
+      );
 
     const evaluated = [];
     for (const item of app.items) {
@@ -166,7 +179,7 @@ export function initScannerView(app) {
       if (s.marketplace === 'CSFLOAT' && !item.isCustom && (item.q || 0) < filterState.minQty) continue;
 
       if (tokens.length > 0) {
-        const hay = `${item.n} ${item.c} ${item.w} ${item.r}`.toLowerCase();
+        const hay = normScan(`${item.n} ${item.c} ${item.w} ${item.r}`);
         if (!tokens.every((tok) => hay.includes(tok))) continue;
       }
 

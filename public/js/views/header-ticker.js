@@ -118,15 +118,45 @@ export function initCommandPalette(app) {
 
   let targetLegHint = null;
   let appendBasketMode = false;
+  let liveLookupTimer = null;
+  let liveLookupCache = new Map();
+  let lastRenderedQuery = '';
 
-  function renderResults() {
+  function normalizeSearch(str) {
+    return String(str || '')
+      .replace(/[★™|()\-_]/g, ' ')
+      .replace(/İ/g, 'i')
+      .replace(/ı/g, 'i')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function injectLiveItemIntoApp(item) {
+    if (!item || !item.n) return item;
+    const existing = app.findItemByName(item.n);
+    if (existing) return existing;
+    app.items.push(item);
+    app.rebuildItemIndex();
+    return item;
+  }
+
+  function renderResults(extraLiveItems = null) {
     clearNode(list);
+    const validExtras = Array.isArray(extraLiveItems) ? extraLiveItems : null;
     const s = app.settings;
     const fx = app.market.fxRates;
     const cur = s.currency;
 
-    const query = (input?.value || '').trim().toLowerCase();
-    const tokens = query.split(/\s+/).filter(Boolean);
+    const rawQuery = (input?.value || '').trim();
+    const normQuery = normalizeSearch(rawQuery);
+    lastRenderedQuery = normQuery;
+    const tokens = normQuery
+      .split(' ')
+      .filter(Boolean)
+      .map((tok) =>
+        tok === 'fn' ? 'factory' : tok === 'mw' ? 'minimal' : tok === 'ft' ? 'field' : tok === 'ww' ? 'well' : tok === 'bs' ? 'battle' : tok
+      );
     const minDisp = parseFloat(minInp?.value);
     const maxDisp = parseFloat(maxInp?.value);
     const minUsd = Number.isFinite(minDisp) && minDisp > 0 ? toUsd(minDisp, cur, fx) : 0;
@@ -145,23 +175,29 @@ export function initCommandPalette(app) {
       conservativeSteamPrice: s.conservativeSteamPrice
     };
 
+    const seenNames = new Set();
+    const pool = [...app.items];
+    const cachedExtras = validExtras || liveLookupCache.get(normQuery) || [];
+    for (const ex of cachedExtras) {
+      if (ex?.n && !app.findItemByName(ex.n)) pool.push(ex);
+    }
+
     const matches = [];
-    for (const item of app.items) {
+    for (const item of pool) {
+      if (seenNames.has(item.n)) continue;
       if (category !== 'ALL' && item.c !== category) continue;
       if (tokens.length > 0) {
-        const hay = `${item.n} ${item.c} ${item.w} ${item.r}`.toLowerCase();
+        const hay = normalizeSearch(`${item.n} ${item.c} ${item.w} ${item.r}`);
         if (!tokens.every((tok) => hay.includes(tok))) continue;
       }
 
       const m = evaluateItemMetrics(item, evalOpts);
       if (!m.hasValidMarket) continue;
 
-      // Filter by active reference price (Leg 1 buy price for L1 sort, Steam buy price for L2 sort)
       const refPrice = sortBy === 'LEG2_ASC' ? m.steamUsd : m.marketBuyUsd;
       if (minUsd > 0 && refPrice < minUsd) continue;
       if (maxUsd > 0 && refPrice > maxUsd) continue;
 
-      // Skip extreme illiquid/manipulated outliers when sorting by profit/loss without text query
       if (tokens.length === 0) {
         if (s.marketplace === 'CSFLOAT' && item.q < 12) continue;
         if (m.isSpiky) continue;
@@ -169,7 +205,21 @@ export function initCommandPalette(app) {
         if (sortBy === 'LEG2_ASC' && m.leg2LossPct < -6) continue;
       }
 
+      seenNames.add(item.n);
       matches.push({ item, m });
+    }
+
+    // Trigger live global 20,000+ CS2 market lookup when query has few/zero local hits!
+    const willFetchLive = normQuery.length >= 3 && matches.length < 4 && !liveLookupCache.has(normQuery) && validExtras === null;
+    if (willFetchLive) {
+      clearTimeout(liveLookupTimer);
+      liveLookupTimer = setTimeout(async () => {
+        const foundLive = await app.market.lookupLiveItems(rawQuery);
+        liveLookupCache.set(normQuery, foundLive);
+        if (lastRenderedQuery === normQuery) {
+          renderResults(foundLive);
+        }
+      }, 240);
     }
 
     matches.sort((a, b) => {
@@ -182,7 +232,9 @@ export function initCommandPalette(app) {
 
     const tr = isTr();
     if (metaCountEl) {
-      metaCountEl.textContent = `${matches.length.toLocaleString(tr ? 'tr-TR' : 'en-US')} ${tr ? 'sonuç' : 'results'}`;
+      metaCountEl.textContent = willFetchLive && matches.length === 0
+        ? (tr ? 'Canlı aranıyor...' : 'Searching live...')
+        : `${matches.length.toLocaleString(tr ? 'tr-TR' : 'en-US')} ${tr ? 'sonuç' : 'results'}`;
     }
 
     const slice = matches.slice(0, 40);
@@ -191,7 +243,11 @@ export function initCommandPalette(app) {
         el(
           'div',
           { className: 'panel-pad ta-center txt-muted', style: { fontSize: '12.5px' } },
-          tr
+          willFetchLive
+            ? tr
+              ? '🔎 20.000+ canlı CS2 piyasasında aranıyor...'
+              : '🔎 Searching 20,000+ live CS2 skins across global feeds...'
+            : tr
             ? 'Bu fiyat aralığında veya aramada eşya bulunamadı. Min/Maks aralığını genişletin.'
             : 'No CS2 items match this search or price range. Try widening Min/Max.'
         )
@@ -218,7 +274,7 @@ export function initCommandPalette(app) {
           el(
             'div',
             { className: 'item-cell-info' },
-            el('div', { className: 'item-cell-name' }, item.n),
+            el('div', { className: 'item-cell-name' }, item.n, item.liveLookup ? el('span', { className: 'pill pill-ice', style: { fontSize: '9.5px', padding: '1px 5px', marginLeft: '6px' } }, tr ? 'CANLI GLOBAL' : 'LIVE GLOBAL') : null),
             el(
               'div',
               { className: 'item-cell-sub num' },
@@ -239,14 +295,15 @@ export function initCommandPalette(app) {
         ),
         el(
           'div',
-          { style: { display: 'flex', gap: '6px', flexShrink: '0' } },
+          { className: 'cmd-row-actions', style: { display: 'flex', gap: '6px', flexShrink: '0' } },
           el(
             'button',
             {
               type: 'button',
               className: `btn btn-sm ${targetLegHint === 1 ? 'btn-primary' : ''}`,
               onClick: () => {
-                app.applyItemToLeg(item, 1, { appendBasket: appendBasketMode });
+                const readyItem = item.liveLookup ? injectLiveItemIntoApp(item) : item;
+                app.applyItemToLeg(readyItem, 1, { appendBasket: appendBasketMode });
                 close();
               }
             },
@@ -258,7 +315,8 @@ export function initCommandPalette(app) {
               type: 'button',
               className: `btn btn-sm ${targetLegHint === 2 ? 'btn-primary' : ''}`,
               onClick: () => {
-                app.applyItemToLeg(item, 2, { appendBasket: appendBasketMode });
+                const readyItem = item.liveLookup ? injectLiveItemIntoApp(item) : item;
+                app.applyItemToLeg(readyItem, 2, { appendBasket: appendBasketMode });
                 close();
               }
             },
@@ -297,10 +355,10 @@ export function initCommandPalette(app) {
   });
 
   [input, minInp, maxInp].forEach((elNode) => {
-    elNode?.addEventListener('input', renderResults);
+    elNode?.addEventListener('input', () => renderResults(null));
   });
   [catSel, sortSel].forEach((elNode) => {
-    elNode?.addEventListener('change', renderResults);
+    elNode?.addEventListener('change', () => renderResults(null));
   });
 
   // Quick Price Range Chips inside Command Palette

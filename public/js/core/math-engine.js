@@ -869,6 +869,7 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
   const leg2Pool = [];
 
   for (const item of items) {
+    if (item.sEst) continue;
     const qty = Number(item.q) || 0;
     if (isCSFloat && qty < 12) continue;
 
