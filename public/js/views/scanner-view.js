@@ -275,7 +275,7 @@ export function initScannerView(app) {
               className: 'txt-muted',
               title: tr ? `${mkt.name} anında satış (en yüksek alım emri)` : `${mkt.name} instant sell (highest buy order)`
             },
-              `${tr ? 'Anlık' : 'Bid'}: ${money(activeBidUsd)}`
+            `${tr ? 'Anlık' : 'Bid'}: ${money(activeBidUsd)}`
           )
           : null
       );
@@ -283,10 +283,27 @@ export function initScannerView(app) {
       const steamPriceCell = el(
         'td',
         { className: 'ta-right num' },
-        el('div', { style: { fontWeight: '600' } }, money(m.steamUsd)),
-        m.isSpiky
-          ? el('div', { style: { fontSize: '10px' }, className: 'txt-amber' }, tr ? '⚠ Dalgalı' : '⚠ Volatile')
-          : el('div', { style: { fontSize: '10.5px' }, className: 'txt-muted' }, `${tr ? '7g' : '7d'}: ${money(item.s7)}`)
+        el(
+          'div',
+          {
+            style: { fontWeight: '600' },
+            title: m.hasRealSteamSales
+              ? tr
+                ? `Gerçek Steam satış geçmişinden hesaplanan satış fiyatı (Son satış: ${money(m.stLast)} • En düşük ilan: ${money(m.steamAskUsd)})`
+                : `Realistic Steam clearing price from real sales history (Last sale: ${money(m.stLast)} • Lowest ask: ${money(m.steamAskUsd)})`
+              : ''
+          },
+          money(filterState.mode === 'LEG2' ? m.steamUsd : m.steamSellUsd || m.steamUsd)
+        ),
+        m.hasRealSteamSales && m.askOverSalePct >= 4 && filterState.mode !== 'LEG2'
+          ? el(
+            'div',
+            { style: { fontSize: '10px' }, className: 'txt-amber' },
+            `${tr ? 'İlan' : 'Ask'}: ${money(m.steamAskUsd)} (+${tr ? '%' : ''}${m.askOverSalePct.toFixed(0)}${tr ? '' : '%'})`
+          )
+          : m.isSpiky
+            ? el('div', { style: { fontSize: '10px' }, className: 'txt-amber' }, tr ? '⚠ Dalgalı' : '⚠ Volatile')
+            : el('div', { style: { fontSize: '10.5px' }, className: 'txt-muted' }, `${tr ? '7g' : '7d'}: ${money(item.s7)}`)
       );
 
       const rowEl = el(
@@ -362,7 +379,7 @@ export function initScannerView(app) {
           el(
             'div',
             { style: { fontSize: '10px', marginTop: '2px' }, className: 'txt-muted' },
-              `${m.velocity.volText}${s.marketplace === 'CSFLOAT' && item.q > 0 ? ` • ${item.q} ${tr ? 'ilan' : 'listed'}` : ''}`
+            `${m.velocity.volText}${s.marketplace === 'CSFLOAT' && item.q > 0 ? ` • ${item.q} ${tr ? 'ilan' : 'listed'}` : ''}`
           )
         ),
         // Market price

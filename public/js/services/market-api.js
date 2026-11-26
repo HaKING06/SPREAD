@@ -80,6 +80,15 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       cfAvg7: Number(p.cfAvg7) || 0,
       st24: Number(p.st24) || 0,
       st24Checked: Boolean(p.st24Checked),
+      stHist: Boolean(p.stHist),
+      st7: Number(p.st7) || 0,
+      st30: Number(p.st30) || 0,
+      stLast: Number(p.stLast) || 0,
+      stLastH: Number(p.stLastH) || 0,
+      stAvg7: Number(p.stAvg7) || 0,
+      stAvg30: Number(p.stAvg30) || 0,
+      stReal: Number(p.stReal) || 0,
+      stSales: Array.isArray(p.stSales) ? p.stSales : [],
       stMed: Number(p.stMed) || 0,
       stBuyOrd: Number(p.stBuyOrd) || 0,
       stSellOrd: Number(p.stSellOrd) || 0,
@@ -202,6 +211,19 @@ export class MarketService {
         if (rec.live) {
           const patch = {
             ...(rec.sold24hChecked ? { st24: rec.volume24h, st24Checked: true } : {}),
+            ...(rec.histLive
+              ? {
+                  stHist: true,
+                  st7: Number(rec.sold7d) || 0,
+                  st30: Number(rec.sold30d) || 0,
+                  stLast: Number(rec.lastSaleUsd) || 0,
+                  stLastH: Number(rec.lastSaleAgeH) || 0,
+                  stAvg7: Number(rec.avg7Usd) || 0,
+                  stAvg30: Number(rec.avg30Usd) || 0,
+                  stReal: Number(rec.realisticSellUsd) || 0,
+                  stSales: Array.isArray(rec.recentSales) ? rec.recentSales : []
+                }
+              : {}),
             ...(rec.medianUsd > 0 ? { stMed: rec.medianUsd } : {}),
             ...(rec.steamBuyOrderUsd > 0 ? { stBuyOrd: rec.steamBuyOrderUsd } : {}),
             ...(rec.steamSellOrderUsd > 0 ? { stSellOrd: rec.steamSellOrderUsd } : {}),

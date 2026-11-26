@@ -1794,6 +1794,47 @@
   opacity: 0.85;
 }
 
+/* V11 Real Steam Recent Sales History Tape */
+.steam-sales-tape {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hair);
+  background: var(--bg-inset);
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.steam-sales-tape strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.steam-sale-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--ice-soft);
+  border: 1px solid var(--ice-border);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.steam-sale-chip.is-latest {
+  background: var(--mint-soft);
+  border-color: var(--mint-border);
+  color: var(--mint);
+  font-weight: 700;
+}
+
 /* Responsive Breakpoints (Kept Last to Override Desktop Rules Cleanly) */
 @media (max-width: 1080px) {
   .strategies-grid { grid-template-columns: 1fr; }

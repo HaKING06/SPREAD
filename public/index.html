@@ -270,6 +270,7 @@
           </a>
           <a href="/scanner" class="nav-tab" data-tab="scanner" style="text-decoration: none;">
             <span data-i18n="nav.scanner">Live Scanner</span>
+            <span class="nav-badge">5,500+</span>
             <span class="nav-badge">6,000+</span>
           </a>
           <a href="/tracker" class="nav-tab" data-tab="tracker" style="text-decoration: none;">
@@ -1511,9 +1512,10 @@
           </div>
           <div class="arch-arrow">→</div>
           <div class="arch-node is-mint">
-            <span class="arch-tag">STAGE 3 • SPREAD AGENT V8 (CLIENT)</span>
-            <strong>Directional Quant &amp; Monte Carlo</strong>
-            <span class="txt-muted" style="font-size: 11px;">Leg-1 Steam Histogram • Leg-2 Cash Velocity • 500-Trial CVaR</span>
+            <span class="arch-tag">STAGE 3 • SPREAD AGENT V11 (CLIENT)</span>
+            <strong>Real Steam Clearing &amp; Monte Carlo</strong>
+            <span class="txt-muted" style="font-size: 11px;">Real Steam 7d/30d Sales • Clearing Price • 500-Trial
+              CVaR</span>
           </div>
           <div class="arch-arrow">→</div>
           <div class="arch-node is-gold">
@@ -1529,63 +1531,83 @@
 
       <!-- Quantitative Engine Deep-Dive -->
       <div class="panel panel-pad">
-        <span class="pill pill-gold">SPREAD AGENT V10 • DOPPLER PHASES &amp; META-ARBITRATOR</span>
+        <span class="pill pill-gold">SPREAD AGENT V11 • REAL STEAM SALES ENGINE &amp; DOPPLER PHASES</span>
         <h3 style="margin-top: 8px; font-size: 17px;" data-i18n="about.mathTitle">Quantitative Engine Highlights</h3>
 
         <div class="quant-cards-grid" data-lang-only="en" style="margin-top: 12px;">
           <div class="quant-card">
-            <strong>1. Full Doppler &amp; Gamma Doppler Phase Library (350+ Phases)</strong>
-            <p>Splits every Doppler &amp; Gamma Doppler knife/skin into exact <strong>Phase 1–4, Ruby, Sapphire, Emerald &amp; Black Pearl</strong> with unique phase icons, exact CSFloat/Youpin/Buff163 phase pricing, direct <code>def_index + paint_index</code> CSFloat deep-links, and Leg-2 gem overpay guards.</p>
+            <strong>1. Real Steam 7d/30d Sales History &amp; Clearing-Price Engine (V11)</strong>
+            <p>Reads <strong>actual wear-matched Steam sales transactions</strong> (24h/7d/30d counts, last actual sale
+              price, 7d weighted average) instead of trusting phantom lowest asks. Auto-prices Step 1 at realistic
+              clearing value with 1-click switchers for Realistic Sell, Last Sale, Lowest Ask &amp; Instant Buy-Order.</p>
           </div>
           <div class="quant-card">
-            <strong>2. Directional Leg-1 Steam &amp; Leg-2 Cash Physics</strong>
-            <p>Step 1 sells on Steam — showing <strong>live Steam 24h sales, active Steam sell wall &amp; instant Steam Buy-Order histograms</strong>. Step 2 sells on CSFloat or Youpin898 — showing strictly that market’s real liquidity &amp; instant buy order.</p>
+            <strong>2. Full Doppler &amp; Gamma Doppler Phase Library (350+ Phases)</strong>
+            <p>Splits every Doppler &amp; Gamma Doppler knife/skin into exact <strong>Phase 1–4, Ruby, Sapphire, Emerald
+                &amp; Black Pearl</strong> with unique phase icons, exact CSFloat/Youpin/Buff163 phase pricing, direct
+              <code>def_index + paint_index</code> CSFloat deep-links, and Leg-2 gem overpay guards.</p>
           </div>
           <div class="quant-card">
-            <strong>3. Live Youpin898 Ask + Buy-Order &amp; 20,000+ Lookup</strong>
-            <p>Ingests 41,000+ live Youpin898 Ask &amp; Highest Buy-Order records with direct <code>templateId</code> links, real CSFloat sales history graphs, and on-demand <code>/api/item-lookup</code> for rare knives &amp; Dopplers.</p>
+            <strong>3. Single vs. Basket Head-to-Head Meta-Arbitrator</strong>
+            <p>Evaluates <strong>both Single Mode (1→1) and Multi-Item Basket Mode</strong> simultaneously across
+              profit, 500-trial EV, CVaR 5% crash floor &amp; order-book volume absorption — advising honestly when to
+              open Basket Mode or close it for higher profit.</p>
           </div>
           <div class="quant-card">
-            <strong>4. 500-Trial Fat-Tail Monte Carlo &amp; Steam Ask Guard</strong>
-            <p>Simulates 500 correlated 7+7D trajectories for Profit Probability (<code>PoP %</code>), Expected Value (<code>EV</code>), Worst-5% Crash (<code>CVaR</code>), Half-Kelly sizing, and flags 0-Steam-sale ask illusions plus Step 2 Steam Buy-Order discounts.</p>
+            <strong>4. Live Youpin898 Ask + Buy-Order &amp; 20,000+ Lookup</strong>
+            <p>Ingests 41,000+ live Youpin898 Ask &amp; Highest Buy-Order records with direct <code>templateId</code>
+              links, real CSFloat sales history graphs, and on-demand <code>/api/item-lookup</code> for rare knives
+              &amp; Dopplers.</p>
           </div>
           <div class="quant-card">
-            <strong>5. Multi-Item Parallel Basket &amp; Auto-Rebalancer</strong>
-            <p>Splits high budgets across 2–3 parallel order books using Almgren-Chriss marginal utility. Removing or adding a skin (e.g. <code>3 → 2</code>) immediately re-balances remaining quantities to fill freed Steam credit.</p>
+            <strong>5. 500-Trial Fat-Tail Monte Carlo &amp; Auto-Rebalancer</strong>
+            <p>Simulates 500 correlated 7+7D trajectories for Profit Probability (<code>PoP %</code>), Expected Value
+              (<code>EV</code>), Worst-5% Crash (<code>CVaR</code>), Half-Kelly sizing, and flags thin Steam 7d sales
+              or Ask-over-Last-Sale illusions while auto-rebalancing desk baskets on add/remove.</p>
           </div>
           <div class="quant-card">
             <strong>6. Owned Skin Optimizer &amp; Exact Valve Cent Math</strong>
-            <p>Load any skin you already own into Step 1 to compare Direct Cashout vs. Steam Arbitrage exits, backed by exact Valve cent fee rules and <code>M₂</code> leftover-balance discounting.</p>
+            <p>Load any skin you already own into Step 1 to compare Direct Cashout vs. Steam Arbitrage exits, backed by
+              exact Valve cent fee rules and <code>M₂</code> leftover-balance discounting.</p>
           </div>
         </div>
 
         <div class="quant-cards-grid hidden" data-lang-only="tr" style="margin-top: 12px;">
           <div class="quant-card">
-            <strong>1. Tam Doppler &amp; Gamma Doppler Faz Kütüphanesi (350+ Faz)</strong>
-            <p>Her Doppler bıçağını ve Glock-18 Gamma Doppler'ı <strong>Phase 1–4, Ruby, Sapphire, Emerald &amp; Black Pearl</strong> olarak ayrı ikon, ayrı CSFloat/Youpin/Buff163 faz fiyatı, direkt <code>def_index + paint_index</code> CSFloat linki ve 2. adım gem korumasıyla modeller; Tekli vs. Sepet Meta-Hakem ile kafa kafaya kıyaslar.</p>
+            <strong>1. Gerçek Steam 7g/30g Satış Geçmişi &amp; Gerçekçi Satış Motoru (V11)</strong>
+            <p>Hayali en düşük Steam ilanına kanmak yerine <strong>Steam'in gerçek aşınma-eşleşmeli satış
+                işlemlerini</strong> (gerçek 24s/7g/30g satış adedi, son gerçekleşen satış fiyatı, 7g ağırlıklı
+              ortalama) okur; 1. adımı gerçekçi satış fiyatından hesaplayıp tek tıkla Gerçekçi Satış / Son Satış / En
+              Düşük İlan / Anında Sat arasında geçiş sunar.</p>
           </div>
           <div class="quant-card">
-            <strong>2. Yönlü Likidite: 1. Adım Steam • 2. Adım Nakit Pazar</strong>
-            <p>1. adımda Steam'de sattığın için <strong>canlı Steam 24s satış adedi, aktif Steam ilan duvarı ve anında Steam Buy-Order histogramı</strong> gösterilir. 2. adımda yalnızca seçili nakit pazarın (CSFloat veya Youpin898) gerçek satış hızı ve alım emri kullanılır.</p>
+            <strong>2. Tam Doppler &amp; Gamma Doppler Faz Kütüphanesi (350+ Faz)</strong>
+            <p>Her Doppler bıçağını ve Glock-18 Gamma Doppler'ı <strong>Phase 1–4, Ruby, Sapphire, Emerald &amp; Black
+                Pearl</strong> olarak ayrı ikon, ayrı CSFloat/Youpin/Buff163 faz fiyatı, direkt
+              <code>def_index + paint_index</code> CSFloat linki ve 2. adım gem korumasıyla modeller.</p>
           </div>
           <div class="quant-card">
-            <strong>3. Canlı Youpin898 Emir Defteri &amp; 20.000+ Global Arama</strong>
-            <p>41.000+ canlı Youpin898 Ask + Alım Emri (<code>ypo</code>) ve direkt <code>templateId</code> skin linkleri, gerçek CSFloat satış grafiği ve nadir Doppler/bıçaklar için anlık <code>/api/item-lookup</code> sorgusu sunar.</p>
+            <strong>3. Tekli vs. Sepet Kafa Kafaya Meta-Hakem</strong>
+            <p><strong>Tekli Mod (1→1) ile Çoklu Sepet Modu'nu</strong> her bütçede aynı anda kâr, 500 senaryolu EV,
+              CVaR %5 ve piyasa hacmi erime gününe göre kıyaslar; çıkış eşyası haftada 100+ satılan popüler skinse
+              sepeti kapatıp yüksek kâr almanı, tıkanma varsa sepeti açmanı tek tıkla önerir.</p>
           </div>
           <div class="quant-card">
-            <strong>4. 500 Senaryolu Monte Carlo &amp; Steam Emir Fırsatı</strong>
-            <p>7+7G takas kilidi boyunca 500 senaryoda <code>PoP %</code>, <code>EV</code>, <code>CVaR %5</code> ve Half-Kelly hesaplar; Steam 24s=0 ilan tuzaklarını uyarır ve 2. adımda <strong>Steam Emirle Al</strong> fırsatını tek tıkla sunar.</p>
+            <strong>4. Canlı Youpin898 Emir Defteri &amp; 20.000+ Global Arama</strong>
+            <p>41.000+ canlı Youpin898 Ask + Alım Emri (<code>ypo</code>) ve direkt <code>templateId</code> skin
+              linkleri, gerçek CSFloat satış grafiği ve nadir Doppler/bıçaklar için anlık <code>/api/item-lookup</code>
+              sorgusu sunar.</p>
           </div>
           <div class="quant-card">
-            <strong>5. Paralel Çoklu Sepet &amp; Otomatik Adet Dengeleyici</strong>
-            <p>Yüksek bütçeleri 2–3 paralel emir defterine böler. Masada bir eşya çıkardığınızda (<code>3 → 2</code>)
-              veya eklediğinizde boşta kalan Steam bakiyesini kalan skinlere otomatik olarak en kârlı adetle dağıtır.
-            </p>
+            <strong>5. 500 Senaryolu Monte Carlo &amp; Otomatik Sepet Dengeleyici</strong>
+            <p>7+7G takas kilidi boyunca 500 senaryoda <code>PoP %</code>, <code>EV</code>, <code>CVaR %5</code> ve
+              Half-Kelly hesaplar; zayıf 7g Steam hacmi ve ilan-son satış makasını uyarır, masada eşya çıkarınca
+              (<code>3 → 2</code>) kalan adetleri otomatik yeniden dengeler.</p>
           </div>
           <div class="quant-card">
             <strong>6. Kendi Skinin İçin Plan &amp; Valve Cent Matematiği</strong>
-            <p>Elindeki herhangi bir skini 1. adıma koyduğunda doğrudan nakit pazar satışı ile Steam arbitrajını kıyaslar;
-              gerçek Valve cent komisyonu ve <code>M₂</code> bakiye iskontosuyla dürüst net kâr sunar.</p>
+            <p>Elindeki herhangi bir skini 1. adıma koyduğunda doğrudan nakit pazar satışı ile Steam arbitrajını
+              kıyaslar; gerçek Valve cent komisyonu ve <code>M₂</code> bakiye iskontosuyla dürüst net kâr sunar.</p>
           </div>
         </div>
 

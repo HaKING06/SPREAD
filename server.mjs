@@ -225,215 +225,358 @@ async function handleApiMarket(res, forceRefresh) {
 
       if (effSteamUsd > 0 && (cfPrice > 0 || ypPrice > 0)) {
         liveCount += 1;
-        prices[key] = {
-          s: round2(effSteamUsd),
-          s7: round2(st7 || effSteamUsd),
-          s30: round2(st30 || effSteamUsd),
-          s90: round2(st90 || effSteamUsd),
-          ...(isEstSteam ? { sEst: 1 } : {}),
-          cf: cfPrice > 0 ? round2(cfPrice) : 0,
-          cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
-          q: cfQty,
-          yp: ypPrice > 0 ? round2(ypPrice) : 0,
-          ypo: ypBuyOrder > 0 ? round2(ypBuyOrder) : 0,
-          b: bPrice > 0 ? round2(bPrice) : 0,
-          bo: bOrder > 0 ? round2(bOrder) : 0,
-          v24: Number(prev.v24) || 0,
-          v7: Number(prev.v7) || 0,
-          v30: Number(prev.v30) || 0,
-          vm: Number(prev.vm) || 0,
-          mv
-        };
+          prices[key] = {
+            s: round2(effSteamUsd),
+            s7: round2(st7 || effSteamUsd),
+            s30: round2(st30 || effSteamUsd),
+            s90: round2(st90 || effSteamUsd),
+            ...(isEstSteam ? { sEst: 1 } : {}),
+            cf: cfPrice > 0 ? round2(cfPrice) : 0,
+            cfo: cfBuyOrder > 0 ? round2(cfBuyOrder) : 0,
+            q: cfQty,
+            yp: ypPrice > 0 ? round2(ypPrice) : 0,
+            ypo: ypBuyOrder > 0 ? round2(ypBuyOrder) : 0,
+            b: bPrice > 0 ? round2(bPrice) : 0,
+            bo: bOrder > 0 ? round2(bOrder) : 0,
+            v24: Number(prev.v24) || 0,
+            v7: Number(prev.v7) || 0,
+            v30: Number(prev.v30) || 0,
+            vm: Number(prev.vm) || 0,
+            mv,
+            ...(prev.stHist
+              ? {
+                stHist: 1,
+                st24: Number(prev.st24) || 0,
+                st24Checked: 1,
+                st7: Number(prev.st7) || 0,
+                st30: Number(prev.st30) || 0,
+                stLast: Number(prev.stLast) || 0,
+                stLastH: Number(prev.stLastH) || 0,
+                stAvg7: Number(prev.stAvg7) || 0,
+                stAvg30: Number(prev.stAvg30) || 0,
+                stReal: Number(prev.stReal) || 0,
+                ...(Array.isArray(prev.stSales) && prev.stSales.length ? { stSales: prev.stSales } : {})
+              }
+              : {}),
+            ...(Number(prev.stBuyOrd) > 0 ? { stBuyOrd: Number(prev.stBuyOrd) } : {}),
+            ...(Number(prev.stSellOrd) > 0 ? { stSellOrd: Number(prev.stSellOrd) } : {}),
+            ...(Number(prev.stSellCnt) > 0 ? { stSellCnt: Number(prev.stSellCnt) } : {})
+          };
+        }
       }
+
+      const jsonStr = JSON.stringify({
+        ok: true,
+        mode: 'live-local',
+        updatedAt: new Date().toISOString(),
+        feeds: {
+          csfloatLive: cfLiveRes.status === 'fulfilled',
+          csfloatOrders: cfOrdRes.status === 'fulfilled',
+          buff163: buffRes.status === 'fulfilled',
+          steam: steamRes.status === 'fulfilled',
+          youpin: ypRes.status === 'fulfilled',
+          marketVol: mcsRes.status === 'fulfilled'
+        },
+        count: liveCount,
+        prices
+      });
+
+      cacheStore.market = { expiresAt: now + 5 * 60 * 1000, payload: jsonStr };
+      res.writeHead(200, {
+        ...SECURITY_HEADERS,
+        'Content-Type': 'application/json; charset=utf-8',
+        'X-Spread-Cache': 'MISS'
+      });
+      res.end(jsonStr);
+    } catch (err) {
+      res.writeHead(502, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: String(err?.message || err) }));
     }
-
-    const jsonStr = JSON.stringify({
-      ok: true,
-      mode: 'live-local',
-      updatedAt: new Date().toISOString(),
-      feeds: {
-        csfloatLive: cfLiveRes.status === 'fulfilled',
-        csfloatOrders: cfOrdRes.status === 'fulfilled',
-        buff163: buffRes.status === 'fulfilled',
-        steam: steamRes.status === 'fulfilled',
-        youpin: ypRes.status === 'fulfilled',
-        marketVol: mcsRes.status === 'fulfilled'
-      },
-      count: liveCount,
-      prices
-    });
-
-    cacheStore.market = { expiresAt: now + 5 * 60 * 1000, payload: jsonStr };
-    res.writeHead(200, {
-      ...SECURITY_HEADERS,
-      'Content-Type': 'application/json; charset=utf-8',
-      'X-Spread-Cache': 'MISS'
-    });
-    res.end(jsonStr);
-  } catch (err) {
-    res.writeHead(502, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: String(err?.message || err) }));
   }
-}
 
 async function handleApiFx(res) {
-  const now = Date.now();
-  if (cacheStore.fx.payload && now < cacheStore.fx.expiresAt) {
-    res.writeHead(200, {
-      ...SECURITY_HEADERS,
-      'Content-Type': 'application/json; charset=utf-8',
-      'X-Spread-Cache': 'HIT'
+    const now = Date.now();
+    if (cacheStore.fx.payload && now < cacheStore.fx.expiresAt) {
+      res.writeHead(200, {
+        ...SECURITY_HEADERS,
+        'Content-Type': 'application/json; charset=utf-8',
+        'X-Spread-Cache': 'HIT'
+      });
+      res.end(cacheStore.fx.payload);
+      return;
+    }
+
+    try {
+      const data = await fetchJsonTimeout('https://open.er-api.com/v6/latest/USD', 10000);
+      const rates = data?.rates || {};
+      const jsonStr = JSON.stringify({
+        ok: true,
+        base: 'USD',
+        updatedAt: data?.time_last_update_utc || new Date().toISOString(),
+        rates: {
+          USD: 1,
+          TRY: Number(rates.TRY) || 34.5,
+          CNY: Number(rates.CNY) || 7.25,
+          EUR: Number(rates.EUR) || 0.92
+        }
+      });
+      cacheStore.fx = { expiresAt: now + 60 * 60 * 1000, payload: jsonStr };
+      res.writeHead(200, {
+        ...SECURITY_HEADERS,
+        'Content-Type': 'application/json; charset=utf-8',
+        'X-Spread-Cache': 'MISS'
+      });
+      res.end(jsonStr);
+    } catch (err) {
+      res.writeHead(502, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: String(err?.message || err) }));
+    }
+  }
+
+  function parseCsfloatGraph(arr) {
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+    const now = new Date();
+    const utcDayFrac = (now.getUTCHours() + now.getUTCMinutes() / 60) / 24;
+    const todayCnt = Number(arr[0]?.count) || 0;
+    const ydayCnt = Number(arr[1]?.count) || 0;
+    const rolling24h = Math.max(todayCnt, Math.round(todayCnt + ydayCnt * Math.max(0, 1 - utcDayFrac)));
+    const s7 = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.count) || 0), 0);
+    const s30 = arr.slice(0, 30).reduce((a, x) => a + (Number(x?.count) || 0), 0);
+    const weightedSum = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.avg_price) || 0) * (Number(x?.count) || 0), 0);
+    const avg7Usd = s7 > 0 ? round2(weightedSum / s7 / 100) : 0;
+    return { live: true, sold24h: rolling24h, sold7d: s7, sold30d: s30, avg7Usd };
+  }
+
+  function parseSteamSummaryCount(htmlStr) {
+    if (!htmlStr || typeof htmlStr !== 'string') return 0;
+    const m = htmlStr.match(/>([0-9,]+)</);
+    if (!m) return 0;
+    const v = parseInt(m[1].replace(/,/g, ''), 10);
+    return Number.isFinite(v) ? v : 0;
+  }
+
+  function calcRealisticSteamSell({ lastSaleUsd = 0, avg7Usd = 0, avg30Usd = 0, sold7d = 0, lowestAskUsd = 0, buyOrderUsd = 0 }) {
+    if (lastSaleUsd <= 0 && avg7Usd <= 0 && avg30Usd <= 0) return 0;
+    const last = lastSaleUsd > 0 ? lastSaleUsd : avg7Usd || avg30Usd;
+    const a7 = avg7Usd > 0 ? avg7Usd : last;
+    let est = last;
+    if (sold7d >= 2) {
+      est = last < a7 ? last * 0.65 + a7 * 0.35 : Math.min(last, a7 * 1.03) * 0.35 + a7 * 0.65;
+    } else if (sold7d === 1) {
+      est = avg30Usd > 0 ? Math.min(last, last * 0.65 + avg30Usd * 0.35) : last;
+    } else if (avg30Usd > 0) {
+      est = last * 0.6 + avg30Usd * 0.4;
+    }
+    if (lowestAskUsd > 0) est = Math.min(est, lowestAskUsd);
+    if (buyOrderUsd > 0 && est < buyOrderUsd) {
+      est = lowestAskUsd > 0 ? Math.min(lowestAskUsd, buyOrderUsd * 1.01) : buyOrderUsd;
+    }
+    return round2(Math.max(0.03, est));
+  }
+
+  function extractSteamPriceHistory(html, exactMhn) {
+    if (!html || typeof html !== 'string' || !exactMhn) return null;
+    const jsonEscaped = JSON.stringify(exactMhn).slice(1, -1);
+    const doubleEsc = jsonEscaped.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const markerEsc = `\\"queryKey\\":[\\"market\\",\\"pricehistory\\",730,\\"${doubleEsc}\\"]`;
+    const markerPlain = `"queryKey":["market","pricehistory",730,"${jsonEscaped}"]`;
+
+    let idx = html.indexOf(markerEsc);
+    let escaped = true;
+    if (idx < 0) {
+      idx = html.indexOf(markerPlain);
+      escaped = false;
+    }
+    if (idx < 0) return null;
+
+    const endIdx = html.lastIndexOf(']}', idx);
+    if (endIdx < 0) return null;
+    const slice = html.slice(Math.max(0, endIdx - 50000), endIdx + 1);
+    const unescaped = escaped ? slice.replace(/\\"/g, '"') : slice;
+
+    const re = /\{"time":(\d+),"price_median":([0-9.]+),"purchases":(\d+)\}/g;
+    const rows = [];
+    let m;
+    while ((m = re.exec(unescaped)) !== null) {
+      rows.push({ time: Number(m[1]), price: Number(m[2]), qty: Number(m[3]) });
+    }
+    if (rows.length === 0) return null;
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    let sold24h = 0, sold7d = 0, sold30d = 0, sum7 = 0, sum30 = 0;
+    for (const r of rows) {
+      if (r.time >= nowSec - 86400) sold24h += r.qty;
+      if (r.time >= nowSec - 7 * 86400) { sold7d += r.qty; sum7 += r.price * r.qty; }
+      if (r.time >= nowSec - 30 * 86400) { sold30d += r.qty; sum30 += r.price * r.qty; }
+    }
+
+    const lastRow = rows[rows.length - 1];
+    return {
+      sold24h,
+      sold7d,
+      sold30d,
+      lastSaleUsd: round2(lastRow.price),
+      lastSaleAgeH: Math.max(0, Math.round((nowSec - lastRow.time) / 3600)),
+      avg7Usd: sold7d > 0 ? round2(sum7 / sold7d) : 0,
+      avg30Usd: sold30d > 0 ? round2(sum30 / sold30d) : 0,
+      recentSales: rows.slice(-4).map((r) => ({ t: r.time, p: round2(r.price), q: r.qty }))
+    };
+  }
+
+  async function fetchTextTimeout(url, ms = 6000) {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), ms);
+    try {
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml',
+          'Accept-Language': 'en-US,en;q=0.9'
+        }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.text();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  async function handleSteamVerify(res, reqUrl) {
+    // CS2 skin names contain "|", so use repeated ?name= & ?nid= params (or ;; fallback)
+    const multiNames = reqUrl.searchParams.getAll('name');
+    const multiNids = reqUrl.searchParams.getAll('nid');
+    const legacyNames = (reqUrl.searchParams.get('names') || '')
+      .split(';;')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const nidMap = new Map();
+    multiNames.forEach((n, idx) => {
+      const clean = n.trim();
+      const nid = parseInt(multiNids[idx] || '0', 10);
+      if (clean && Number.isFinite(nid) && nid > 0) nidMap.set(clean, nid);
     });
-    res.end(cacheStore.fx.payload);
-    return;
-  }
 
-  try {
-    const data = await fetchJsonTimeout('https://open.er-api.com/v6/latest/USD', 10000);
-    const rates = data?.rates || {};
-    const jsonStr = JSON.stringify({
-      ok: true,
-      base: 'USD',
-      updatedAt: data?.time_last_update_utc || new Date().toISOString(),
-      rates: {
-        USD: 1,
-        TRY: Number(rates.TRY) || 34.5,
-        CNY: Number(rates.CNY) || 7.25,
-        EUR: Number(rates.EUR) || 0.92
-      }
-    });
-    cacheStore.fx = { expiresAt: now + 60 * 60 * 1000, payload: jsonStr };
-    res.writeHead(200, {
-      ...SECURITY_HEADERS,
-      'Content-Type': 'application/json; charset=utf-8',
-      'X-Spread-Cache': 'MISS'
-    });
-    res.end(jsonStr);
-  } catch (err) {
-    res.writeHead(502, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: String(err?.message || err) }));
-  }
-}
+    const names = Array.from(new Set([...multiNames, ...legacyNames].map((s) => s.trim())))
+      .filter((s) => s.length > 0 && s.length <= 130)
+      .slice(0, 6);
 
-function parseCsfloatGraph(arr) {
-  if (!Array.isArray(arr) || arr.length === 0) return null;
-  const now = new Date();
-  const utcDayFrac = (now.getUTCHours() + now.getUTCMinutes() / 60) / 24;
-  const todayCnt = Number(arr[0]?.count) || 0;
-  const ydayCnt = Number(arr[1]?.count) || 0;
-  const rolling24h = Math.max(todayCnt, Math.round(todayCnt + ydayCnt * Math.max(0, 1 - utcDayFrac)));
-  const s7 = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.count) || 0), 0);
-  const s30 = arr.slice(0, 30).reduce((a, x) => a + (Number(x?.count) || 0), 0);
-  const weightedSum = arr.slice(0, 7).reduce((a, x) => a + (Number(x?.avg_price) || 0) * (Number(x?.count) || 0), 0);
-  const avg7Usd = s7 > 0 ? round2(weightedSum / s7 / 100) : 0;
-  return { live: true, sold24h: rolling24h, sold7d: s7, sold30d: s30, avg7Usd };
-}
+    if (names.length === 0) {
+      res.writeHead(400, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'name param required' }));
+      return;
+    }
 
-function parseSteamSummaryCount(htmlStr) {
-  if (!htmlStr || typeof htmlStr !== 'string') return 0;
-  const m = htmlStr.match(/>([0-9,]+)</);
-  if (!m) return 0;
-  const v = parseInt(m[1].replace(/,/g, ''), 10);
-  return Number.isFinite(v) ? v : 0;
-}
+    const mkt = (reqUrl.searchParams.get('mkt') || 'CSFLOAT').toUpperCase() === 'YOUPIN' ? 'YOUPIN' : 'CSFLOAT';
+    const key = `v6:${mkt}:${names.map((n) => `${n}:${nidMap.get(n) || 0}`).join(';;')}`;
+    const now = Date.now();
+    const cached = cacheStore.steamVerify.get(key);
+    if (cached && now < cached.expiresAt) {
+      res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(cached.payload);
+      return;
+    }
 
-async function handleSteamVerify(res, reqUrl) {
-  // CS2 skin names contain "|", so use repeated ?name= & ?nid= params (or ;; fallback)
-  const multiNames = reqUrl.searchParams.getAll('name');
-  const multiNids = reqUrl.searchParams.getAll('nid');
-  const legacyNames = (reqUrl.searchParams.get('names') || '')
-    .split(';;')
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const nidMap = new Map();
-  multiNames.forEach((n, idx) => {
-    const clean = n.trim();
-    const nid = parseInt(multiNids[idx] || '0', 10);
-    if (clean && Number.isFinite(nid) && nid > 0) nidMap.set(clean, nid);
-  });
-
-  const names = Array.from(new Set([...multiNames, ...legacyNames].map((s) => s.trim())))
-    .filter((s) => s.length > 0 && s.length <= 130)
-    .slice(0, 6);
-
-  if (names.length === 0) {
-    res.writeHead(400, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: false, error: 'name param required' }));
-    return;
-  }
-
-  const mkt = (reqUrl.searchParams.get('mkt') || 'CSFLOAT').toUpperCase() === 'YOUPIN' ? 'YOUPIN' : 'CSFLOAT';
-  const key = `${mkt}:${names.map((n) => `${n}:${nidMap.get(n) || 0}`).join(';;')}`;
-  const now = Date.now();
-  const cached = cacheStore.steamVerify.get(key);
-  if (cached && now < cached.expiresAt) {
-    res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(cached.payload);
-    return;
-  }
-
-  const results = {};
-  await Promise.allSettled(
-    names.map(async (name) => {
-      const baseQueryName = stripPhaseSuffix(name);
-      const enc = encodeURIComponent(baseQueryName);
-      const nid = nidMap.get(name) || 0;
-      const stPoTask = fetchJsonTimeout(
-        `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${enc}`,
-        5000
-      );
-      const stHistTask =
-        nid > 0
-          ? fetchJsonTimeout(
+    const results = {};
+    await Promise.allSettled(
+      names.map(async (name, idx) => {
+        const baseQueryName = stripPhaseSuffix(name);
+        const enc = encodeURIComponent(baseQueryName);
+        const nid = nidMap.get(name) || 0;
+        const stPoTask = fetchJsonTimeout(
+          `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${enc}`,
+          5000
+        );
+        const stHistTask =
+          nid > 0
+            ? fetchJsonTimeout(
               `https://steamcommunity.com/market/itemordershistogram?country=US&language=english&currency=1&item_nameid=${nid}&two_factor=0`,
               5000
             )
-          : Promise.resolve(null);
-      const cfTask =
-        mkt === 'CSFLOAT'
-          ? fetchJsonTimeout(`https://csfloat.com/api/v1/history/${enc}/graph`, 5500)
-          : Promise.resolve(null);
+            : Promise.resolve(null);
+        const stSalesTask =
+          idx < 4
+            ? fetchTextTimeout(`https://steamcommunity.com/market/listings/730/${enc}`, 6000)
+            : Promise.resolve(null);
+        const cfTask =
+          mkt === 'CSFLOAT'
+            ? fetchJsonTimeout(`https://csfloat.com/api/v1/history/${enc}/graph`, 5500)
+            : Promise.resolve(null);
 
-      const [stRes, histRes, cfRes] = await Promise.allSettled([stPoTask, stHistTask, cfTask]);
-      const entry = {
-        live: false,
-        sold24hChecked: false,
-        volume24h: 0,
-        medianUsd: 0,
-        lowestUsd: 0,
-        steamBuyOrderUsd: 0,
-        steamSellOrderUsd: 0,
-        steamBuyCount: 0,
-        steamSellCount: 0,
-        csfloat: null
-      };
-      if (stRes?.status === 'fulfilled' && stRes.value?.success) {
-        entry.live = true;
-        entry.sold24hChecked = true;
-        entry.volume24h = Math.round(parseSteamNumber(stRes.value.volume));
-        entry.medianUsd = round2(parseSteamNumber(stRes.value.median_price));
-        entry.lowestUsd = round2(parseSteamNumber(stRes.value.lowest_price));
-      }
-      if (histRes?.status === 'fulfilled' && histRes.value?.success === 1) {
-        const h = histRes.value;
-        const bo = Number(h.highest_buy_order) || 0;
-        const so = Number(h.lowest_sell_order) || 0;
-        if (bo > 0) entry.steamBuyOrderUsd = round2(bo / 100);
-        if (so > 0) entry.steamSellOrderUsd = round2(so / 100);
-        entry.steamBuyCount = parseSteamSummaryCount(h.buy_order_summary);
-        entry.steamSellCount = parseSteamSummaryCount(h.sell_order_summary);
-        entry.live = true;
-      }
-      if (mkt === 'CSFLOAT' && cfRes?.status === 'fulfilled' && cfRes.value) {
-        const parsedCf = parseCsfloatGraph(cfRes.value);
-        if (parsedCf) entry.csfloat = parsedCf;
-      }
-      if (entry.live || entry.csfloat?.live) {
-        results[name] = entry;
-      }
-    })
-  );
+        const [stRes, histRes, salesRes, cfRes] = await Promise.allSettled([stPoTask, stHistTask, stSalesTask, cfTask]);
+        const entry = {
+          live: false,
+          sold24hChecked: false,
+          histLive: false,
+          volume24h: 0,
+          sold7d: 0,
+          sold30d: 0,
+          lastSaleUsd: 0,
+          lastSaleAgeH: 0,
+          avg7Usd: 0,
+          avg30Usd: 0,
+          realisticSellUsd: 0,
+          recentSales: [],
+          medianUsd: 0,
+          lowestUsd: 0,
+          steamBuyOrderUsd: 0,
+          steamSellOrderUsd: 0,
+          steamBuyCount: 0,
+          steamSellCount: 0,
+          csfloat: null
+        };
+        if (stRes?.status === 'fulfilled' && stRes.value?.success) {
+          entry.live = true;
+          entry.sold24hChecked = true;
+          entry.volume24h = Math.round(parseSteamNumber(stRes.value.volume));
+          entry.medianUsd = round2(parseSteamNumber(stRes.value.median_price));
+          entry.lowestUsd = round2(parseSteamNumber(stRes.value.lowest_price));
+        }
+        if (histRes?.status === 'fulfilled' && histRes.value?.success === 1) {
+          const h = histRes.value;
+          const bo = Number(h.highest_buy_order) || 0;
+          const so = Number(h.lowest_sell_order) || 0;
+          if (bo > 0) entry.steamBuyOrderUsd = round2(bo / 100);
+          if (so > 0) entry.steamSellOrderUsd = round2(so / 100);
+          entry.steamBuyCount = parseSteamSummaryCount(h.buy_order_summary);
+          entry.steamSellCount = parseSteamSummaryCount(h.sell_order_summary);
+          entry.live = true;
+        }
+        if (salesRes?.status === 'fulfilled' && typeof salesRes.value === 'string') {
+          const parsedHist = extractSteamPriceHistory(salesRes.value, baseQueryName);
+          if (parsedHist) {
+            entry.live = true;
+            entry.histLive = true;
+            entry.sold24hChecked = true;
+            entry.volume24h = parsedHist.sold24h;
+            entry.sold7d = parsedHist.sold7d;
+            entry.sold30d = parsedHist.sold30d;
+            entry.lastSaleUsd = parsedHist.lastSaleUsd;
+            entry.lastSaleAgeH = parsedHist.lastSaleAgeH;
+            entry.avg7Usd = parsedHist.avg7Usd;
+            entry.avg30Usd = parsedHist.avg30Usd;
+            entry.recentSales = parsedHist.recentSales;
+            const lowestAsk = entry.steamSellOrderUsd || entry.lowestUsd || 0;
+            entry.realisticSellUsd = calcRealisticSteamSell({
+              lastSaleUsd: parsedHist.lastSaleUsd,
+              avg7Usd: parsedHist.avg7Usd,
+              avg30Usd: parsedHist.avg30Usd,
+              sold7d: parsedHist.sold7d,
+              lowestAskUsd: lowestAsk,
+              buyOrderUsd: entry.steamBuyOrderUsd
+            });
+          }
+        }
+        if (mkt === 'CSFLOAT' && cfRes?.status === 'fulfilled' && cfRes.value) {
+          const parsedCf = parseCsfloatGraph(cfRes.value);
+          if (parsedCf) entry.csfloat = parsedCf;
+        }
+        if (entry.live || entry.csfloat?.live) {
+          results[name] = entry;
+        }
+      })
+    );
 
     const payload = JSON.stringify({ ok: true, updatedAt: new Date().toISOString(), items: results });
     cacheStore.steamVerify.set(key, { expiresAt: now + 15 * 60 * 1000, payload });

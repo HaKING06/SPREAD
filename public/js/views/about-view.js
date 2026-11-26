@@ -26,11 +26,11 @@ export function initAboutView(app) {
           : 'Live min ask, buy orders, depth + real live 24h/7d/30d CSFloat sales history'
       },
       {
-        title: 'Steam Market Live Order Book + 24h',
+        title: 'Steam Market Live Sales History + Order Book',
         status: isLive ? (feeds.steam !== false ? 'OK' : 'FALLBACK') : 'SNAPSHOT',
         sub: tr
-          ? '1. Adım için canlı Steam 24s satış adedi, aktif Steam ilan duvarı ve anında Steam Buy-Order (itemordershistogram)'
-          : 'Step 1 live Steam 24h sold count, active Steam sell wall & instant Steam Buy-Order histogram'
+          ? '1. Adım için gerçek Steam 24s/7g/30g satış geçmişi, son gerçekleşen satış fiyatı, gerçekçi satış hesabı ve anında Steam Buy-Order histogramı'
+          : 'Step 1 real Steam 24h/7d/30d sales history, last actual sale price, realistic clearing-price engine & instant Steam Buy-Order histogram'
       },
       {
         title: 'Buff163 Global Cash Anchor',
@@ -45,11 +45,11 @@ export function initAboutView(app) {
           : `${app.items.length.toLocaleString('en-US')} bundled skins + on-demand live lookup for rare knives & Dopplers`
       },
       {
-        title: 'SPREAD Agent V10 • Meta-Arbitrator & Doppler Phases',
+        title: 'SPREAD Agent V11 • Clearing-Price & Doppler Phases',
         status: 'OK',
         sub: tr
-          ? '350+ canlı Doppler/Gamma Doppler fazı (Phase 1–4, Ruby, Sapphire, Emerald, Black Pearl), Tekli vs. Sepet Meta-Hakem ve 500 sim. Monte Carlo CVaR'
-          : '350+ live Doppler/Gamma Doppler phases (Phase 1–4, Ruby, Sapphire, Emerald, Black Pearl), Single vs. Basket Meta-Arbitrator & 500-sim Monte Carlo CVaR'
+          ? 'Gerçek Steam son satışa dayalı fiyatlama (hayali ilan koruması), 350+ canlı Doppler/Gamma Doppler fazı, Tekli vs. Sepet Meta-Hakem ve 500 sim. Monte Carlo CVaR'
+          : 'Real Steam recent-sales clearing engine (phantom ask guard), 350+ live Doppler/Gamma Doppler phases, Single vs. Basket Meta-Arbitrator & 500-sim Monte Carlo CVaR'
       },
       {
         title: 'Youpin898 Live Order Book + Direct IDs',

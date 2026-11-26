@@ -152,7 +152,7 @@ class SpreadApp {
       } else {
         arr.push(
           legNum === 1
-            ? { name: item.n, qty: 1, marketUsd: m.marketBuyUsd, steamUsd: m.steamUsd }
+            ? { name: item.n, qty: 1, marketUsd: m.marketBuyUsd, steamUsd: m.steamSellUsd || m.steamUsd }
             : { name: item.n, qty: 1, steamUsd: m.steamUsd, marketUsd: m.marketSellUsd }
         );
       }
@@ -176,8 +176,8 @@ class SpreadApp {
       this.views.calculator?.render();
       this.toast(
         isTr()
-            ? `"${item.n}" ${legNum}. Adım sepetine eklendi ve adetler otomatik dengelendi.`
-            : `"${item.n}" added to Step ${legNum} basket and quantities auto-rebalanced.`
+          ? `"${item.n}" ${legNum}. Adım sepetine eklendi ve adetler otomatik dengelendi.`
+          : `"${item.n}" added to Step ${legNum} basket and quantities auto-rebalanced.`
       );
       return;
     }
@@ -187,7 +187,7 @@ class SpreadApp {
       s.leg1 = {
         name: item.n,
         marketUsd: m.marketBuyUsd,
-        steamUsd: m.steamUsd
+        steamUsd: m.steamSellUsd || m.steamUsd
       };
     } else {
       s.leg2 = {
@@ -208,7 +208,7 @@ class SpreadApp {
     this.settings.leg1 = {
       name: item1.n,
       marketUsd: m1.marketBuyUsd,
-      steamUsd: m1.steamUsd
+      steamUsd: m1.steamSellUsd || m1.steamUsd
     };
     this.settings.leg2 = {
       name: item2.n,
