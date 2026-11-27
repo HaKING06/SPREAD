@@ -641,6 +641,7 @@ export function computeLoopMetrics(params) {
     pS1Usd = 0,
     pS2Usd = 0,
     pM2Usd = 0,
+    acquisitionListings = null,
     buyFeePct = 0,
     sellFeePct = 2.0,
     withdrawFeePct = 0,
@@ -670,7 +671,18 @@ export function computeLoopMetrics(params) {
   const realisticCycles = [];
 
   for (let k = 1; k <= 12; k++) {
-    const q1 = effPM1 > 0 ? Math.floor(cashWallet / effPM1) : 0;
+    let q1 = effPM1 > 0 ? Math.floor(cashWallet / effPM1) : 0;
+    if (acquisitionListings !== null && q1 > 1) {
+      let low = 1;
+      let high = q1;
+      while (low < high) {
+        const qty = Math.ceil((low + high) / 2);
+        const reserve = 1 + estimateAcquisitionSlippagePct(qty, acquisitionListings) / 100;
+        if (qty * effPM1 * reserve <= cashWallet + 1e-8) low = qty;
+        else high = qty - 1;
+      }
+      q1 = low;
+    }
     const spentM1 = q1 * effPM1;
     cashWallet -= spentM1;
     const cashLeftAfterLeg1 = cashWallet;
@@ -1078,6 +1090,11 @@ function computePairConfidence(l1, l2, c1, reality) {
   return Math.max(35, Math.min(99, Math.round(conf)));
 }
 
+function estimateAcquisitionSlippagePct(quantity, listings) {
+  if (quantity <= 1) return 0;
+  return Math.min(4.5, 1.8 * Math.sqrt(quantity / Math.max(15, listings || 30)));
+}
+
 export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters = {}) {
   const cap = Math.max(5, Number(capitalUsd) || 200);
   const tier = getCapitalTierInfo(cap);
@@ -1229,6 +1246,7 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       const sim = computeLoopMetrics({
         capitalUsd: cap,
         pM1Usd: l1.m.marketBuyUsd,
+        acquisitionListings: l1.qty || 0,
         pS1Usd: l1.m.steamSellUsd || l1.m.steamUsd,
         pS2Usd: l2.m.steamUsd,
         pM2Usd: l2.m.marketSellUsd,
@@ -1249,13 +1267,14 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       );
       if (c1.q2 > maxRealisticQ2) continue;
 
+      const slip1Pct = estimateAcquisitionSlippagePct(c1.q1, l1.qty);
+
       const reality = estimateExecutionReality(sim, l1.item, l2.item, opts);
       const utilizedPct = c1.steamAfterLeg1 > 0 ? ((c1.steamAfterLeg1 - c1.steamWallet) / c1.steamAfterLeg1) * 100 : 0;
       const speedScore = Math.round((l1.vel.score + l2.vel.score) / 2);
       const avgDays = (reality.minDays + reality.maxDays) / 2;
 
       // V5 Square-Root Order-Book Market Impact / Slippage Model
-      const slip1Pct = c1.q1 <= 1 ? 0 : Math.min(4.5, 1.8 * Math.sqrt(c1.q1 / Math.max(15, l1.qty || 30)));
       const slip2Pct =
         c1.q2 <= 1 || opts.useBuyOrderForLeg2 ? 0 : Math.min(4.5, 1.5 * Math.sqrt(c1.q2 / Math.max(15, l2.qty || 30)));
       const estSlippagePct = Math.round((slip1Pct + slip2Pct) * 100) / 100;

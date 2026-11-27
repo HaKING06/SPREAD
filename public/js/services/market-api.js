@@ -210,7 +210,7 @@ export class MarketService {
         if (res?.ok && res.items) {
           for (const [k, v] of Object.entries(res.items)) {
             const fetchedAt = Date.parse(res.updatedAt) || Date.now();
-            const ttl = v.histLive || v.csfloat?.live ? VERIFY_TTL_MS : VERIFY_RETRY_MS;
+            const ttl = v.live || v.csfloat?.live ? VERIFY_TTL_MS : VERIFY_RETRY_MS;
             this.steamLiveCache.set(cacheKeyOf(k), { record: v, fetchedAt, expiresAt: fetchedAt + ttl });
           }
         }
@@ -261,8 +261,8 @@ export class MarketService {
               : {}),
             ...(rec.medianUsd > 0 ? { stMed: rec.medianUsd } : {}),
             ...(rec.steamBuyOrderUsd > 0 ? { stBuyOrd: rec.steamBuyOrderUsd } : {}),
-            ...(rec.steamSellOrderUsd > 0
-              ? { stSellOrd: rec.steamSellOrderUsd, stVerifiedAt: entry.fetchedAt, stAskVerifiedAt: entry.fetchedAt }
+            ...(liveAsk > 0
+              ? { stSellOrd: liveAsk, stVerifiedAt: entry.fetchedAt, stAskVerifiedAt: entry.fetchedAt }
               : {}),
             ...(rec.steamSellCount > 0 ? { stSellCnt: rec.steamSellCount } : {}),
             ...(rec.steamBuyCount > 0 ? { stBuyCnt: rec.steamBuyCount } : {})

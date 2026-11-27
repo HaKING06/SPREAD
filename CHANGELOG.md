@@ -1,5 +1,10 @@
 # Changelog
 
+## 11.3.0 - 2026-11-27
+
+- Use the current Steam lowest listing for purchase sizing when histogram quotes are unavailable.
+- Include estimated acquisition slippage in the single-strategy budget check.
+
 ## 11.2.1 - 2026-11-27
 
 - Restored the previous page template to fix duplicate controls and broken markup.
