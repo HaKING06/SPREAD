@@ -1,7 +1,7 @@
 <div align="center">
   <img src="public/assets/brand/banner.jpg" alt="SPREAD — CS2 Arbitrage Calculator & Live Spread Terminal (spread.haking.tr)" width="100%" />
 
-  <h1>SPREAD V11.2 — CS2 Arbitrage Terminal &amp; Quant Desk</h1>
+  <h1>SPREAD V11.2.1 — CS2 Arbitrage Terminal &amp; Quant Desk</h1>
 
   <p>
     <strong>Zero-login, open-source quantitative terminal</strong> for <strong>CSFloat &amp; Youpin898 ↔ Steam Community Market</strong> two-way CS2 arbitrage — powered by <strong>real Steam 7d/30d sales history</strong>, <strong>354+ Doppler &amp; Gamma Doppler phases</strong>, a <strong>Single vs. Basket Meta-Arbitrator</strong>, <strong>500-trial Monte Carlo CVaR</strong>, exact Valve cent math, and a 100% local SHA-256 browser vault.
@@ -18,7 +18,7 @@
 
   <p>
     <a href="https://spread.haking.tr"><img src="https://img.shields.io/badge/Live-spread.haking.tr-F0B90B?style=flat-square" alt="Live Terminal" /></a>
-    <img src="https://img.shields.io/badge/Release-V11.2-10D981?style=flat-square" alt="SPREAD V11.2" />
+    <img src="https://img.shields.io/badge/Release-V11.2.1-10D981?style=flat-square" alt="SPREAD V11.2.1" />
     <img src="https://img.shields.io/badge/Catalog-6,000%2B%20Skins%20%7C%20354%20Doppler%20Phases-38BDF8?style=flat-square" alt="Catalog" />
     <img src="https://img.shields.io/badge/Global%20Lookup-20,000%2B%20Items-6366F1?style=flat-square" alt="Global Lookup" />
     <img src="https://img.shields.io/badge/Security-Zero%20Login%20%7C%20Strict%20CSP-10D981?style=flat-square" alt="Security" />
@@ -49,7 +49,7 @@ Naive CS2 arbitrage sheets compare a discounted CSFloat listing against the **lo
   [Net Cash Profit when M₁ × M₂ > 1.0000]  +  Leftover Steam discounted by M₂ (Zero inflation!)
 ```
 
-| Problem in Typical Spread Tables | How SPREAD V11.2 Solves It |
+| Problem in Typical Spread Tables | How SPREAD V11.2.1 Solves It |
 | :--- | :--- |
 | **Phantom Lowest Steam Ask** (e.g. `\$880` Ask when last sales cleared at `\$811–\$856`) | Extracts **wear-matched real Steam 7d/30d transactions**, auto-prices Step 1 at **Realistic Clearing Value (`stReal`)**, and gives 1-click presets (`Realistic Sell`, `Last Sale`, `Lowest Ask`, `Instant Buy-Order`). |
 | **Fake Cross-Market Volume** (showing P2P sales on Step 1 Steam sells or leaking CSFloat stats in Youpin mode) | **Directional Liquidity Physics**: Step 1 strictly tracks **Steam sales & Steam order-book histograms**; Step 2 strictly tracks the active cashout market (**CSFloat real sales graph** or **Youpin898 live Bid/Ask**). |
@@ -61,7 +61,7 @@ Naive CS2 arbitrage sheets compare a discounted CSFloat listing against the **lo
 
 ## Core Capabilities
 
-### 1. Real Steam 7d/30d Sales History & Clearing-Price Engine (V11.2)
+### 1. Real Steam 7d/30d Sales History & Clearing-Price Engine (V11.2.1)
 - Extracts **actual wear-matched Steam sales history** (`24h / 7d / 30d` sold volume, last actual sale price + live relative age, 7d weighted average, last 4 transactions) without requiring Steam login.
 - **Self-Healing Monotonic Telemetry:** Prevents partial Edge responses from ever zeroing out verified snapshot history or contradicting the recent sales tape (`st24 ≥ tape24`, `st7 ≥ tape7`, `st30 ≥ tape30`).
 - **Full-Width Step 1 Telemetry Deck:** Shows clickable recent Steam sales chips plus 4 one-click desk price presets (`✓ Realistic Sell`, `Last Sale`, `Lowest Ask (+%)`, `Steam Instant Buy-Order`).

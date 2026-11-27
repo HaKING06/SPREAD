@@ -1,5 +1,9 @@
 # Changelog
 
+## 11.2.1 - 2026-11-27
+
+- Restored the previous page template to fix duplicate controls and broken markup.
+
 ## 11.2.0 - 2026-11-27
 
 - Instant cashout calculations require a buy order for the selected cash marketplace.
