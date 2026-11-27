@@ -4,6 +4,14 @@
 
 import { DEFAULT_FX_RATES } from '../core/config.js';
 
+const VERIFY_TTL_MS = 15 * 60 * 1000;
+const VERIFY_RETRY_MS = 60 * 1000;
+const VERIFIED_STEAM_FIELDS = [
+  'st24', 'st24Checked', 'stHist', 'st7', 'st30', 'stLast', 'stLastH',
+  'stAvg7', 'stAvg30', 'stReal', 'stSales', 'stMed', 'stBuyOrd',
+  'stSellOrd', 'stSellCnt', 'stBuyCnt', 'stVerifiedAt', 'stAskVerifiedAt'
+];
+
 async function fetchJsonSafe(url, timeoutMs = 12000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -38,7 +46,7 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       s30: Number(ci.steamUsd) || 0,
       s90: Number(ci.steamUsd) || 0,
       cf: Number(ci.csfloatUsd) || 0,
-      cfo: Number(ci.csfloatUsd) || 0,
+      cfo: 0,
       q: Number(ci.qty) || 99,
       yp: Number(ci.youpinUsd) || Number(ci.csfloatUsd) || 0,
       v24: 10,
@@ -81,6 +89,8 @@ function mergeCatalogAndPrices(catalogItems, priceMap, customItems = []) {
       st24: Number(p.st24) || 0,
       st24Checked: Boolean(p.st24Checked),
       stHist: Boolean(p.stHist),
+      stVerifiedAt: Number(p.stVerifiedAt) || 0,
+      stAskVerifiedAt: Number(p.stAskVerifiedAt) || 0,
       st7: Number(p.st7) || 0,
       st30: Number(p.st30) || 0,
       stLast: Number(p.stLast) || 0,
@@ -144,6 +154,10 @@ export class MarketService {
         mergedPrices[k] = {
           ...prev,
           ...val,
+          ...(prev.stVerifiedAt > 0
+            ? Object.fromEntries(VERIFIED_STEAM_FIELDS.map((field) => [field, prev[field]]))
+            : {}),
+          sEst: val.sEst || 0,
           b: val.b || prev.b || 0,
           bo: val.bo || prev.bo || 0,
           v24: val.v24 || prev.v24 || 0,
@@ -183,7 +197,7 @@ export class MarketService {
     const mkt = marketplace === 'YOUPIN' ? 'YOUPIN' : 'CSFLOAT';
     const unique = Array.from(new Set(names.filter(Boolean))).slice(0, 6);
     const cacheKeyOf = (n) => `${mkt}:${n}`;
-    const missing = unique.filter((n) => !this.steamLiveCache.has(cacheKeyOf(n)));
+    const missing = unique.filter((n) => (this.steamLiveCache.get(cacheKeyOf(n))?.expiresAt || 0) <= Date.now());
     if (missing.length > 0) {
       try {
         const params = [];
@@ -195,7 +209,9 @@ export class MarketService {
         const res = await fetchJsonSafe(`/api/steam-verify?mkt=${mkt}&${params.join('&')}`, 9000);
         if (res?.ok && res.items) {
           for (const [k, v] of Object.entries(res.items)) {
-            this.steamLiveCache.set(cacheKeyOf(k), v);
+            const fetchedAt = Date.parse(res.updatedAt) || Date.now();
+            const ttl = v.histLive || v.csfloat?.live ? VERIFY_TTL_MS : VERIFY_RETRY_MS;
+            this.steamLiveCache.set(cacheKeyOf(k), { record: v, fetchedAt, expiresAt: fetchedAt + ttl });
           }
         }
       } catch {
@@ -204,7 +220,8 @@ export class MarketService {
     }
     const out = {};
     for (const n of unique) {
-      const rec = this.steamLiveCache.get(cacheKeyOf(n));
+      const entry = this.steamLiveCache.get(cacheKeyOf(n));
+      const rec = entry?.expiresAt > Date.now() ? entry.record : null;
       if (rec) {
         out[n] = rec;
         const it = Array.isArray(liveItemsRef) ? liveItemsRef.find((x) => x.n === n) : null;
@@ -231,6 +248,7 @@ export class MarketService {
             ...(hasValidHist
               ? {
                 stHist: true,
+                stVerifiedAt: entry.fetchedAt,
                 st7: Math.max(Number(rec.sold7d) || 0, Number(rec.volume24h) || 0),
                 st30: Math.max(Number(rec.sold30d) || 0, Number(rec.sold7d) || 0),
                 stLast: Number(rec.lastSaleUsd) || 0,
@@ -243,7 +261,9 @@ export class MarketService {
               : {}),
             ...(rec.medianUsd > 0 ? { stMed: rec.medianUsd } : {}),
             ...(rec.steamBuyOrderUsd > 0 ? { stBuyOrd: rec.steamBuyOrderUsd } : {}),
-            ...(rec.steamSellOrderUsd > 0 ? { stSellOrd: rec.steamSellOrderUsd } : {}),
+            ...(rec.steamSellOrderUsd > 0
+              ? { stSellOrd: rec.steamSellOrderUsd, stVerifiedAt: entry.fetchedAt, stAskVerifiedAt: entry.fetchedAt }
+              : {}),
             ...(rec.steamSellCount > 0 ? { stSellCnt: rec.steamSellCount } : {}),
             ...(rec.steamBuyCount > 0 ? { stBuyCnt: rec.steamBuyCount } : {})
           };

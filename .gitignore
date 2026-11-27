@@ -12,3 +12,10 @@ Thumbs.db
 *.log
 .vscode/*
 !.vscode/extensions.json
+
+# Browser verification artifacts and local secrets
+.playwright-mcp/
+.env
+.env.*
+!.env.example
+.dev.vars.*

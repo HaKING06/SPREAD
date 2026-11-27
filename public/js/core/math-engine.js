@@ -516,6 +516,13 @@ export function evaluateItemMetrics(item, opts) {
     steamUsd = Math.min(...candidates);
   }
 
+  // An observed ask is the purchase quote. Historical averages are fallback
+  // estimates and must not undercut a recent execution quote.
+  const verifiedAgeMs = Date.now() - Number(item.stAskVerifiedAt);
+  const currentAsk = verifiedAgeMs >= 0 && verifiedAgeMs < 15 * 60 * 1000
+    ? Number(item.stSellOrd) || 0
+    : 0;
+
   // V11 Realistic Steam Clearing Price (Leg 1 Sell Baseline):
   // Never assume Leg 1 clears at a phantom lowest Ask ($880) when actual recent Steam sales cleared at $811–$856!
   const hasRealSteamSales = Boolean(item.stHist) && Number(item.stReal) > 0;
@@ -533,14 +540,8 @@ export function evaluateItemMetrics(item, opts) {
       : 0;
 
   const marketBuyUsd = marketplace === 'YOUPIN' ? Number(item.yp) || 0 : Number(item.cf) || 0;
-  const marketSellUsd =
-    marketplace === 'YOUPIN'
-      ? useBuyOrderForLeg2 && item.ypo > 0
-        ? Number(item.ypo)
-        : Number(item.yp) || 0
-      : useBuyOrderForLeg2 && item.cfo > 0
-        ? Number(item.cfo)
-        : Number(item.cf) || 0;
+  const cashBidUsd = Number(marketplace === 'YOUPIN' ? item.ypo : item.cfo) || 0;
+  const marketSellUsd = useBuyOrderForLeg2 ? Math.max(0, cashBidUsd) : marketBuyUsd;
 
   // Buff163 Global Cash Anchor (undervalued vs global benchmark detection)
   const buff163Usd = Number(item.b) || 0;
@@ -561,6 +562,7 @@ export function evaluateItemMetrics(item, opts) {
     trendStatus = 'RISING';
   }
 
+  steamUsd = currentAsk || steamUsd;
   const effBuy = calcEffectiveBuyUsd(marketBuyUsd, buyFeePct);
   const netSteam = calcNetSteamUsd(steamSellUsd, steamFeeMode, steamCustomFeePct);
   const m1 = effBuy > 0 && netSteam > 0 ? netSteam / effBuy : 0;

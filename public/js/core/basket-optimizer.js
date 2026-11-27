@@ -1878,12 +1878,15 @@ export function runMonteCarloSimulation({
   const cvar5ProfitUsd = Math.round((tailSum / tailN) * 100) / 100;
   const p90ProfitUsd = Math.round(outcomes[Math.min(trials - 1, Math.floor(trials * 0.9))] * 100) / 100;
 
-  // Fractional Half-Kelly recommended max single-cycle allocation %
-  const avgWin = Math.max(1, evProfitUsd > 0 ? evProfitUsd : 1);
-  const avgDownside = Math.max(1, Math.abs(Math.min(-1, cvar5ProfitUsd)));
-  const pWin = popPct / 100;
-  const rawKelly = pWin - (1 - pWin) / (avgWin / avgDownside);
-  const kellyPct = Math.round(Math.max(15, Math.min(100, rawKelly * 100 * 0.85)));
+  // Half-Kelly uses conditional win/loss magnitudes. An unobserved loss
+  // in a finite simulation still gets one capital-loss stress observation.
+  const gains = outcomes.reduce((sum, profit) => sum + Math.max(0, profit), 0);
+  const losses = outcomes.reduce((sum, profit) => sum + Math.max(0, -profit), 0);
+  const avgWin = wins > 0 ? gains / wins : 0;
+  const avgLoss = (losses + cap) / (trials - wins + 1);
+  const pWin = wins / (trials + 1);
+  const rawKelly = avgWin > 0 ? pWin - (1 - pWin) * avgLoss / avgWin : 0;
+  const kellyPct = Math.round(Math.max(0, rawKelly) * 50);
 
   // Plain Risk Grade (A+ -> C)
   let riskGrade = 'B';
