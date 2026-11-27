@@ -1,5 +1,10 @@
 # Changelog
 
+## 11.4.0 - 2026-11-27
+
+- Rank single strategies using an adverse two-leg price scenario, including whole-unit exit sizing and a cash reserve.
+- Treat missing cash market bids as unknown instead of substituting asking prices.
+
 ## 11.3.0 - 2026-11-27
 
 - Use the current Steam lowest listing for purchase sizing when histogram quotes are unavailable.

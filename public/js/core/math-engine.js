@@ -1281,19 +1281,32 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
       const slippageAdjProfit = c1.netProfit - c1.spentM1 * (slip1Pct / 100) - c1.cashReturnM2 * (slip2Pct / 100);
       const slippageAdjRoi = cap > 0 ? (slippageAdjProfit / cap) * 100 : 0;
 
-      // V8 Instant Buy-Order Guaranteed Downside Floor (0-second dump into active marketplace highest_order)
-      const instantSellPrice = isCSFloat
-        ? l2.item.cfo > 0
-          ? l2.item.cfo
-          : l2.m.marketSellUsd
-        : l2.item.ypo > 0
-          ? l2.item.ypo
-          : l2.m.marketSellUsd;
-      const instantNetM2 = calcNetSellUsd(instantSellPrice, opts.sellFeePct, opts.withdrawFeePct);
-      const instantM2 = l2.m.steamUsd > 0 ? instantNetM2 / l2.m.steamUsd : 0;
-      const instantFloorEnd = c1.cashLeftAfterLeg1 + c1.q2 * instantNetM2 + c1.steamWallet * instantM2;
-      const instantFloorProfit = Math.round((instantFloorEnd - cap) * 100) / 100;
-      const instantFloorRoi = cap > 0 ? (instantFloorProfit / cap) * 100 : 0;
+      const bid = Number(isCSFloat ? l2.item.cfo : l2.item.ypo) || 0;
+      const instantNetM2 = calcNetSellUsd(bid, opts.sellFeePct, opts.withdrawFeePct);
+      const instantM2 = instantNetM2 / l2.m.steamUsd;
+      const buyReserve = c1.spentM1 * slip1Pct / 100;
+      const instantFloorProfit = bid > 0
+        ? Math.round((c1.cashLeftAfterLeg1 - buyReserve + c1.q2 * instantNetM2 + c1.steamWallet * instantM2 - cap) * 100) / 100
+        : null;
+      const instantFloorRoi = instantFloorProfit === null ? null : instantFloorProfit / cap * 100;
+
+      // Reprice both legs together and again size the exit in whole units.
+      // These are stress assumptions, independent of the quoted bid.
+      const steamSaleShock = l1.item.stHist ? 0.05 : 0.08;
+      const steamPurchaseShock = 0.04;
+      const cashSaleShock = opts.useBuyOrderForLeg2 ? 0.04 : 0.06;
+      const stressedSteam = c1.q1 * calcNetSteamUsd(
+        (l1.m.steamSellUsd || l1.m.steamUsd) * (1 - steamSaleShock),
+        opts.steamFeeMode,
+        opts.steamCustomFeePct
+      );
+      const stressedSteamBuy = l2.m.steamUsd * (1 + steamPurchaseShock);
+      const stressedQty = Math.min(c1.q2, Math.floor(stressedSteam / stressedSteamBuy));
+      const stressedResidual = stressedSteam - stressedQty * stressedSteamBuy;
+      const stressedNetCash = l2.m.netSell * (1 - cashSaleShock);
+      const stressCashUsd = c1.cashLeftAfterLeg1 - buyReserve + stressedQty * stressedNetCash;
+      const stressProfitUsd = stressCashUsd + stressedResidual * stressedNetCash / stressedSteamBuy - cap;
+      const stressRoiPct = stressProfitUsd / cap * 100;
 
       const roiPer14d = slippageAdjRoi * (14 / Math.max(14, avgDays));
       const roiPerDay = c1.netRoiPct / Math.max(14, avgDays);
@@ -1308,10 +1321,14 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
         reality.maxDays >= slowDayLimit;
       const confidenceScore = computePairConfidence(l1, l2, c1, reality);
       const floorRoiPer14d = instantFloorRoi * (14 / Math.max(14, avgDays));
-      const blendedRoiPer14d = roiPer14d * 0.72 + Math.max(0, floorRoiPer14d) * 0.28;
+      const stressRoiPer14d = stressRoiPct * (14 / Math.max(14, avgDays));
+      const downsideRoiPer14d = instantFloorProfit === null
+        ? stressRoiPer14d
+        : Math.min(stressRoiPer14d, floorRoiPer14d);
+      const blendedRoiPer14d = roiPer14d * 0.65 + downsideRoiPer14d * 0.35;
       const buffBonus = l1.m.isBelowBuff ? 3.5 : l1.m.isOverBuff ? -4 : 0;
       const trendBonus = l1.m.trendStatus === 'FALLING' ? -6 : l1.m.trendStatus === 'STABLE' ? 1.5 : 0;
-      const floorPenalty = instantFloorProfit < 0 ? -3.5 : 0;
+      const floorPenalty = instantFloorProfit === null ? -2 : instantFloorProfit < 0 ? -3.5 : 0;
       const l2SpeedBonus =
         (l2.vel.tier === 'A' ? 2.4 : 0) +
         (l2.vel.turnover30Pct >= 22
@@ -1355,6 +1372,9 @@ export function analyzeCapitalStrategies(items, opts, capitalUsd = 200, filters 
         estSlippagePct,
         slippageAdjProfit,
         slippageAdjRoi,
+        stressProfitUsd,
+        stressCashUsd,
+        stressedQty,
         instantFloorProfit,
         instantFloorRoi,
         roiPer14d,

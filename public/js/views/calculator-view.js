@@ -1931,7 +1931,7 @@ export function initCalculatorView(app) {
                   onClick: () => {
                     const linesTxt = [
                       `SPREAD Agent V11 Single Plan (${money(s.capitalUsd)} • 1 -> 1)`,
-                      `Est. Profit: ${money(ap.c1.netProfit, true)} (${fmtPct(ap.c1.netRoiPct, true)}) | Floor: ${money(ap.instantFloorProfit, true)} | PoP: ${singleMc.popPct}%`,
+                      `Est. Profit: ${money(ap.c1.netProfit, true)} (${fmtPct(ap.c1.netRoiPct, true)}) | Price stress: ${money(ap.stressProfitUsd, true)} | PoP: ${singleMc.popPct}%`,
                       '',
                       `[1] BUY (${mkt.name} -> Steam):`,
                       `- ${ap.c1.q1}x ${ap.leg1.item.n} @ ${money(ap.leg1.m.marketBuyUsd)} = ${money(ap.c1.spentM1)} -> Steam Net ${money(ap.c1.steamAfterLeg1)}`,
